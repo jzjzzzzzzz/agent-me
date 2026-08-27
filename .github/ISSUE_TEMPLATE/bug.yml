@@ -1,0 +1,22 @@
+name: Bug report
+description: Report a reproducible problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes: { value: "Do not include credentials, private documents, or personal data." }
+  - type: textarea
+    id: behavior
+    attributes: { label: Observed behavior, description: What happened? }
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes: { label: Expected behavior }
+    validations: { required: true }
+  - type: textarea
+    id: reproduce
+    attributes: { label: Reproduction steps }
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes: { label: Version or commit }
