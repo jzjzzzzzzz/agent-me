@@ -1,0 +1,22 @@
+# API reference
+
+## `GET /health`
+
+Liveness check. Returns `{ "status": "healthy" }`.
+
+## `GET /ready`
+
+Readiness and public document count. It never exposes filenames or content.
+
+## `GET /api/v1/profile`
+
+Returns the configured public agent name and description.
+
+## `POST /api/v1/chat`
+
+Request fields:
+
+- `question`: required nonblank string, capped by `MAX_QUESTION_CHARS`.
+- `history`: optional array of up to 20 `{role, content}` items. Roles are `user` or `assistant`.
+
+Unknown fields, invalid roles, blank content, and oversized fields are rejected. The response includes `answer`, `mode`, and grounding `sources`.
