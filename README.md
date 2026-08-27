@@ -1,75 +1,139 @@
-# Agent-Me Starter
+<div align="center">
+
+# Agent-Me
+
+**Build a transparent, grounded question-answering agent from knowledge you control.**
+
+A privacy-conscious open-source foundation with a typed FastAPI backend, a React interface, local document retrieval, and an optional OpenAI-compatible provider.
+
+[Quick start](#quick-start) · [Architecture](docs/ARCHITECTURE.md) · [API reference](docs/API.md) · [Deployment](docs/DEPLOYMENT.md) · [Security](SECURITY.md)
+
+[English](README.md) · [简体中文](docs/i18n/README.zh-CN.md) · [繁體中文](docs/i18n/README.zh-TW.md) · [日本語](docs/i18n/README.ja.md) · [한국어](docs/i18n/README.ko.md) · [Español](docs/i18n/README.es.md) · [Français](docs/i18n/README.fr.md) · [Deutsch](docs/i18n/README.de.md) · [Português](docs/i18n/README.pt-BR.md)
 
 [![CI](https://github.com/jzjzzzzzzz/agent-me/actions/workflows/ci.yml/badge.svg)](https://github.com/jzjzzzzzzz/agent-me/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-4c1.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/jzjzzzzzzz/agent-me?display_name=tag)](https://github.com/jzjzzzzzzz/agent-me/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-4c1.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776ab.svg)](backend/pyproject.toml)
+[![React](https://img.shields.io/badge/React-18-149eca.svg)](frontend/package.json)
 
-A clean, privacy-safe framework for publishing a question-answering agent grounded in documents you control. It includes a typed FastAPI service, a React interface, deterministic local retrieval, an optional OpenAI-compatible inference adapter, tests, containers, and security defaults.
+</div>
 
-> This repository is a reusable framework. It intentionally contains no production database, private memory, analytics records, credentials, or deployment secrets.
+---
 
-## What you get
+## Overview
 
-- Markdown knowledge ingestion with source-level grounding
-- Local extractive mode that works without an API key
-- Optional OpenAI-compatible model provider
-- Strict request schemas and configurable input limits
-- Safe plain-text rendering in the browser
-- Health and readiness endpoints
-- Docker Compose, backend/frontend tests, linting, and CI
+Agent-Me is a small, auditable foundation for publishing a Q&A agent over Markdown documents. It deliberately separates knowledge retrieval from answer generation:
+
+- **Local extractive mode** works without an external model or API key.
+- **Provider mode** sends only the retrieved context and recent conversation to an OpenAI-compatible endpoint that you configure.
+- Every response can include the document excerpts used as grounding sources.
+
+This public repository contains reusable application code only. It does not contain a production database, private memory, analytics records, credentials, or deployment secrets.
+
+## Why Agent-Me?
+
+| Capability | Included |
+| --- | --- |
+| Knowledge source | Markdown files you can review and version |
+| Retrieval | Deterministic local search with source excerpts |
+| Generation | Optional OpenAI-compatible provider |
+| Backend | Typed FastAPI routes and strict request schemas |
+| Frontend | React, safe text rendering, responsive design |
+| Languages | Automatic locale detection and 9 interface languages |
+| Operations | Health/readiness endpoints, Docker Compose, CI |
+| Quality | Backend/frontend tests, linting, type checking |
+| Security | Input limits, no HTML injection, secrets kept outside Git |
+
+Agent-Me is intentionally focused. It is a strong base for a personal knowledge agent, documentation assistant, portfolio Q&A, internal handbook, or product-support prototype without introducing a large orchestration framework.
 
 ## Architecture
 
-```mermaid
+~~~mermaid
 flowchart LR
-  Browser[React web] -->|POST /api/v1/chat| API[FastAPI]
-  API --> Search[Local document search]
+  User[Browser] -->|POST /api/v1/chat| Web[React interface]
+  Web --> API[FastAPI service]
+  API --> Search[Local document retrieval]
   Search --> Docs[(Markdown knowledge)]
   API -. optional .-> Provider[OpenAI-compatible provider]
-  API -->|answer + sources| Browser
-```
+  API -->|answer, mode, sources| Web
+~~~
 
-The API retrieves relevant excerpts first. With no provider configured, it returns the best grounded excerpt. With a provider configured, it sends only the retrieved context and recent conversation to that provider.
+Request flow:
+
+1. The API validates the question and conversation history.
+2. The retriever ranks relevant Markdown excerpts.
+3. Extractive mode returns the strongest grounded excerpt directly.
+4. Provider mode submits limited retrieved context to your configured endpoint.
+5. The browser renders the answer and sources as plain text.
+
+See the full [architecture guide](docs/ARCHITECTURE.md).
 
 ## Quick start
 
-Requirements: Docker with Compose.
+### Docker Compose
 
-```bash
+**Prerequisite:** Docker with the Compose plugin.
+
+~~~bash
 git clone https://github.com/jzjzzzzzzz/agent-me.git
 cd agent-me
 cp .env.example .env
 docker compose up --build
-```
+~~~
 
-Open <http://localhost:5173>. API documentation is available at <http://localhost:8000/docs>.
+Open:
+
+- Web application: <http://localhost:5173>
+- Interactive API documentation: <http://localhost:8000/docs>
+- Health endpoint: <http://localhost:8000/health>
+- Readiness endpoint: <http://localhost:8000/ready>
+
+Local extractive mode is enabled by default, so the first run does not require an API key.
+
+### Local development
+
+**Prerequisites:** Python 3.11+, Node.js 20+, and npm.
+
+~~~bash
+make setup
+make lint
+make test
+make build
+~~~
+
+Run the services separately when developing:
+
+~~~bash
+.venv/bin/uvicorn app.main:app --app-dir backend --reload
+cd frontend
+npm run dev
+~~~
 
 ## Make it yours
 
-1. Replace `knowledge/example-profile.md` with Markdown you have permission to publish.
-2. Set `APP_NAME` and `APP_DESCRIPTION` in `.env`.
-3. For generated answers, configure an OpenAI-compatible endpoint:
+1. Replace <code>knowledge/example-profile.md</code> with Markdown you are allowed to use.
+2. Set <code>APP_NAME</code> and <code>APP_DESCRIPTION</code> in your local <code>.env</code>.
+3. Keep local extractive mode, or configure an OpenAI-compatible provider.
+4. Review source excerpts and tune your knowledge content before publishing.
+5. Put production secrets in your hosting platform's secret manager—not in Git.
 
-```dotenv
+Example provider configuration:
+
+~~~dotenv
 LLM_BASE_URL=https://provider.example/v1
 LLM_API_KEY=replace-with-a-secret
 LLM_MODEL=replace-with-a-model-id
-```
+~~~
 
-4. Keep `.env` private. Use your platform's secret manager in production.
-5. Review the returned sources and adjust your content before publishing.
+## API example
 
-## API
-
-```bash
+~~~bash
 curl http://localhost:8000/api/v1/chat \
   -H 'Content-Type: application/json' \
   -d '{"question":"How does the example agent plan a project?"}'
-```
+~~~
 
-Response:
-
-```json
+~~~json
 {
   "answer": "For project planning, the example agent starts with user goals...",
   "mode": "extractive",
@@ -82,41 +146,94 @@ Response:
     }
   ]
 }
-```
+~~~
 
-See [API reference](docs/API.md), [architecture](docs/ARCHITECTURE.md), and [deployment guide](docs/DEPLOYMENT.md).
+See the [API reference](docs/API.md) for request limits, schemas, and response fields.
 
-## Local development
+## Configuration
 
-```bash
-make setup
-make lint
-make test
-make build
-```
+The complete template is in [.env.example](.env.example).
 
-Or run services separately:
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| <code>APP_NAME</code> | Public service name | <code>Agent-Me Starter</code> |
+| <code>APP_DESCRIPTION</code> | Public service description | Starter description |
+| <code>KNOWLEDGE_DIR</code> | Markdown knowledge directory | <code>knowledge</code> |
+| <code>MAX_QUESTION_CHARS</code> | Question length limit | <code>8000</code> |
+| <code>LLM_BASE_URL</code> | Optional OpenAI-compatible base URL | empty |
+| <code>LLM_API_KEY</code> | Optional provider secret | empty |
+| <code>LLM_MODEL</code> | Optional provider model ID | empty |
+| <code>VITE_API_BASE_URL</code> | Browser-facing API URL | <code>http://localhost:8000</code> |
 
-```bash
-.venv/bin/uvicorn app.main:app --app-dir backend --reload
-cd frontend && npm run dev
-```
+## Internationalization
 
-## Data and privacy
+The web interface supports:
 
-- Local extractive mode does not transmit questions or documents to a model provider.
-- Provider mode transmits retrieved context, the question, and recent history to the endpoint you configure.
-- This starter does not persist chat content or enable analytics by default.
-- Do not publish secrets, credentials, private communications, health information, or other sensitive personal data as knowledge files.
+- English
+- 简体中文
+- 繁體中文
+- 日本語
+- 한국어
+- Español
+- Français
+- Deutsch
+- Português (Brasil)
+
+The initial language follows the browser locale. A manual selection is stored locally and English is the fallback. The localization layer is dependency-free and type-checked so every locale must implement every message key.
+
+Read [localization guidance](docs/LOCALIZATION.md) before adding or updating a language.
+
+## Project structure
+
+~~~text
+agent-me/
+├── backend/             FastAPI application and backend tests
+├── frontend/            React application and frontend tests
+├── knowledge/           Versioned Markdown knowledge
+├── docs/                API, architecture, deployment, localization
+├── .github/             CI, dependency updates, contribution templates
+├── docker-compose.yml   Local production-shaped stack
+└── .env.example         Safe configuration template
+~~~
+
+## Security and privacy
+
+- Treat prompts and knowledge files as untrusted input.
+- The frontend renders returned content as text, not raw HTML.
+- Request schemas and maximum input sizes are enforced server-side.
+- Extractive mode does not transmit questions or documents to a model provider.
+- Provider mode transmits retrieved context, the question, and recent history to the endpoint you choose.
+- Chat content and analytics are not persisted by this starter.
+- Never publish secrets, private communications, regulated data, or personal information in the knowledge directory.
+- Review your provider's retention and data-processing terms before enabling provider mode.
+
+Report vulnerabilities through the process in [SECURITY.md](SECURITY.md), not through a public issue.
+
+## Documentation
+
+- [API reference](docs/API.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Deployment guide](docs/DEPLOYMENT.md)
+- [Localization guide](docs/LOCALIZATION.md)
+- [Contributing guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+
+## Contributing
+
+Issues and pull requests are welcome. Before contributing:
+
+1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
+2. Keep changes focused and add tests for behavior changes.
+3. Run <code>make lint</code>, <code>make test</code>, and <code>make build</code>.
+4. Use GitHub Security Advisories for security reports.
+
+Translations are maintained by contributors. English documentation is canonical when translations temporarily differ.
 
 ## Related project
 
-For an OpenAI-compatible endpoint whose answers are written by authorized people through a shared queue, see [Human API](https://github.com/jzjzzzzzzz/human-api).
-
-## Contributing and security
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities privately through [GitHub Security Advisories](SECURITY.md), not public issues.
+Need an OpenAI-compatible endpoint whose answers are written by authorized people through a shared queue? See [Human API](https://github.com/jzjzzzzzzz/human-api).
 
 ## License
 
-[MIT](LICENSE)
+Agent-Me is available under the [MIT License](LICENSE).
