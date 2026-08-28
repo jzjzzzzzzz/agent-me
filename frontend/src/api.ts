@@ -1,6 +1,7 @@
 export type AnswerMode = "extractive" | "openai-compatible";
 export type Source = { title: string; path: string; excerpt: string; score: number };
 export type ChatResponse = { answer: string; mode: AnswerMode; sources: Source[] };
+export type ProfileResponse = { name: string; description: string; max_question_chars: number };
 
 export class ApiError extends Error {
   constructor(
@@ -25,6 +26,24 @@ function isSource(value: unknown): value is Source {
     typeof source.score === "number"
   );
 }
+
+function parseProfileResponse(value: unknown): ProfileResponse {
+  if (!value || typeof value !== "object") {
+    throw new ApiError("Server returned an invalid profile.", 502, "invalid_profile");
+  }
+  const profile = value as Record<string, unknown>;
+  if (
+    typeof profile.name !== "string" ||
+    typeof profile.description !== "string" ||
+    typeof profile.max_question_chars !== "number" ||
+    !Number.isInteger(profile.max_question_chars) ||
+    profile.max_question_chars < 1
+  ) {
+    throw new ApiError("Server returned an invalid profile.", 502, "invalid_profile");
+  }
+  return profile as ProfileResponse;
+}
+
 
 function parseChatResponse(value: unknown): ChatResponse {
   if (!value || typeof value !== "object") {
@@ -64,4 +83,11 @@ export async function ask(question: string, signal?: AbortSignal): Promise<ChatR
   });
   if (!response.ok) throw await responseError(response);
   return parseChatResponse(await response.json());
+}
+
+
+export async function loadProfile(signal?: AbortSignal): Promise<ProfileResponse> {
+  const response = await fetch(`${API_BASE}/api/v1/profile`, { signal });
+  if (!response.ok) throw await responseError(response);
+  return parseProfileResponse(await response.json());
 }

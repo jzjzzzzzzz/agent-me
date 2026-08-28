@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ApiError, ask, ChatResponse } from "./api";
+import { ApiError, ask, ChatResponse, loadProfile, ProfileResponse } from "./api";
 import {
   initialLocale,
   Locale,
@@ -9,7 +9,7 @@ import {
 } from "./i18n";
 import "./styles.css";
 
-const MAX_QUESTION_CHARS = 8000;
+const DEFAULT_MAX_QUESTION_CHARS = 8000;
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
@@ -17,11 +17,23 @@ export function App() {
   const [result, setResult] = useState<ChatResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const text = messages[locale];
+  const maxQuestionChars = profile?.max_question_chars ?? DEFAULT_MAX_QUESTION_CHARS;
 
   useEffect(() => {
     persistLocale(locale);
   }, [locale]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadProfile(controller.signal)
+      .then(setProfile)
+      .catch(() => {
+        // The localized starter copy remains usable when profile metadata is unavailable.
+      });
+    return () => controller.abort();
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -66,12 +78,12 @@ export function App() {
 
       <header>
         <div className="mark" aria-hidden="true">
-          A
+          {profile?.name.trim().charAt(0).toUpperCase() || "A"}
         </div>
         <div>
-          <p className="eyebrow">{text.projectLabel}</p>
+          <p className="eyebrow">{profile?.name || text.projectLabel}</p>
           <h1>{text.title}</h1>
-          <p className="intro">{text.intro}</p>
+          <p className="intro">{profile?.description || text.intro}</p>
         </div>
       </header>
 
@@ -83,7 +95,7 @@ export function App() {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder={text.placeholder}
-            maxLength={MAX_QUESTION_CHARS}
+            maxLength={maxQuestionChars}
             aria-describedby="question-meta"
             rows={4}
           />
@@ -94,7 +106,7 @@ export function App() {
         <div id="question-meta" className="question-meta">
           <span>{text.inputPrivacy}</span>
           <span>
-            {question.length} / {MAX_QUESTION_CHARS} {text.characters}
+            {question.length} / {maxQuestionChars} {text.characters}
           </span>
         </div>
       </form>

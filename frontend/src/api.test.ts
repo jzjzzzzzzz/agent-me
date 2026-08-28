@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { ApiError, ask } from "./api";
+import { ApiError, ask, loadProfile } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -50,5 +50,26 @@ it("rejects malformed success payloads", async () => {
   await expect(ask("Question")).rejects.toMatchObject({
     message: "Server returned an invalid response.",
     code: "invalid_response",
+  });
+});
+
+
+it("validates public profile metadata", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        name: "My Agent",
+        description: "My description",
+        max_question_chars: 1200,
+      }),
+    }),
+  );
+
+  await expect(loadProfile()).resolves.toEqual({
+    name: "My Agent",
+    description: "My description",
+    max_question_chars: 1200,
   });
 });
