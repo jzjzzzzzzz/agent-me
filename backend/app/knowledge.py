@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
+_ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$")
 
 
 class KnowledgeLoadError(RuntimeError):
@@ -38,6 +39,24 @@ def _title(path: Path, text: str) -> str:
         if line.startswith("# "):
             return line[2:].strip()
     return path.stem.replace("-", " ").replace("_", " ").title()
+
+
+def _content_chunks(text: str) -> list[str]:
+    chunks: list[str] = []
+    for block in re.split(r"\n\s*\n", text):
+        lines: list[str] = []
+        has_body = False
+        for raw_line in block.splitlines():
+            heading = _ATX_HEADING.fullmatch(raw_line)
+            if heading:
+                lines.append(heading.group(1).strip())
+            else:
+                lines.append(raw_line.strip())
+                has_body = has_body or bool(raw_line.strip())
+        normalized = "\n".join(line for line in lines if line).strip()
+        if has_body and normalized:
+            chunks.append(normalized)
+    return chunks
 
 
 class KnowledgeBase:
@@ -96,10 +115,7 @@ class KnowledgeBase:
             return []
         matches: list[Match] = []
         for document in self.documents():
-            paragraphs = [part.strip() for part in re.split(r"\n\s*\n", document.text)]
-            for paragraph in paragraphs:
-                if not paragraph or paragraph.startswith("#"):
-                    continue
+            for paragraph in _content_chunks(document.text):
                 paragraph_tokens = _tokens(paragraph)
                 overlap = query & paragraph_tokens
                 if not overlap:

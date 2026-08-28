@@ -41,3 +41,28 @@ def test_symbolic_linked_document_is_rejected(tmp_path: Path) -> None:
         KnowledgeBase(str(tmp_path)).documents()
 
     assert captured.value.code == "knowledge_symlink_rejected"
+
+
+def test_search_preserves_content_below_a_markdown_heading(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text(
+        "# Profile\n\n## Project planning\nStart with user goals and write Python prototypes.\n",
+        encoding="utf-8",
+    )
+
+    matches = KnowledgeBase(str(tmp_path)).search("project planning Python")
+
+    assert len(matches) == 1
+    assert matches[0].document.path == "profile.md"
+    assert matches[0].excerpt == (
+        "Project planning\nStart with user goals and write Python prototypes."
+    )
+    assert matches[0].score == 1.0
+
+
+def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
+    (tmp_path / "b.md").write_text("Alpha Python", encoding="utf-8")
+    (tmp_path / "a.md").write_text("Alpha Python", encoding="utf-8")
+
+    matches = KnowledgeBase(str(tmp_path)).search("Alpha Python", limit=1)
+
+    assert [match.document.path for match in matches] == ["a.md"]
