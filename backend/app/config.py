@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     app_name: str = "My Answer Agent"
     app_description: str = "A grounded question-answering agent built from your documents."
-    knowledge_dir: str = "../knowledge"
+    knowledge_dir: str = "knowledge"
     max_question_chars: int = Field(default=8_000, ge=1, le=100_000)
     max_context_chars: int = Field(default=12_000, ge=1, le=100_000)
     llm_base_url: str = ""

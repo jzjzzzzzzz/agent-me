@@ -158,7 +158,7 @@ The complete template is in [.env.example](.env.example).
 | --- | --- | --- |
 | <code>APP_NAME</code> | Public service name | <code>Agent-Me Starter</code> |
 | <code>APP_DESCRIPTION</code> | Public service description | Starter description |
-| <code>KNOWLEDGE_DIR</code> | Markdown knowledge directory | <code>knowledge</code> |
+| <code>KNOWLEDGE_DIR</code> | Markdown knowledge directory, relative to the process working directory or absolute | <code>knowledge</code> |
 | <code>MAX_QUESTION_CHARS</code> | Question length limit | <code>8000</code> |
 | <code>LLM_BASE_URL</code> | Optional OpenAI-compatible base URL | empty |
 | <code>LLM_API_KEY</code> | Optional provider secret | empty |
