@@ -1,9 +1,9 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .config import Settings, get_settings
-from .knowledge import KnowledgeBase
+from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .provider import generate_answer
 from .schemas import ChatRequest, ChatResponse, ProfileResponse, Source
 
@@ -18,6 +18,17 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(KnowledgeLoadError)
+async def knowledge_load_error(_: Request, error: KnowledgeLoadError) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "Knowledge base is temporarily unavailable.",
+            "code": error.code,
+        },
+    )
+
+
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "healthy"}
@@ -27,7 +38,9 @@ async def health() -> dict[str, str]:
 async def ready(
     config: Settings = Depends(get_settings),
 ) -> JSONResponse:
-    documents = KnowledgeBase(config.knowledge_dir).documents()
+    documents = KnowledgeBase(
+        config.knowledge_dir, max_document_bytes=config.max_document_bytes
+    ).documents()
     content: dict[str, object] = {
         "status": "ready" if documents else "not_ready",
         "knowledge_documents": len(documents),
@@ -44,7 +57,9 @@ async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
 async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -> ChatResponse:
     if len(payload.question) > config.max_question_chars:
         raise HTTPException(status_code=413, detail="question exceeds configured limit")
-    matches = KnowledgeBase(config.knowledge_dir).search(payload.question)
+    matches = KnowledgeBase(
+        config.knowledge_dir, max_document_bytes=config.max_document_bytes
+    ).search(payload.question)
     answer, mode = await generate_answer(
         question=payload.question,
         history=payload.history,
