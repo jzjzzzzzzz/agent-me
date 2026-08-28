@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     max_question_chars: int = Field(default=8_000, ge=1, le=100_000)
     max_context_chars: int = Field(default=12_000, ge=1, le=100_000)
     max_document_bytes: int = Field(default=1_000_000, ge=1, le=50_000_000)
+    max_history_chars: int = Field(default=24_000, ge=1, le=200_000)
+    max_answer_chars: int = Field(default=50_000, ge=1, le=200_000)
+    provider_timeout_seconds: float = Field(default=60, ge=1, le=300)
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
@@ -21,6 +24,13 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def provider_state(self) -> str:
+        configured = [self.llm_base_url, self.llm_api_key, self.llm_model]
+        if not any(configured):
+            return "extractive"
+        return "openai-compatible" if all(configured) else "misconfigured"
 
 
 @lru_cache

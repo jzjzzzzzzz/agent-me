@@ -37,7 +37,11 @@ async def test_health(client: httpx.AsyncClient) -> None:
 async def test_ready_reports_loaded_documents(client: httpx.AsyncClient) -> None:
     response = await client.get("/ready")
     assert response.status_code == 200
-    assert response.json() == {"status": "ready", "knowledge_documents": 1}
+    assert response.json() == {
+        "status": "ready",
+        "knowledge_documents": 1,
+        "answer_mode": "extractive",
+    }
 
 
 @pytest.mark.anyio
@@ -55,7 +59,11 @@ async def test_ready_fails_when_knowledge_directory_is_empty(
         settings.knowledge_dir = original
 
     assert response.status_code == 503
-    assert response.json() == {"status": "not_ready", "knowledge_documents": 0}
+    assert response.json() == {
+        "status": "not_ready",
+        "knowledge_documents": 0,
+        "answer_mode": "extractive",
+    }
 
 
 @pytest.mark.anyio
@@ -95,3 +103,47 @@ async def test_blank_and_unknown_fields_are_rejected(client: httpx.AsyncClient) 
     extra = await client.post("/api/v1/chat", json={"question": "hello", "admin": True})
     assert blank.status_code == 422
     assert extra.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_history_total_limit_is_enforced(client: httpx.AsyncClient) -> None:
+    settings = get_settings()
+    original = settings.max_history_chars
+    settings.max_history_chars = 5
+    try:
+        response = await client.post(
+            "/api/v1/chat",
+            json={
+                "question": "Python?",
+                "history": [{"role": "user", "content": "123456"}],
+            },
+        )
+    finally:
+        settings.max_history_chars = original
+
+    assert response.status_code == 413
+    assert response.json() == {"detail": "history exceeds configured limit"}
+
+
+@pytest.mark.anyio
+async def test_incomplete_provider_configuration_fails_explicitly(
+    client: httpx.AsyncClient,
+) -> None:
+    settings = get_settings()
+    original = (settings.llm_base_url, settings.llm_api_key, settings.llm_model)
+    settings.llm_base_url = "https://provider.example/v1"
+    settings.llm_api_key = ""
+    settings.llm_model = ""
+    try:
+        readiness = await client.get("/ready")
+        response = await client.post("/api/v1/chat", json={"question": "Python?"})
+    finally:
+        settings.llm_base_url, settings.llm_api_key, settings.llm_model = original
+
+    assert readiness.status_code == 503
+    assert readiness.json()["answer_mode"] == "misconfigured"
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Provider configuration is incomplete.",
+        "code": "provider_configuration_incomplete",
+    }
