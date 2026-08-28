@@ -34,6 +34,31 @@ async def test_health(client: httpx.AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_ready_reports_loaded_documents(client: httpx.AsyncClient) -> None:
+    response = await client.get("/ready")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready", "knowledge_documents": 1}
+
+
+@pytest.mark.anyio
+async def test_ready_fails_when_knowledge_directory_is_empty(
+    client: httpx.AsyncClient, tmp_path: Path
+) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    settings = get_settings()
+    original = settings.knowledge_dir
+    settings.knowledge_dir = str(empty)
+    try:
+        response = await client.get("/ready")
+    finally:
+        settings.knowledge_dir = original
+
+    assert response.status_code == 503
+    assert response.json() == {"status": "not_ready", "knowledge_documents": 0}
+
+
+@pytest.mark.anyio
 async def test_grounded_extractive_answer(client: httpx.AsyncClient) -> None:
     response = await client.post("/api/v1/chat", json={"question": "preferred Python tools?"})
     assert response.status_code == 200
