@@ -76,7 +76,11 @@ async def ready(
 
 @app.get("/api/v1/profile", response_model=ProfileResponse)
 async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
-    return ProfileResponse(name=config.app_name, description=config.app_description)
+    return ProfileResponse(
+        name=config.app_name,
+        description=config.app_description,
+        max_question_chars=config.max_question_chars,
+    )
 
 
 @app.post("/api/v1/chat", response_model=ChatResponse)

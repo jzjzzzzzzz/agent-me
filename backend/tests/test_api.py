@@ -34,6 +34,19 @@ async def test_health(client: httpx.AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_profile_exposes_public_runtime_configuration(client: httpx.AsyncClient) -> None:
+    response = await client.get("/api/v1/profile")
+
+    settings = get_settings()
+    assert response.status_code == 200
+    assert response.json() == {
+        "name": settings.app_name,
+        "description": settings.app_description,
+        "max_question_chars": settings.max_question_chars,
+    }
+
+
+@pytest.mark.anyio
 async def test_ready_reports_loaded_documents(client: httpx.AsyncClient) -> None:
     response = await client.get("/ready")
     assert response.status_code == 200

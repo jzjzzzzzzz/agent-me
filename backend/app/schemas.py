@@ -41,3 +41,4 @@ class ChatResponse(BaseModel):
 class ProfileResponse(BaseModel):
     name: str
     description: str
+    max_question_chars: int

@@ -5,6 +5,23 @@ import { App } from "./App";
 
 afterEach(cleanup);
 
+const profileResponse = {
+  ok: true,
+  json: async () => ({
+    name: "My Answer Agent",
+    description: "A grounded question-answering agent built from your documents.",
+    max_question_chars: 8000,
+  }),
+};
+
+function routeFetch(chatResponse: object) {
+  return vi.fn().mockImplementation((url: string) =>
+    url.endsWith("/api/v1/profile")
+      ? Promise.resolve(profileResponse)
+      : Promise.resolve({ ok: true, json: async () => chatResponse }),
+  );
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.lang = "en";
@@ -14,20 +31,17 @@ beforeEach(() => {
 it("submits a question and renders grounded sources", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        answer: "Start with user goals.",
-        mode: "extractive",
-        sources: [
-          {
-            title: "Example",
-            path: "example.md",
-            excerpt: "Start with user goals.",
-            score: 1,
-          },
-        ],
-      }),
+    routeFetch({
+      answer: "Start with user goals.",
+      mode: "extractive",
+      sources: [
+        {
+          title: "Example",
+          path: "example.md",
+          excerpt: "Start with user goals.",
+          score: 1,
+        },
+      ],
     }),
   );
 
@@ -56,13 +70,10 @@ it("switches locale, translates the interface, and remembers the choice", async 
 it("translates provider mode and explains an empty source list", async () => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        answer: "The supplied context is insufficient.",
-        mode: "openai-compatible",
-        sources: [],
-      }),
+    routeFetch({
+      answer: "The supplied context is insufficient.",
+      mode: "openai-compatible",
+      sources: [],
     }),
   );
 
@@ -76,17 +87,20 @@ it("translates provider mode and explains an empty source list", async () => {
 
 it("shows a structured API error and clears a stale answer while retrying", async () => {
   let rejectRequest: ((reason: Error) => void) | undefined;
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ answer: "Old answer", mode: "extractive", sources: [] }),
-    })
-    .mockReturnValueOnce(
-      new Promise((_, reject) => {
-        rejectRequest = reject;
-      }),
-    );
+  let chatCall = 0;
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    chatCall += 1;
+    if (chatCall === 1) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ answer: "Old answer", mode: "extractive", sources: [] }),
+      });
+    }
+    return new Promise((_, reject) => {
+      rejectRequest = reject;
+    });
+  });
   vi.stubGlobal("fetch", fetchMock);
 
   render(<App />);
@@ -103,4 +117,26 @@ it("shows a structured API error and clears a stale answer while retrying", asyn
 
   rejectRequest?.(new Error("network"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed");
+});
+
+
+it("applies the configured public profile and question limit", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        name: "Documentation Helper",
+        description: "Answers from reviewed documentation.",
+        max_question_chars: 42,
+      }),
+    }),
+  );
+
+  render(<App />);
+
+  expect(await screen.findByText("Documentation Helper")).toBeInTheDocument();
+  expect(screen.getByText("Answers from reviewed documentation.")).toBeInTheDocument();
+  expect(screen.getByLabelText(/ask the example/i)).toHaveAttribute("maxlength", "42");
+  expect(screen.getByText(/0 \/ 42 characters/)).toBeInTheDocument();
 });

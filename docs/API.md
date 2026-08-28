@@ -10,7 +10,7 @@ Readiness and public document count. It returns HTTP `503` with `status: "not_re
 
 ## `GET /api/v1/profile`
 
-Returns the configured public agent name and description.
+Returns the configured public agent name, description, and `max_question_chars` so the browser can enforce the same input limit.
 
 ## `POST /api/v1/chat`
 
