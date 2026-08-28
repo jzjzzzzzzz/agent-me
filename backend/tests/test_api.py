@@ -59,6 +59,27 @@ async def test_ready_fails_when_knowledge_directory_is_empty(
 
 
 @pytest.mark.anyio
+async def test_unsafe_knowledge_returns_safe_service_error(
+    client: httpx.AsyncClient, tmp_path: Path
+) -> None:
+    (tmp_path / "oversized-private-name.md").write_text("too large", encoding="utf-8")
+    settings = get_settings()
+    original = settings.max_document_bytes
+    settings.max_document_bytes = 2
+    try:
+        response = await client.get("/ready")
+    finally:
+        settings.max_document_bytes = original
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Knowledge base is temporarily unavailable.",
+        "code": "knowledge_document_too_large",
+    }
+    assert "private-name" not in response.text
+
+
+@pytest.mark.anyio
 async def test_grounded_extractive_answer(client: httpx.AsyncClient) -> None:
     response = await client.post("/api/v1/chat", json={"question": "preferred Python tools?"})
     assert response.status_code == 200

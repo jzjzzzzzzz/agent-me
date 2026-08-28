@@ -1,8 +1,18 @@
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 _TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
+
+
+class KnowledgeLoadError(RuntimeError):
+    """Raised when the configured knowledge corpus cannot be loaded safely."""
+
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 @dataclass(frozen=True)
@@ -31,19 +41,50 @@ def _title(path: Path, text: str) -> str:
 
 
 class KnowledgeBase:
-    def __init__(self, directory: str) -> None:
+    def __init__(self, directory: str, *, max_document_bytes: int = 1_000_000) -> None:
         self.directory = Path(directory)
+        self.max_document_bytes = max_document_bytes
 
     def documents(self) -> list[Document]:
         if not self.directory.exists():
             return []
+
+        try:
+            root = self.directory.resolve(strict=True)
+        except OSError as error:
+            raise KnowledgeLoadError("knowledge_directory_unavailable") from error
+        if not root.is_dir():
+            raise KnowledgeLoadError("knowledge_directory_invalid")
+
         result: list[Document] = []
-        for path in sorted(self.directory.rglob("*.md")):
-            text = path.read_text(encoding="utf-8")
+        try:
+            paths = sorted(self.directory.rglob("*.md"))
+        except OSError as error:
+            raise KnowledgeLoadError("knowledge_directory_unavailable") from error
+
+        for path in paths:
+            if path.is_symlink():
+                raise KnowledgeLoadError("knowledge_symlink_rejected")
+            try:
+                resolved = path.resolve(strict=True)
+                resolved.relative_to(root)
+            except (OSError, ValueError) as error:
+                raise KnowledgeLoadError("knowledge_path_rejected") from error
+            if not resolved.is_file():
+                continue
+            try:
+                if resolved.stat().st_size > self.max_document_bytes:
+                    raise KnowledgeLoadError("knowledge_document_too_large")
+                text = resolved.read_text(encoding="utf-8")
+            except KnowledgeLoadError:
+                raise
+            except (OSError, UnicodeError) as error:
+                raise KnowledgeLoadError("knowledge_document_unreadable") from error
+
             result.append(
                 Document(
                     title=_title(path, text),
-                    path=str(path.relative_to(self.directory)),
+                    path=path.relative_to(self.directory).as_posix(),
                     text=text,
                 )
             )
