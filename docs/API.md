@@ -6,7 +6,7 @@ Liveness check. Returns `{ "status": "healthy" }`.
 
 ## `GET /ready`
 
-Readiness and public document count. It never exposes filenames or content.
+Readiness and public document count. It returns HTTP `503` with `status: "not_ready"` when no Markdown documents are loaded. It never exposes filenames or content.
 
 ## `GET /api/v1/profile`
 
