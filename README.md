@@ -156,6 +156,8 @@ The complete template is in [.env.example](.env.example).
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
+| <code>API_BIND</code> / <code>WEB_BIND</code> | Compose host bindings; loopback by default | <code>127.0.0.1</code> |
+| <code>API_PORT</code> / <code>WEB_PORT</code> | Local published ports | <code>8000</code> / <code>5173</code> |
 | <code>APP_NAME</code> | Public service name | <code>Agent-Me Starter</code> |
 | <code>APP_DESCRIPTION</code> | Public service description | Starter description |
 | <code>KNOWLEDGE_DIR</code> | Markdown knowledge directory, relative to the process working directory or absolute | <code>knowledge</code> |
