@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ask, ChatResponse } from "./api";
+import { ApiError, ask, ChatResponse } from "./api";
 import {
   initialLocale,
   Locale,
@@ -8,6 +8,8 @@ import {
   supportedLocales,
 } from "./i18n";
 import "./styles.css";
+
+const MAX_QUESTION_CHARS = 8000;
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
@@ -27,12 +29,12 @@ export function App() {
 
     setLoading(true);
     setError("");
+    setResult(null);
     try {
       setResult(await ask(question.trim()));
     } catch (reason) {
-      setError(
-        reason instanceof Error ? text.requestFailed + ": " + reason.message : text.requestFailed,
-      );
+      const detail = reason instanceof ApiError ? reason.message : "";
+      setError(detail ? `${text.requestFailed}: ${detail}` : text.requestFailed);
     } finally {
       setLoading(false);
     }
@@ -41,9 +43,9 @@ export function App() {
   const modeLabel =
     result?.mode === "extractive"
       ? text.extractiveMode
-      : result?.mode === "provider"
+      : result?.mode === "openai-compatible"
         ? text.providerMode
-        : result?.mode;
+        : "";
 
   return (
     <main>
@@ -73,7 +75,7 @@ export function App() {
         </div>
       </header>
 
-      <form onSubmit={submit}>
+      <form onSubmit={submit} aria-busy={loading}>
         <label htmlFor="question">{text.formLabel}</label>
         <div className="ask-row">
           <textarea
@@ -81,12 +83,19 @@ export function App() {
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder={text.placeholder}
-            maxLength={8000}
+            maxLength={MAX_QUESTION_CHARS}
+            aria-describedby="question-meta"
             rows={4}
           />
           <button disabled={!question.trim() || loading} type="submit">
             {loading ? text.searching : text.ask}
           </button>
+        </div>
+        <div id="question-meta" className="question-meta">
+          <span>{text.inputPrivacy}</span>
+          <span>
+            {question.length} / {MAX_QUESTION_CHARS} {text.characters}
+          </span>
         </div>
       </form>
 
@@ -104,14 +113,18 @@ export function App() {
           </div>
           <p>{result.answer}</p>
           <h3>{text.groundingSources}</h3>
-          <ul>
-            {result.sources.map((source) => (
-              <li key={source.path + "-" + source.excerpt}>
-                <strong>{source.title}</strong> <code>{source.path}</code>
-                <p>{source.excerpt}</p>
-              </li>
-            ))}
-          </ul>
+          {result.sources.length > 0 ? (
+            <ul>
+              {result.sources.map((source) => (
+                <li key={source.path + "-" + source.excerpt}>
+                  <strong>{source.title}</strong> <code>{source.path}</code>
+                  <p>{source.excerpt}</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="no-sources">{text.noSources}</p>
+          )}
         </section>
       )}
 
