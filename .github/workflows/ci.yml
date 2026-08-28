@@ -1,22 +1,33 @@
 name: CI
+
 on:
   push:
     branches: [main]
   pull_request:
+
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: python -m pip install -e 'backend[dev]'
       - run: ruff check backend
+      - run: ruff format --check backend
       - run: pytest backend/tests
+
   frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4
@@ -27,3 +38,35 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python3 scripts/check_docs.py
+
+  containers:
+    needs: [backend, frontend, documentation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start hardened Compose stack
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose up --detach --build --wait
+      - name: Smoke-test both services
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8000/health
+          curl --fail --silent --show-error http://127.0.0.1:8000/ready
+          curl --fail --silent --show-error http://127.0.0.1:5173/ >/dev/null
+      - name: Show logs after failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop stack
+        if: always()
+        run: docker compose down --volumes
