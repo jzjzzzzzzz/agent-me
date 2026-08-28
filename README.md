@@ -98,6 +98,7 @@ Local extractive mode is enabled by default, so the first run does not require a
 make setup
 make lint
 make test
+make docs
 make build
 ~~~
 
@@ -231,7 +232,7 @@ Issues and pull requests are welcome. Before contributing:
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
 2. Keep changes focused and add tests for behavior changes.
-3. Run <code>make lint</code>, <code>make test</code>, and <code>make build</code>.
+3. Run <code>make lint</code>, <code>make test</code>, <code>make docs</code>, and <code>make build</code>.
 4. Use GitHub Security Advisories for security reports.
 
 Translations are maintained by contributors. English documentation is canonical when translations temporarily differ.

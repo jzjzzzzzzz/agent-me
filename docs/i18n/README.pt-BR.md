@@ -73,4 +73,4 @@ Relate vulnerabilidades de forma privada conforme [SECURITY.md](../../SECURITY.m
 
 Consulte [API](../API.md), [arquitetura](../ARCHITECTURE.md), [implantação](../DEPLOYMENT.md) e [guia de contribuição](../../CONTRIBUTING.md).
 
-Projeto relacionado: [Human API](https://github.com/jzjzzzzz/human-api). Licença: [MIT](../../LICENSE).
+Projeto relacionado: [Human API](https://github.com/jzjzzzzzzz/human-api). Licença: [MIT](../../LICENSE).
