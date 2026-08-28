@@ -161,6 +161,9 @@ The complete template is in [.env.example](.env.example).
 | <code>KNOWLEDGE_DIR</code> | Markdown knowledge directory, relative to the process working directory or absolute | <code>knowledge</code> |
 | <code>MAX_QUESTION_CHARS</code> | Question length limit | <code>8000</code> |
 | <code>MAX_DOCUMENT_BYTES</code> | Maximum UTF-8 size of one Markdown file | <code>1000000</code> |
+| <code>MAX_HISTORY_CHARS</code> | Maximum total characters in submitted chat history | <code>24000</code> |
+| <code>MAX_ANSWER_CHARS</code> | Maximum accepted provider answer size | <code>50000</code> |
+| <code>PROVIDER_TIMEOUT_SECONDS</code> | Upstream provider timeout | <code>60</code> |
 | <code>LLM_BASE_URL</code> | Optional OpenAI-compatible base URL | empty |
 | <code>LLM_API_KEY</code> | Optional provider secret | empty |
 | <code>LLM_MODEL</code> | Optional provider model ID | empty |

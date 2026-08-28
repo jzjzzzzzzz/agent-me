@@ -17,6 +17,11 @@ Returns the configured public agent name and description.
 Request fields:
 
 - `question`: required nonblank string, capped by `MAX_QUESTION_CHARS`.
-- `history`: optional array of up to 20 `{role, content}` items. Roles are `user` or `assistant`.
+- `history`: optional array of up to 20 `{role, content}` items. Roles are `user` or `assistant`; total content is capped by `MAX_HISTORY_CHARS`.
 
 Unknown fields, invalid roles, blank content, and oversized fields are rejected. Unsafe symbolic links, unreadable Markdown, or documents larger than `MAX_DOCUMENT_BYTES` make readiness and chat return a safe `503` without exposing a private path. The response includes `answer`, `mode`, and grounding `sources`.
+
+
+## Provider failures
+
+Partial provider configuration makes `/ready` return `503` instead of silently changing answer mode. Provider timeouts, rejected requests, rate limits, invalid JSON, invalid completion shapes, and oversized answers return classified `502`/`503` errors. Upstream bodies, URLs, and credentials are never copied into client errors.
