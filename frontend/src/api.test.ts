@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { ApiError, ask, loadProfile } from "./api";
+import { ApiError, ask, collaborate, loadProfile } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -50,6 +50,48 @@ it("rejects malformed success payloads", async () => {
   await expect(ask("Question")).rejects.toMatchObject({
     message: "Server returned an invalid response.",
     code: "invalid_response",
+  });
+});
+
+
+it("returns a typed multi-agent collaboration trace", async () => {
+  const payload = {
+    run_id: `run_${"a".repeat(32)}`,
+    workflow: "planner-researcher-critic-writer",
+    mode: "multi-agent-local",
+    answer: "Grounded collaboration answer",
+    grounded: true,
+    sources: [],
+    trace: ["planner", "researcher", "critic", "writer"].map((agent, index) => ({
+      sequence: index + 1,
+      agent,
+      outcome: "completed",
+      summary: `${agent} completed`,
+      metrics: { artifact_count: 1 },
+    })),
+  };
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(collaborate("Question")).resolves.toEqual(payload);
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining("/api/v1/collaborate"),
+    expect.objectContaining({ body: JSON.stringify({ question: "Question" }) }),
+  );
+});
+
+it("rejects malformed multi-agent traces", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ mode: "multi-agent-local", trace: [] }),
+    }),
+  );
+
+  await expect(collaborate("Question")).rejects.toMatchObject({
+    message: "Server returned an invalid collaboration trace.",
+    code: "invalid_trace",
   });
 });
 

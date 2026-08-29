@@ -140,3 +140,52 @@ it("applies the configured public profile and question limit", async () => {
   expect(screen.getByLabelText(/ask the example/i)).toHaveAttribute("maxlength", "42");
   expect(screen.getByText(/0 \/ 42 characters/)).toBeInTheDocument();
 });
+
+it("runs the multi-agent lab and renders its ordered operational trace", async () => {
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        run_id: `run_${"b".repeat(32)}`,
+        workflow: "planner-researcher-critic-writer",
+        mode: "multi-agent-local",
+        answer: "Use evidence first.\n\nSources: [example.md]",
+        grounded: true,
+        sources: [
+          {
+            title: "Example",
+            path: "example.md",
+            excerpt: "Use evidence first.",
+            score: 1,
+          },
+        ],
+        trace: ["planner", "researcher", "critic", "writer"].map((agent, index) => ({
+          sequence: index + 1,
+          agent,
+          outcome: "completed",
+          summary: `${agent} completed its handoff.`,
+          metrics: { artifact_count: 1 },
+        })),
+      }),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await userEvent.click(screen.getByRole("radio", { name: "Multi-agent lab" }));
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "How should I plan?");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByRole("heading", { name: "Collaboration trace" })).toBeInTheDocument();
+  expect(screen.getByText("Grounded")).toBeInTheDocument();
+  expect(screen.getByText("planner")).toBeInTheDocument();
+  expect(screen.getByText(`run_${"b".repeat(32)}`)).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining("/api/v1/collaborate"),
+    expect.objectContaining({
+      method: "POST",
+      body: JSON.stringify({ question: "How should I plan?" }),
+    }),
+  );
+});

@@ -1,5 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ApiError, ask, ChatResponse, loadProfile, ProfileResponse } from "./api";
+import {
+  ApiError,
+  ask,
+  ChatResponse,
+  collaborate,
+  CollaborationResponse,
+  loadProfile,
+  ProfileResponse,
+} from "./api";
 import {
   initialLocale,
   Locale,
@@ -10,14 +18,16 @@ import {
 import "./styles.css";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
+type WorkflowMode = "standard" | "collaboration";
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [question, setQuestion] = useState("");
-  const [result, setResult] = useState<ChatResponse | null>(null);
+  const [result, setResult] = useState<ChatResponse | CollaborationResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("standard");
   const text = messages[locale];
   const maxQuestionChars = profile?.max_question_chars ?? DEFAULT_MAX_QUESTION_CHARS;
 
@@ -43,7 +53,11 @@ export function App() {
     setError("");
     setResult(null);
     try {
-      setResult(await ask(question.trim()));
+      setResult(
+        workflowMode === "collaboration"
+          ? await collaborate(question.trim())
+          : await ask(question.trim()),
+      );
     } catch (reason) {
       const detail = reason instanceof ApiError ? reason.message : "";
       setError(detail ? `${text.requestFailed}: ${detail}` : text.requestFailed);
@@ -53,7 +67,9 @@ export function App() {
   }
 
   const modeLabel =
-    result?.mode === "extractive"
+    result?.mode === "multi-agent-local"
+      ? text.collaborationModeLabel
+      : result?.mode === "extractive"
       ? text.extractiveMode
       : result?.mode === "openai-compatible"
         ? text.providerMode
@@ -88,6 +104,36 @@ export function App() {
       </header>
 
       <form onSubmit={submit} aria-busy={loading}>
+        <fieldset className="workflow-picker">
+          <legend>{text.workflowMode}</legend>
+          <div className="workflow-options">
+            <label>
+              <input
+                type="radio"
+                name="workflow"
+                value="standard"
+                checked={workflowMode === "standard"}
+                onChange={() => setWorkflowMode("standard")}
+                disabled={loading}
+              />
+              {text.standardWorkflow}
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="workflow"
+                value="collaboration"
+                checked={workflowMode === "collaboration"}
+                onChange={() => setWorkflowMode("collaboration")}
+                disabled={loading}
+              />
+              {text.collaborationWorkflow}
+            </label>
+          </div>
+          {workflowMode === "collaboration" && (
+            <p className="workflow-hint">{text.collaborationHint}</p>
+          )}
+        </fieldset>
         <label htmlFor="question">{text.formLabel}</label>
         <div className="ask-row">
           <textarea
@@ -136,6 +182,38 @@ export function App() {
             </ul>
           ) : (
             <p className="no-sources">{text.noSources}</p>
+          )}
+          {result.mode === "multi-agent-local" && (
+            <div className="workflow-trace">
+              <div className="trace-heading">
+                <h3>{text.workflowTrace}</h3>
+                <span className={result.grounded ? "grounded" : "not-grounded"}>
+                  {result.grounded ? text.grounded : text.notGrounded}
+                </span>
+              </div>
+              <p className="run-id">
+                {text.runId}: <code>{result.run_id}</code>
+              </p>
+              <ol>
+                {result.trace.map((stage) => (
+                  <li key={stage.sequence}>
+                    <div className="stage-heading">
+                      <code>{stage.agent}</code>
+                      <span>{stage.outcome === "blocked" ? text.blocked : text.completed}</span>
+                    </div>
+                    <p>{stage.summary}</p>
+                    <dl>
+                      {Object.entries(stage.metrics).map(([name, value]) => (
+                        <div key={name}>
+                          <dt>{name}</dt>
+                          <dd>{String(value)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
+                ))}
+              </ol>
+            </div>
           )}
         </section>
       )}
