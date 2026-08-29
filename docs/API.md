@@ -23,6 +23,45 @@ Unknown fields, invalid roles, blank content, and oversized fields are rejected.
 
 The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES` with `413`, before JSON parsing. This applies both when `Content-Length` is present and when a body is streamed without it.
 
+## `POST /api/v1/collaborate`
+
+Runs the local planner → researcher → critic → writer learning workflow. The request is a strict object containing only a required nonblank `question`, capped by `MAX_QUESTION_CHARS`:
+
+```json
+{
+  "question": "How does the example agent plan a project?"
+}
+```
+
+The response contains a server-generated run ID, the fixed workflow and mode identifiers, a grounded decision, sources, and four ordered operational trace stages:
+
+```json
+{
+  "run_id": "run_0123456789abcdef0123456789abcdef",
+  "workflow": "planner-researcher-critic-writer",
+  "mode": "multi-agent-local",
+  "answer": "For project planning...\n\nSources: [example-profile.md]",
+  "grounded": true,
+  "sources": [],
+  "trace": [
+    {
+      "sequence": 1,
+      "agent": "planner",
+      "outcome": "completed",
+      "summary": "Created an evidence-first execution plan.",
+      "metrics": {
+        "task_count": 3,
+        "query_term_count": 9
+      }
+    }
+  ]
+}
+```
+
+The actual response always contains planner, researcher, critic, and writer stages in that order. The shortened example shows only the first stage. Trace summaries describe workflow operations and counts; they are not hidden model reasoning. This endpoint is deterministic, local, and does not use `LLM_BASE_URL`.
+
+When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `blocked`, and the writer returns the fixed insufficient-evidence message with zero citations.
+
 
 ## Provider failures
 
