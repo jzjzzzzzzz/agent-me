@@ -114,6 +114,74 @@ make docs
 make evaluate
 ```
 
+##### Windows PowerShell
+
+Make is not included with Windows by default. From the repository root, use the equivalent native PowerShell commands instead:
+
+```powershell
+python --version
+node --version
+npm --version
+git --version
+
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e "backend[dev]"
+
+Set-Location frontend
+npm ci
+Set-Location ..
+```
+
+Run the same four quality gates without requiring Make:
+
+```powershell
+# Lint and type checking
+.\.venv\Scripts\ruff.exe check backend scripts
+.\.venv\Scripts\ruff.exe format --check backend scripts
+Set-Location frontend
+npm run lint
+npm run typecheck
+Set-Location ..
+
+# Tests
+.\.venv\Scripts\pytest.exe backend\tests
+Set-Location frontend
+npm test
+Set-Location ..
+
+# Documentation
+.\.venv\Scripts\python.exe scripts\check_docs.py
+
+# Deterministic evaluation
+.\.venv\Scripts\python.exe scripts\evaluate_collaboration.py
+```
+
+To run the application locally, start the backend and frontend in separate PowerShell terminals.
+
+Backend, from the repository root:
+
+```powershell
+.\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --reload
+```
+
+Frontend, from the repository root:
+
+```powershell
+Set-Location frontend
+npm run dev
+```
+
+Verify the backend from another PowerShell terminal:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+The web application is then available at http://localhost:5173/.
+
 Expected final line:
 
 ```text
