@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 
@@ -25,7 +25,30 @@ function routeFetch(chatResponse: object) {
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.lang = "en";
+  document.title = "Agent-Me Starter";
+  let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+  if (!description) {
+    description = document.createElement("meta");
+    description.name = "description";
+    document.head.append(description);
+  }
+  description.content = "A grounded personal Q&A agent starter.";
   vi.restoreAllMocks();
+});
+
+it("sets useful localized metadata before the profile is available", () => {
+  vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
+
+  render(<App />);
+
+  expect(document.documentElement.lang).toBe("en");
+  expect(document.title).toBe(
+    "OPEN-SOURCE STARTER | Build an answer agent from knowledge you control.",
+  );
+  expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+    "content",
+    expect.stringContaining("Add Markdown documents"),
+  );
 });
 
 it("submits a question and renders grounded sources", async () => {
@@ -63,7 +86,27 @@ it("switches locale, translates the interface, and remembers the choice", async 
   expect(screen.getByRole("heading", { name: "用你掌控的知识构建问答 Agent。" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "提问" })).toBeDisabled();
   expect(document.documentElement.lang).toBe("zh-CN");
+  expect(document.title).toContain("用你掌控的知识构建问答 Agent。");
+  expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+    "content",
+    expect.stringContaining("添加 Markdown 文档"),
+  );
   expect(window.localStorage.getItem("agent-me-locale")).toBe("zh-CN");
+});
+
+it("keeps localized metadata when profile loading fails", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+  render(<App />);
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "fr");
+
+  await waitFor(() => expect(document.documentElement.lang).toBe("fr"));
+  expect(document.title).toContain("Créez un agent de réponse");
+  expect(document.title.trim()).not.toBe("");
+  expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+    "content",
+    expect.stringContaining("Ajoutez des documents Markdown"),
+  );
 });
 
 
@@ -137,6 +180,11 @@ it("applies the configured public profile and question limit", async () => {
 
   expect(await screen.findByText("Documentation Helper")).toBeInTheDocument();
   expect(screen.getByText("Answers from reviewed documentation.")).toBeInTheDocument();
+  expect(document.title).toContain("Documentation Helper");
+  expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+    "content",
+    "Answers from reviewed documentation.",
+  );
   expect(screen.getByLabelText(/ask the example/i)).toHaveAttribute("maxlength", "42");
   expect(screen.getByText(/0 \/ 42 characters/)).toBeInTheDocument();
 });

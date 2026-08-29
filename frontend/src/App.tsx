@@ -36,6 +36,19 @@ export function App() {
   }, [locale]);
 
   useEffect(() => {
+    const profileName = profile?.name.trim();
+    const profileDescription = profile?.description.trim();
+
+    document.documentElement.lang = locale;
+    document.title = `${profileName || text.projectLabel} | ${text.title}`;
+
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (description) {
+      description.content = profileDescription || text.intro;
+    }
+  }, [locale, profile, text]);
+
+  useEffect(() => {
     const controller = new AbortController();
     loadProfile(controller.signal)
       .then(setProfile)
