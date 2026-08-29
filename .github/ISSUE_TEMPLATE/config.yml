@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Course and setup Q&A / 课程与环境提问
+    url: https://github.com/jzjzzzzzzz/agent-me/discussions/categories/q-a
+    about: Ask for help with lessons, setup, architecture, or design without opening a bug report.
+  - name: Show your project / 展示学习成果
+    url: https://github.com/jzjzzzzzzz/agent-me/discussions/categories/show-and-tell
+    about: Share a fork, completed lab, evaluation result, or capstone with the community.
   - name: Security vulnerability
     url: https://github.com/jzjzzzzzzz/agent-me/security/advisories/new
     about: Report vulnerabilities privately. Do not open a public issue.
