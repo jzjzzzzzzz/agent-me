@@ -111,6 +111,45 @@ async def test_grounded_extractive_answer(client: httpx.AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+async def test_multi_agent_collaboration_returns_typed_trace(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/v1/collaborate",
+        json={"question": "preferred Python tools?"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["run_id"].startswith("run_")
+    assert body["workflow"] == "planner-researcher-critic-writer"
+    assert body["mode"] == "multi-agent-local"
+    assert body["grounded"] is True
+    assert [stage["agent"] for stage in body["trace"]] == [
+        "planner",
+        "researcher",
+        "critic",
+        "writer",
+    ]
+    assert "[profile.md]" in body["answer"]
+    assert body["sources"][0]["path"] == "profile.md"
+
+
+@pytest.mark.anyio
+async def test_multi_agent_request_is_strict_and_rejects_blank_questions(
+    client: httpx.AsyncClient,
+) -> None:
+    blank = await client.post("/api/v1/collaborate", json={"question": "  "})
+    extra = await client.post(
+        "/api/v1/collaborate",
+        json={"question": "Python?", "agent": "attacker-controlled"},
+    )
+
+    assert blank.status_code == 422
+    assert extra.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_blank_and_unknown_fields_are_rejected(client: httpx.AsyncClient) -> None:
     blank = await client.post("/api/v1/chat", json={"question": "   "})
     extra = await client.post("/api/v1/chat", json={"question": "hello", "admin": True})

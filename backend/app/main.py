@@ -2,11 +2,20 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .provider import ProviderError, generate_answer
 from .request_limits import RequestBodyLimitMiddleware
-from .schemas import ChatRequest, ChatResponse, ProfileResponse, Source
+from .schemas import (
+    ChatRequest,
+    ChatResponse,
+    CollaborationRequest,
+    CollaborationResponse,
+    CollaborationStage,
+    ProfileResponse,
+    Source,
+)
 
 app = FastAPI(title="Agent-Me Starter API", version="1.0.0")
 settings = get_settings()
@@ -111,5 +120,43 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
                 score=match.score,
             )
             for match in matches
+        ],
+    )
+
+
+@app.post("/api/v1/collaborate", response_model=CollaborationResponse)
+async def collaborate(
+    payload: CollaborationRequest,
+    config: Settings = Depends(get_settings),
+) -> CollaborationResponse:
+    if len(payload.question) > config.max_question_chars:
+        raise HTTPException(status_code=413, detail="question exceeds configured limit")
+    matches = KnowledgeBase(
+        config.knowledge_dir, max_document_bytes=config.max_document_bytes
+    ).search(payload.question)
+    result = CollaborationOrchestrator().run(question=payload.question, matches=matches)
+    return CollaborationResponse(
+        run_id=result.run_id,
+        workflow=result.workflow,
+        answer=result.answer,
+        grounded=result.grounded,
+        sources=[
+            Source(
+                title=match.document.title,
+                path=match.document.path,
+                excerpt=match.excerpt,
+                score=match.score,
+            )
+            for match in result.matches
+        ],
+        trace=[
+            CollaborationStage(
+                sequence=stage.sequence,
+                agent=stage.agent,
+                outcome=stage.outcome,
+                summary=stage.summary,
+                metrics=stage.metrics,
+            )
+            for stage in result.trace
         ],
     )
