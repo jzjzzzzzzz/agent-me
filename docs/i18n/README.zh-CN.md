@@ -12,6 +12,14 @@
 
 > 本文是项目概览的简体中文翻译。完整技术规范以[英文 README](../../README.md)和 <code>docs/</code> 文档为准。
 
+## 免费、详细、可运行的课程
+
+Agent-Me 现在以教程为第一目标，提供完整的 8 课学习路线：环境基线、grounded Q&A、检索、角色设计、类型化交接、Critic 门控、评估与生产结课项目。每课都包含原理、源码阅读顺序、可执行实验、练习、理解检查和完成标准。
+
+- **[打开完整简体中文课程](../../course/translations/zh-CN/README.md)**
+- [English course](../../course/README.md)
+- [评分标准](../../course/translations/zh-CN/RUBRIC.md) · [词汇表](../../course/translations/zh-CN/GLOSSARY.md)
+
 ## 项目简介
 
 Agent-Me 是一个小型、可审计的开源框架，用于基于 Markdown 文档发布问答 Agent。检索与回答生成相互分离：
@@ -59,7 +67,7 @@ docker compose up --build
 
 ## Multi-Agent 实操课程
 
-仓库提供一套[详细的中文实操课程](../../course/README.zh-CN.md)，包含角色拆分、类型化交接、
+仓库提供一套[详细的中文实操课程](../../course/translations/zh-CN/README.md)，包含角色拆分、类型化交接、
 critic 门禁、网页轨迹、确定性评估、故障注入、扩展第五个角色、生产架构设计以及可辩护的简历写法。
 
 默认工作流在单进程内顺序执行，不应被描述为多个模型、自主进程或已经完成的分布式 Agent 平台。
@@ -100,7 +108,7 @@ LLM_MODEL=replace-with-a-model-id
 
 - [API 参考](../API.md)
 - [架构说明](../ARCHITECTURE.md)
-- [Multi-Agent 协作实操课程](../../course/README.zh-CN.md)
+- [Multi-Agent 协作实操课程](../../course/translations/zh-CN/README.md)
 - [部署指南](../DEPLOYMENT.md)
 - [本地化指南](../LOCALIZATION.md)
 - [贡献指南](../../CONTRIBUTING.md)

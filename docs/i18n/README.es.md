@@ -12,6 +12,10 @@ Una base de código abierto centrada en la privacidad, con backend tipado en Fas
 
 > Esta es la traducción al español de la descripción general. La [documentación en inglés](../../README.md) y <code>docs/</code> constituyen la especificación técnica canónica.
 
+## Curso práctico y gratuito
+
+Agent-Me está organizado primero como un curso estructurado de 8 lecciones: requisitos, teoría, recorridos del código, laboratorios ejecutables, ejercicios, preguntas de comprensión y un proyecto final para el portafolio. El curso completo está disponible actualmente en [inglés](../../course/README.md) y [chino simplificado](../../course/translations/zh-CN/README.md). Se aceptan traducciones; la [cobertura de idiomas](../../course/LANGUAGES.md) identifica con claridad el contenido incompleto.
+
 ## Descripción
 
 Agent-Me es un framework pequeño y auditable para publicar un agente de preguntas y respuestas basado en documentos Markdown.

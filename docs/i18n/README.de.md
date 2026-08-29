@@ -12,6 +12,10 @@ Eine datenschutzorientierte Open-Source-Basis mit typisiertem FastAPI-Backend, R
 
 > Dies ist die deutsche Übersetzung der Projektübersicht. Die technische Referenz bilden die [englische README](../../README.md) und die Dokumente unter <code>docs/</code>.
 
+## Kostenloser, praxisorientierter Kurs
+
+Agent-Me ist jetzt zuerst als strukturierter 8-Lektionen-Kurs organisiert: Voraussetzungen, Theorie, Quellcode-Lesepfade, ausführbare Labs, Übungen, Verständnisfragen und eine Portfolio-Abschlussaufgabe. Der vollständige Kurs ist derzeit auf [Englisch](../../course/README.md) und [vereinfachtem Chinesisch](../../course/translations/zh-CN/README.md) verfügbar. Übersetzungsbeiträge sind willkommen; der [Sprachstatus](../../course/LANGUAGES.md) weist unvollständige Inhalte ausdrücklich aus.
+
 ## Überblick
 
 Agent-Me ist ein kleines, prüfbares Framework zur Veröffentlichung eines Frage-Antwort-Agenten auf Grundlage von Markdown-Dokumenten.

@@ -44,3 +44,13 @@ Agent-Me ships a dependency-free, typed localization layer for the web interface
 - Prefer terminology commonly used by software developers in the target locale.
 - Preserve security and privacy statements without weakening them.
 - English is the canonical technical specification when a translation is temporarily outdated.
+
+## Course translations
+
+The project overview and web interface may have broader coverage than the complete course. Full
+lesson coverage is tracked separately in [`course/LANGUAGES.md`](../course/LANGUAGES.md).
+
+A full course translation lives under `course/translations/<locale>/` and mirrors the English
+syllabus, 8 numbered lessons, glossary, and rubric. Follow the contribution and human-review rules
+in [`CONTRIBUTING.md`](../CONTRIBUTING.md#translate-the-course). Do not label a partial or
+unreviewed lesson set as complete.
