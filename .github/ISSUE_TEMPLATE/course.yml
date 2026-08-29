@@ -3,6 +3,7 @@ description: Report a confusing lesson, broken command, or missing explanation
 title: "[Course]: "
 labels:
   - documentation
+  - course
 body:
   - type: markdown
     attributes:
