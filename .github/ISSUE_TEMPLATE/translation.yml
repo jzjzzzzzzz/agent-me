@@ -1,0 +1,45 @@
+name: Translation contribution
+description: Add or correct a project or course translation
+title: "[i18n]: "
+labels: [documentation, i18n]
+body:
+  - type: input
+    id: locale
+    attributes: { label: Locale, description: BCP 47-style code such as ja or pt-BR. }
+    validations: { required: true }
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Project overview
+        - Web interface
+        - One course lesson
+        - Complete course
+        - Correction / review
+    validations: { required: true }
+  - type: textarea
+    id: files
+    attributes: { label: Files or lessons }
+    validations: { required: true }
+  - type: dropdown
+    id: method
+    attributes:
+      label: Review status
+      options:
+        - Human-written and reviewed
+        - Machine-assisted and human-reviewed
+        - Review requested
+    validations: { required: true }
+  - type: textarea
+    id: terminology
+    attributes: { label: Terminology or localization notes }
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I will preserve commands, identifiers, paths, warnings, and scope limitations.
+          required: true
+        - label: I will run the documentation link check.
+          required: true
