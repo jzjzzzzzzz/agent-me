@@ -29,6 +29,17 @@ type Messages = {
   requestFailed: string;
   extractiveMode: string;
   providerMode: string;
+  collaborationModeLabel: string;
+  workflowMode: string;
+  standardWorkflow: string;
+  collaborationWorkflow: string;
+  collaborationHint: string;
+  workflowTrace: string;
+  grounded: string;
+  notGrounded: string;
+  completed: string;
+  blocked: string;
+  runId: string;
   footer: string;
 };
 
@@ -51,6 +62,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Request failed",
     extractiveMode: "extractive",
     providerMode: "provider",
+    collaborationModeLabel: "multi-agent lab",
+    workflowMode: "Workflow",
+    standardWorkflow: "Standard Q&A",
+    collaborationWorkflow: "Multi-agent lab",
+    collaborationHint:
+      "Runs planner, researcher, critic, and writer roles with typed, inspectable handoffs.",
+    workflowTrace: "Collaboration trace",
+    grounded: "Grounded",
+    notGrounded: "Insufficient evidence",
+    completed: "Completed",
+    blocked: "Blocked",
+    runId: "Run ID",
     footer:
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
@@ -72,6 +95,17 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "请求失败",
     extractiveMode: "本地抽取",
     providerMode: "模型服务",
+    collaborationModeLabel: "多 Agent 实验",
+    workflowMode: "工作流",
+    standardWorkflow: "标准问答",
+    collaborationWorkflow: "多 Agent 实验",
+    collaborationHint: "依次运行规划、研究、审查和写作角色，并展示类型化、可检查的交接记录。",
+    workflowTrace: "协作轨迹",
+    grounded: "已有依据",
+    notGrounded: "依据不足",
+    completed: "已完成",
+    blocked: "已阻止",
+    runId: "运行 ID",
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
@@ -92,6 +126,17 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "請求失敗",
     extractiveMode: "本機擷取",
     providerMode: "模型服務",
+    collaborationModeLabel: "多 Agent 實驗",
+    workflowMode: "工作流程",
+    standardWorkflow: "標準問答",
+    collaborationWorkflow: "多 Agent 實驗",
+    collaborationHint: "依序執行規劃、研究、審查與寫作角色，並顯示具型別且可檢查的交接紀錄。",
+    workflowTrace: "協作軌跡",
+    grounded: "已有依據",
+    notGrounded: "依據不足",
+    completed: "已完成",
+    blocked: "已阻擋",
+    runId: "執行 ID",
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
@@ -112,6 +157,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "リクエストに失敗しました",
     extractiveMode: "ローカル抽出",
     providerMode: "モデルプロバイダー",
+    collaborationModeLabel: "マルチエージェント演習",
+    workflowMode: "ワークフロー",
+    standardWorkflow: "標準 Q&A",
+    collaborationWorkflow: "マルチエージェント演習",
+    collaborationHint:
+      "プランナー、リサーチャー、批評者、ライターを順に実行し、型付きの引き継ぎを表示します。",
+    workflowTrace: "協働トレース",
+    grounded: "根拠あり",
+    notGrounded: "根拠不足",
+    completed: "完了",
+    blocked: "ブロック済み",
+    runId: "実行 ID",
     footer:
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
@@ -133,6 +190,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "요청 실패",
     extractiveMode: "로컬 추출",
     providerMode: "모델 공급자",
+    collaborationModeLabel: "멀티 에이전트 실습",
+    workflowMode: "워크플로",
+    standardWorkflow: "표준 Q&A",
+    collaborationWorkflow: "멀티 에이전트 실습",
+    collaborationHint:
+      "계획자, 조사자, 비평가, 작성자 역할을 순서대로 실행하고 형식화된 인계 기록을 표시합니다.",
+    workflowTrace: "협업 추적",
+    grounded: "근거 있음",
+    notGrounded: "근거 부족",
+    completed: "완료",
+    blocked: "차단됨",
+    runId: "실행 ID",
     footer:
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
@@ -154,6 +223,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "La solicitud ha fallado",
     extractiveMode: "extractivo local",
     providerMode: "proveedor",
+    collaborationModeLabel: "laboratorio multiagente",
+    workflowMode: "Flujo de trabajo",
+    standardWorkflow: "Preguntas y respuestas",
+    collaborationWorkflow: "Laboratorio multiagente",
+    collaborationHint:
+      "Ejecuta los roles de planificación, investigación, crítica y redacción con entregas tipadas e inspeccionables.",
+    workflowTrace: "Traza de colaboración",
+    grounded: "Fundamentado",
+    notGrounded: "Evidencia insuficiente",
+    completed: "Completado",
+    blocked: "Bloqueado",
+    runId: "ID de ejecución",
     footer:
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
@@ -175,6 +256,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Échec de la requête",
     extractiveMode: "extraction locale",
     providerMode: "fournisseur",
+    collaborationModeLabel: "atelier multi-agent",
+    workflowMode: "Flux de travail",
+    standardWorkflow: "Questions-réponses standard",
+    collaborationWorkflow: "Atelier multi-agent",
+    collaborationHint:
+      "Exécute les rôles de planification, recherche, critique et rédaction avec des transmissions typées et inspectables.",
+    workflowTrace: "Trace de collaboration",
+    grounded: "Fondé sur les sources",
+    notGrounded: "Preuves insuffisantes",
+    completed: "Terminé",
+    blocked: "Bloqué",
+    runId: "ID d’exécution",
     footer:
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
@@ -196,6 +289,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Anfrage fehlgeschlagen",
     extractiveMode: "lokale Extraktion",
     providerMode: "Modellanbieter",
+    collaborationModeLabel: "Multi-Agent-Labor",
+    workflowMode: "Arbeitsablauf",
+    standardWorkflow: "Standard-Q&A",
+    collaborationWorkflow: "Multi-Agent-Labor",
+    collaborationHint:
+      "Führt Planer, Recherche, Kritik und Redaktion mit typisierten, prüfbaren Übergaben aus.",
+    workflowTrace: "Zusammenarbeitsprotokoll",
+    grounded: "Quellengestützt",
+    notGrounded: "Unzureichende Belege",
+    completed: "Abgeschlossen",
+    blocked: "Blockiert",
+    runId: "Lauf-ID",
     footer:
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
@@ -217,6 +322,18 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Falha na solicitação",
     extractiveMode: "extração local",
     providerMode: "provedor",
+    collaborationModeLabel: "laboratório multiagente",
+    workflowMode: "Fluxo de trabalho",
+    standardWorkflow: "Perguntas e respostas",
+    collaborationWorkflow: "Laboratório multiagente",
+    collaborationHint:
+      "Executa os papéis de planejamento, pesquisa, crítica e redação com transferências tipadas e inspecionáveis.",
+    workflowTrace: "Rastro de colaboração",
+    grounded: "Fundamentado",
+    notGrounded: "Evidências insuficientes",
+    completed: "Concluído",
+    blocked: "Bloqueado",
+    runId: "ID da execução",
     footer:
       "Prompts são entradas não confiáveis. Revise os documentos antes de publicar e nunca faça commit de segredos.",
   },
