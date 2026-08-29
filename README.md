@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/agent-me-social-preview.png" alt="Agent-Me course: build, inspect, evaluate, and ship a grounded multi-agent system" width="100%">
+
 # Agent-Me: Grounded Multi-Agent Systems from First Principles
 
 **A free, hands-on course for building, testing, and explaining an auditable AI-agent system.**
@@ -7,7 +9,7 @@
 Learn the theory, run the application, inspect every handoff, break it deliberately, and finish
 with a portfolio-ready capstone. No paid model API is required for the core course.
 
-[Start the course](course/README.md) · [5-minute setup](course/00-course-setup/README.md) · [Try the app](#run-the-project) · [Contribute](CONTRIBUTING.md)
+[Start the course](LEARN.md) · [5-minute setup](course/00-course-setup/README.md) · [Ask a question](https://github.com/jzjzzzzzzz/agent-me/discussions/categories/q-a) · [Contribute](CONTRIBUTING.md)
 
 [English](README.md) · [简体中文](docs/i18n/README.zh-CN.md) · [繁體中文](docs/i18n/README.zh-TW.md) · [日本語](docs/i18n/README.ja.md) · [한국어](docs/i18n/README.ko.md) · [Español](docs/i18n/README.es.md) · [Français](docs/i18n/README.fr.md) · [Deutsch](docs/i18n/README.de.md) · [Português](docs/i18n/README.pt-BR.md)
 
@@ -270,11 +272,16 @@ translation rules, local checks, pull-request checklist, and privacy requirement
 contributing, you agree that your contribution is licensed under the MIT License and that you
 follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
+- Ask course and setup questions in [GitHub Discussions Q&A](https://github.com/jzjzzzzzzz/agent-me/discussions/categories/q-a).
+- Share a finished lab or capstone in [Show and tell](https://github.com/jzjzzzzzzz/agent-me/discussions/categories/show-and-tell).
+- Choose a scoped task from [good first issues](https://github.com/jzjzzzzzzz/agent-me/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+
 Security vulnerabilities must be reported privately as described in [SECURITY.md](SECURITY.md).
 
 ## Reference documentation
 
 - [Complete course syllabus](course/README.md)
+- [Step-by-step learning path](LEARN.md)
 - [Simplified Chinese course / 简体中文课程](course/translations/zh-CN/README.md)
 - [Course glossary](course/GLOSSARY.md)
 - [Assessment and capstone rubric](course/RUBRIC.md)
