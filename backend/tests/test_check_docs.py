@@ -1,6 +1,11 @@
+import importlib.util
 from pathlib import Path
 
-from scripts import check_docs
+CHECK_DOCS_PATH = Path(__file__).resolve().parents[2] / "scripts" / "check_docs.py"
+CHECK_DOCS_SPEC = importlib.util.spec_from_file_location("check_docs", CHECK_DOCS_PATH)
+assert CHECK_DOCS_SPEC is not None and CHECK_DOCS_SPEC.loader is not None
+check_docs = importlib.util.module_from_spec(CHECK_DOCS_SPEC)
+CHECK_DOCS_SPEC.loader.exec_module(check_docs)
 
 
 def test_heading_anchors_follow_github_slug_rules() -> None:
