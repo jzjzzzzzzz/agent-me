@@ -1,0 +1,55 @@
+title: "[Q&A] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for learning with Agent-Me. Questions in English or Chinese are welcome.
+        Please remove API keys, personal records, private prompts, and proprietary documents.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Course area / 课程部分
+      description: Which part is your question about?
+      options:
+        - Setup or tooling / 环境与工具
+        - Grounded Q&A or retrieval / Grounded Q&A 与检索
+        - Roles or typed orchestration / 角色与强类型编排
+        - Critic or observability / Critic 与可观测性
+        - Evaluation or testing / 评估与测试
+        - Deployment or capstone / 部署与结课项目
+        - Other / 其他
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal and question / 目标与问题
+      description: Explain what you are trying to learn or build and where you are blocked.
+      placeholder: I am completing Lesson 02 and expected…
+    validations:
+      required: true
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What you tried / 已尝试内容
+      description: Include the relevant lesson, commands, and sanitized output.
+      placeholder: |
+        Lesson:
+        Command:
+        Expected:
+        Observed:
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment / 环境
+      description: Operating system and relevant Python, Node.js, or Docker versions.
+      placeholder: macOS 15, Python 3.12, Node.js 22, Docker Desktop 4.x
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check / 隐私确认
+      options:
+        - label: I removed secrets and private or proprietary data from this post.
+          required: true
