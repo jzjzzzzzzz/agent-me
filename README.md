@@ -166,6 +166,7 @@ The complete template is in [.env.example](.env.example).
 | <code>MAX_DOCUMENT_BYTES</code> | Maximum UTF-8 size of one Markdown file | <code>1000000</code> |
 | <code>MAX_HISTORY_CHARS</code> | Maximum total characters in submitted chat history | <code>24000</code> |
 | <code>MAX_ANSWER_CHARS</code> | Maximum accepted provider answer size | <code>50000</code> |
+| <code>MAX_REQUEST_BODY_BYTES</code> | Maximum HTTP request-body size before JSON parsing | <code>262144</code> |
 | <code>PROVIDER_TIMEOUT_SECONDS</code> | Upstream provider timeout | <code>60</code> |
 | <code>LLM_BASE_URL</code> | Optional OpenAI-compatible base URL | empty |
 | <code>LLM_API_KEY</code> | Optional provider secret | empty |
@@ -207,7 +208,7 @@ agent-me/
 
 - Treat prompts and knowledge files as untrusted input.
 - The frontend renders returned content as text, not raw HTML.
-- Request schemas and maximum input sizes are enforced server-side.
+- Request schemas, semantic input limits, and a streaming HTTP body-size limit are enforced server-side.
 - Extractive mode does not transmit questions or documents to a model provider.
 - Provider mode transmits retrieved context, the question, and recent history to the endpoint you choose.
 - Chat content and analytics are not persisted by this starter.

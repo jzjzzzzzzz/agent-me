@@ -4,7 +4,7 @@
 2. Set exact `CORS_ORIGINS`; do not use a wildcard for credentialed applications.
 3. Mount a reviewed, read-only knowledge directory.
 4. Build pinned container images and place TLS at the ingress.
-5. Apply network rate limiting at the edge and request-size limits at the proxy.
+5. Apply network rate limiting at the edge and set its request-size limit no higher than the application's `MAX_REQUEST_BODY_BYTES` defense-in-depth limit.
 6. Keep provider credentials in a secret manager and rotate them regularly.
 7. Monitor `/health` and `/ready` without logging request bodies.
 

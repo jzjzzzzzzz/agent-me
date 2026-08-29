@@ -5,10 +5,12 @@ from fastapi.responses import JSONResponse
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .provider import ProviderError, generate_answer
+from .request_limits import RequestBodyLimitMiddleware
 from .schemas import ChatRequest, ChatResponse, ProfileResponse, Source
 
 app = FastAPI(title="Agent-Me Starter API", version="1.0.0")
 settings = get_settings()
+app.add_middleware(RequestBodyLimitMiddleware, settings=settings)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     max_document_bytes: int = Field(default=1_000_000, ge=1, le=50_000_000)
     max_history_chars: int = Field(default=24_000, ge=1, le=200_000)
     max_answer_chars: int = Field(default=50_000, ge=1, le=200_000)
+    max_request_body_bytes: int = Field(default=262_144, ge=1_024, le=10_000_000)
     provider_timeout_seconds: float = Field(default=60, ge=1, le=300)
     llm_base_url: str = ""
     llm_api_key: str = ""
