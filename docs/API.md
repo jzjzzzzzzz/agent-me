@@ -21,6 +21,8 @@ Request fields:
 
 Unknown fields, invalid roles, blank content, and oversized fields are rejected. Unsafe symbolic links, unreadable Markdown, or documents larger than `MAX_DOCUMENT_BYTES` make readiness and chat return a safe `503` without exposing a private path. The response includes `answer`, `mode`, and grounding `sources`.
 
+The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES` with `413`, before JSON parsing. This applies both when `Content-Length` is present and when a body is streamed without it.
+
 
 ## Provider failures
 
