@@ -139,6 +139,50 @@ async def test_history_total_limit_is_enforced(client: httpx.AsyncClient) -> Non
 
 
 @pytest.mark.anyio
+async def test_declared_oversized_request_body_is_rejected_before_parsing(
+    client: httpx.AsyncClient,
+) -> None:
+    settings = get_settings()
+    original = settings.max_request_body_bytes
+    settings.max_request_body_bytes = 1_024
+    try:
+        response = await client.post("/api/v1/chat", json={"question": "x" * 2_048})
+    finally:
+        settings.max_request_body_bytes = original
+
+    assert response.status_code == 413
+    assert response.json() == {
+        "detail": "request body exceeds configured limit",
+        "code": "request_body_too_large",
+    }
+
+
+@pytest.mark.anyio
+async def test_streamed_oversized_request_body_is_rejected(
+    client: httpx.AsyncClient,
+) -> None:
+    async def chunks():
+        yield b'{"question":"'
+        yield b"x" * 2_048
+        yield b'"}'
+
+    settings = get_settings()
+    original = settings.max_request_body_bytes
+    settings.max_request_body_bytes = 1_024
+    try:
+        response = await client.post(
+            "/api/v1/chat",
+            content=chunks(),
+            headers={"Content-Type": "application/json"},
+        )
+    finally:
+        settings.max_request_body_bytes = original
+
+    assert response.status_code == 413
+    assert response.json()["code"] == "request_body_too_large"
+
+
+@pytest.mark.anyio
 async def test_incomplete_provider_configuration_fails_explicitly(
     client: httpx.AsyncClient,
 ) -> None:
