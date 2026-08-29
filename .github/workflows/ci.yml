@@ -21,9 +21,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12", cache: pip }
       - run: python -m pip install -e 'backend[dev]'
-      - run: ruff check backend
-      - run: ruff format --check backend
+      - run: ruff check backend scripts
+      - run: ruff format --check backend scripts
       - run: pytest backend/tests
+      - run: python scripts/evaluate_collaboration.py --json
 
   frontend:
     runs-on: ubuntu-latest
@@ -63,6 +64,10 @@ jobs:
         run: |
           curl --fail --silent --show-error http://127.0.0.1:8000/health
           curl --fail --silent --show-error http://127.0.0.1:8000/ready
+          curl --fail --silent --show-error http://127.0.0.1:8000/api/v1/collaborate \
+            --header 'Content-Type: application/json' \
+            --data '{"question":"How does the example agent plan a project?"}' \
+            | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["grounded"] and len(data["trace"]) == 4'
           curl --fail --silent --show-error http://127.0.0.1:5173/ >/dev/null
       - name: Show logs after failure
         if: failure()
