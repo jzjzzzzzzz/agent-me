@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs build
+.PHONY: setup dev test lint format docs evaluate build
 
 setup:
 	cp -n .env.example .env || true
@@ -14,8 +14,8 @@ test:
 	cd frontend && npm test
 
 lint:
-	.venv/bin/ruff check backend
-	.venv/bin/ruff format --check backend
+	.venv/bin/ruff check backend scripts
+	.venv/bin/ruff format --check backend scripts
 	cd frontend && npm run lint && npm run typecheck
 
 format:
@@ -23,6 +23,9 @@ format:
 
 docs:
 	python3 scripts/check_docs.py
+
+evaluate:
+	.venv/bin/python scripts/evaluate_collaboration.py
 
 build:
 	docker compose build

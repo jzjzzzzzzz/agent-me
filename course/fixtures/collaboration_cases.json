@@ -1,0 +1,17 @@
+[
+  {
+    "id": "project-planning",
+    "question": "How does the example agent plan a project?",
+    "expected_grounded": true
+  },
+  {
+    "id": "preferred-work",
+    "question": "What does the example agent enjoy building?",
+    "expected_grounded": true
+  },
+  {
+    "id": "unsupported-domain",
+    "question": "Explain quantum chromodynamics renormalization.",
+    "expected_grounded": false
+  }
+]
