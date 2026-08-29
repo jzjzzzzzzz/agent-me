@@ -12,6 +12,10 @@ Une base open source respectueuse de la vie privée, avec un backend FastAPI typ
 
 > Ceci est la traduction française de la présentation du projet. Le [README anglais](../../README.md) et les documents du dossier <code>docs/</code> constituent la spécification technique de référence.
 
+## Cours pratique et gratuit
+
+Agent-Me est désormais organisé en priorité comme un cours structuré de 8 leçons : prérequis, théorie, parcours de lecture du code, laboratoires exécutables, exercices, questions de compréhension et projet final pour portfolio. Le cours complet est actuellement disponible en [anglais](../../course/README.md) et en [chinois simplifié](../../course/translations/zh-CN/README.md). Les traductions sont bienvenues ; la [couverture linguistique](../../course/LANGUAGES.md) indique clairement les contenus incomplets.
+
 ## Présentation
 
 Agent-Me est un framework compact et auditable qui permet de publier un agent de questions-réponses fondé sur des documents Markdown.

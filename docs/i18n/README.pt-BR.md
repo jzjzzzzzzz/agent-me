@@ -12,6 +12,10 @@ Uma base de código aberto focada em privacidade, com backend FastAPI tipado, in
 
 > Esta é a tradução para português do Brasil da visão geral do projeto. O [README em inglês](../../README.md) e os documentos em <code>docs/</code> são a especificação técnica canônica.
 
+## Curso prático e gratuito
+
+O Agent-Me agora é organizado primeiro como um curso estruturado de 8 lições: pré-requisitos, teoria, percursos de leitura do código, laboratórios executáveis, exercícios, perguntas de compreensão e um projeto final para portfólio. O curso completo está disponível atualmente em [inglês](../../course/README.md) e [chinês simplificado](../../course/translations/zh-CN/README.md). Traduções são bem-vindas; a [cobertura de idiomas](../../course/LANGUAGES.md) identifica claramente o conteúdo incompleto.
+
 ## Visão geral
 
 Agent-Me é um framework pequeno e auditável para publicar um agente de perguntas e respostas baseado em documentos Markdown.
