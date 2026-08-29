@@ -1,0 +1,40 @@
+name: Feature proposal
+description: Propose a focused change to the reference implementation
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: "Explain the measured problem before proposing an agent, dependency, or service. Do not include secrets or private data."
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: "What current user or engineering failure should change?"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed boundary and behavior
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Include doing nothing or a simpler design.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: "Which tests, evaluation cases, and measurements prove value?"
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Security, privacy, compatibility, and operations impact

@@ -1,22 +1,40 @@
 name: Bug report
 description: Report a reproducible problem
 title: "[Bug]: "
-labels: [bug]
+labels:
+  - bug
 body:
   - type: markdown
-    attributes: { value: "Do not include credentials, private documents, or personal data." }
+    attributes:
+      value: "Do not include credentials, private documents, production prompts, or personal data."
   - type: textarea
     id: behavior
-    attributes: { label: Observed behavior, description: What happened? }
-    validations: { required: true }
+    attributes:
+      label: Observed behavior
+      description: "What happened?"
+    validations:
+      required: true
   - type: textarea
     id: expected
-    attributes: { label: Expected behavior }
-    validations: { required: true }
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
   - type: textarea
     id: reproduce
-    attributes: { label: Reproduction steps }
-    validations: { required: true }
+    attributes:
+      label: Reproduction steps
+      description: Include the smallest sanitized commands or example.
+    validations:
+      required: true
   - type: input
     id: version
-    attributes: { label: Version or commit }
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and relevant Python, Node, browser, or Docker versions.

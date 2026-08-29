@@ -1,0 +1,52 @@
+name: Course feedback
+description: Report a confusing lesson, broken command, or missing explanation
+title: "[Course]: "
+labels:
+  - documentation
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for improving the course. Do not include secrets, private documents, production prompts, or personal data."
+  - type: dropdown
+    id: lesson
+    attributes:
+      label: Lesson
+      options:
+        - 00 - Environment and learning loop
+        - 01 - Grounded Q&A foundations
+        - 02 - Retrieval pipeline
+        - 03 - Role design
+        - 04 - Typed orchestration
+        - 05 - Critic and observability
+        - 06 - Evaluation
+        - 07 - Production capstone
+        - Course home / glossary / rubric
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Section or link
+      description: Point to the exact heading or file.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What was unclear or broken?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Sanitized command and output
+      render: shell
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS and relevant Python, Node, or Docker versions.
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested improvement
