@@ -6,7 +6,7 @@
 
 A privacy-conscious open-source foundation with a typed FastAPI backend, a React interface, local document retrieval, and an optional OpenAI-compatible provider.
 
-[Quick start](#quick-start) · [Architecture](docs/ARCHITECTURE.md) · [API reference](docs/API.md) · [Deployment](docs/DEPLOYMENT.md) · [Security](SECURITY.md)
+[Quick start](#quick-start) · [Multi-agent course](course/README.md) · [Architecture](docs/ARCHITECTURE.md) · [API reference](docs/API.md) · [Deployment](docs/DEPLOYMENT.md) · [Security](SECURITY.md)
 
 [English](README.md) · [简体中文](docs/i18n/README.zh-CN.md) · [繁體中文](docs/i18n/README.zh-TW.md) · [日本語](docs/i18n/README.ja.md) · [한국어](docs/i18n/README.ko.md) · [Español](docs/i18n/README.es.md) · [Français](docs/i18n/README.fr.md) · [Deutsch](docs/i18n/README.de.md) · [Português](docs/i18n/README.pt-BR.md)
 
@@ -26,6 +26,7 @@ Agent-Me is a small, auditable foundation for publishing a Q&A agent over Markdo
 
 - **Local extractive mode** works without an external model or API key.
 - **Provider mode** sends only the retrieved context and recent conversation to an OpenAI-compatible endpoint that you configure.
+- **Multi-agent lab mode** runs planner, researcher, critic, and writer roles with typed handoffs and an inspectable operational trace.
 - Every response can include the document excerpts used as grounding sources.
 
 This public repository contains reusable application code only. It does not contain a production database, private memory, analytics records, credentials, or deployment secrets.
@@ -37,6 +38,7 @@ This public repository contains reusable application code only. It does not cont
 | Knowledge source | Markdown files you can review and version |
 | Retrieval | Deterministic local search with source excerpts |
 | Generation | Optional OpenAI-compatible provider |
+| Collaboration | Local planner → researcher → critic → writer workflow |
 | Backend | Typed FastAPI routes and strict request schemas |
 | Frontend | React, safe text rendering, responsive design |
 | Languages | Automatic locale detection and 9 interface languages |
@@ -50,12 +52,16 @@ Agent-Me is intentionally focused. It is a strong base for a personal knowledge 
 
 ~~~mermaid
 flowchart LR
-  User[Browser] -->|POST /api/v1/chat| Web[React interface]
-  Web --> API[FastAPI service]
+  User[Browser] --> Web[React interface]
+  Web -->|POST /api/v1/chat| API[FastAPI service]
+  Web -->|POST /api/v1/collaborate| Flow[Role orchestrator]
   API --> Search[Local document retrieval]
+  Flow --> Search
+  Flow --> Roles[Planner → Researcher → Critic → Writer]
   Search --> Docs[(Markdown knowledge)]
   API -. optional .-> Provider[OpenAI-compatible provider]
   API -->|answer, mode, sources| Web
+  Flow -->|answer, sources, trace| Web
 ~~~
 
 Request flow:
@@ -64,7 +70,8 @@ Request flow:
 2. The retriever ranks relevant Markdown excerpts.
 3. Extractive mode returns the strongest grounded excerpt directly.
 4. Provider mode submits limited retrieved context to your configured endpoint.
-5. The browser renders the answer and sources as plain text.
+5. Multi-agent lab mode passes typed artifacts through four local roles and lets the critic block unsupported synthesis.
+6. The browser renders answers, sources, and operational traces as plain text.
 
 See the full [architecture guide](docs/ARCHITECTURE.md).
 
@@ -99,6 +106,7 @@ make setup
 make lint
 make test
 make docs
+make evaluate
 make build
 ~~~
 
@@ -151,6 +159,20 @@ curl http://localhost:8000/api/v1/chat \
 
 See the [API reference](docs/API.md) for request limits, schemas, and response fields.
 
+## Hands-on multi-agent course
+
+The repository includes a detailed, runnable learning path rather than a diagram-only
+“multi-agent” claim. It covers typed role handoffs, critic gating, browser traces, deterministic
+evaluations, failure injection, a verifier-role extension, production design, and defensible resume
+wording.
+
+- [English course](course/README.md)
+- [简体中文课程](course/README.zh-CN.md)
+
+The default workflow is local and sequential in one process. It is intentionally described as
+role-based multi-agent orchestration—not as multiple models, autonomous processes, or a distributed
+agent platform.
+
 ## Configuration
 
 The complete template is in [.env.example](.env.example).
@@ -197,6 +219,7 @@ Read [localization guidance](docs/LOCALIZATION.md) before adding or updating a l
 agent-me/
 ├── backend/             FastAPI application and backend tests
 ├── frontend/            React application and frontend tests
+├── course/              Bilingual hands-on labs and evaluation fixtures
 ├── knowledge/           Versioned Markdown knowledge
 ├── docs/                API, architecture, deployment, localization
 ├── .github/             CI, dependency updates, contribution templates
@@ -210,6 +233,7 @@ agent-me/
 - The frontend renders returned content as text, not raw HTML.
 - Request schemas, semantic input limits, and a streaming HTTP body-size limit are enforced server-side.
 - Extractive mode does not transmit questions or documents to a model provider.
+- Multi-agent lab mode is deterministic and local; it does not call a provider.
 - Provider mode transmits retrieved context, the question, and recent history to the endpoint you choose.
 - Chat content and analytics are not persisted by this starter.
 - Never publish secrets, private communications, regulated data, or personal information in the knowledge directory.
@@ -221,6 +245,8 @@ Report vulnerabilities through the process in [SECURITY.md](SECURITY.md), not th
 
 - [API reference](docs/API.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Hands-on multi-agent course](course/README.md)
+- [Multi-Agent 协作实操课程](course/README.zh-CN.md)
 - [Deployment guide](docs/DEPLOYMENT.md)
 - [Localization guide](docs/LOCALIZATION.md)
 - [Contributing guide](CONTRIBUTING.md)
@@ -233,7 +259,7 @@ Issues and pull requests are welcome. Before contributing:
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md).
 2. Keep changes focused and add tests for behavior changes.
-3. Run <code>make lint</code>, <code>make test</code>, <code>make docs</code>, and <code>make build</code>.
+3. Run <code>make lint</code>, <code>make test</code>, <code>make docs</code>, <code>make evaluate</code>, and <code>make build</code>.
 4. Use GitHub Security Advisories for security reports.
 
 Translations are maintained by contributors. English documentation is canonical when translations temporarily differ.

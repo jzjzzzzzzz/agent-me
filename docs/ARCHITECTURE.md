@@ -11,4 +11,28 @@
 
 `POST /api/v1/chat` validates the body, enforces the configured question limit, tokenizes the question, scores Markdown paragraphs by token overlap, and returns up to four sources. If all provider settings are present, the service calls the provider's `/chat/completions` route using a grounded system message. Otherwise it returns the highest-ranked excerpt.
 
+## Multi-agent learning path
+
+`POST /api/v1/collaborate` uses the same bounded Markdown retrieval layer and runs four local roles in a fixed order:
+
+```mermaid
+sequenceDiagram
+  participant API
+  participant P as Planner
+  participant R as Researcher
+  participant C as Critic
+  participant W as Writer
+  API->>P: normalized question
+  P-->>R: Plan
+  R-->>C: EvidenceBundle
+  C-->>W: Critique (approved or blocked)
+  W-->>API: WrittenAnswer
+```
+
+The role artifacts are frozen dataclasses. The orchestrator owns ordering and produces a server-controlled run ID plus four operational trace stages. A trace stage contains a role identifier, outcome, safe summary, and numeric/boolean metrics. It is an audit-friendly workflow record, not model chain-of-thought.
+
+The critic approves synthesis only when retrieval produced evidence. Without evidence it emits a blocked outcome and the writer returns a fixed insufficient-evidence response with zero citations. The default collaboration workflow never calls the optional external provider.
+
+This is intentionally an in-process, sequential teaching implementation. Moving stages to distributed workers would require durable state, idempotency, delivery semantics, timeouts, retries, cancellation, authorization, and trace-retention controls. See the [hands-on course](../course/README.md) for the implementation and design exercises.
+
 The starter does not persist requests. Add a database only when the product needs persistence, and document the purpose, retention, and access controls before collecting data.
