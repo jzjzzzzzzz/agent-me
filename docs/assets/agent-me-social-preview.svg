@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">Agent-Me grounded multi-agent systems course</title>
+  <desc id="desc">A dark blue course card showing the planner, researcher, critic, and writer workflow.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071426"/>
+      <stop offset="0.55" stop-color="#0a1f3b"/>
+      <stop offset="1" stop-color="#10294d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="25"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#background)"/>
+  <circle cx="1130" cy="80" r="210" fill="#2563eb" opacity="0.13" filter="url(#glow)"/>
+  <circle cx="90" cy="610" r="220" fill="#14b8a6" opacity="0.11" filter="url(#glow)"/>
+
+  <g opacity="0.16" stroke="#93c5fd" stroke-width="1">
+    <path d="M0 128H1280M0 256H1280M0 384H1280M0 512H1280"/>
+    <path d="M160 0V640M320 0V640M480 0V640M640 0V640M800 0V640M960 0V640M1120 0V640"/>
+  </g>
+
+  <g transform="translate(72 70)">
+    <rect width="58" height="58" rx="15" fill="url(#accent)"/>
+    <path d="M17 18h24v7H24v9h15v7H17z" fill="#071426"/>
+    <circle cx="43" cy="42" r="4" fill="#071426"/>
+    <text x="78" y="41" fill="#e2e8f0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="25" font-weight="650" letter-spacing="1.5">OPEN-SOURCE COURSE</text>
+  </g>
+
+  <text x="72" y="220" fill="#ffffff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="76" font-weight="760" letter-spacing="-2">Agent-Me</text>
+  <text x="72" y="282" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="36" font-weight="520">Grounded Multi-Agent Systems</text>
+  <text x="72" y="329" fill="#94a3b8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="25">Build · Inspect · Evaluate · Ship</text>
+
+  <g transform="translate(72 397)" font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+    <g>
+      <rect width="218" height="82" rx="18" fill="#0f2747" stroke="#5eead4" stroke-width="2"/>
+      <text x="109" y="35" fill="#99f6e4" font-size="17" font-weight="700" text-anchor="middle" letter-spacing="1">PLANNER</text>
+      <text x="109" y="61" fill="#cbd5e1" font-size="15" text-anchor="middle">define the work</text>
+    </g>
+    <path d="M230 41h50" stroke="#64748b" stroke-width="3"/>
+    <path d="m280 41-11-7v14z" fill="#64748b"/>
+    <g transform="translate(292)">
+      <rect width="218" height="82" rx="18" fill="#0f2747" stroke="#60a5fa" stroke-width="2"/>
+      <text x="109" y="35" fill="#93c5fd" font-size="17" font-weight="700" text-anchor="middle" letter-spacing="1">RESEARCHER</text>
+      <text x="109" y="61" fill="#cbd5e1" font-size="15" text-anchor="middle">retrieve evidence</text>
+    </g>
+    <path d="M522 41h50" stroke="#64748b" stroke-width="3"/>
+    <path d="m572 41-11-7v14z" fill="#64748b"/>
+    <g transform="translate(584)">
+      <rect width="218" height="82" rx="18" fill="#0f2747" stroke="#a78bfa" stroke-width="2"/>
+      <text x="109" y="35" fill="#c4b5fd" font-size="17" font-weight="700" text-anchor="middle" letter-spacing="1">CRITIC</text>
+      <text x="109" y="61" fill="#cbd5e1" font-size="15" text-anchor="middle">verify grounding</text>
+    </g>
+    <path d="M814 41h50" stroke="#64748b" stroke-width="3"/>
+    <path d="m864 41-11-7v14z" fill="#64748b"/>
+    <g transform="translate(876)">
+      <rect width="218" height="82" rx="18" fill="#0f2747" stroke="#fbbf24" stroke-width="2"/>
+      <text x="109" y="35" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle" letter-spacing="1">WRITER</text>
+      <text x="109" y="61" fill="#cbd5e1" font-size="15" text-anchor="middle">answer or abstain</text>
+    </g>
+  </g>
+
+  <g transform="translate(72 555)" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18">
+    <text fill="#e2e8f0">FastAPI</text>
+    <circle cx="83" cy="-6" r="3" fill="#5eead4"/>
+    <text x="101" fill="#e2e8f0">React</text>
+    <circle cx="166" cy="-6" r="3" fill="#60a5fa"/>
+    <text x="184" fill="#e2e8f0">Typed handoffs</text>
+    <circle cx="323" cy="-6" r="3" fill="#a78bfa"/>
+    <text x="341" fill="#e2e8f0">RAG</text>
+    <circle cx="391" cy="-6" r="3" fill="#fbbf24"/>
+    <text x="409" fill="#e2e8f0">Evaluation</text>
+  </g>
+  <text x="1208" y="566" fill="#94a3b8" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" text-anchor="end">English · 简体中文</text>
+</svg>
