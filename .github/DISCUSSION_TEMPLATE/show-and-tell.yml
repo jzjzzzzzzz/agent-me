@@ -1,0 +1,46 @@
+title: "[Show and tell] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share what you built from the course. A small verified experiment is as welcome as a full
+        capstone. Do not include secrets, private records, or proprietary data.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What did you build? / 你完成了什么？
+      description: Describe the learning goal and the result in a few sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: changes
+    attributes:
+      label: Key changes / 主要改动
+      description: Which lessons, source files, contracts, or evaluation cases did you extend?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Verification evidence / 验证证据
+      description: Share sanitized test output, measurements, screenshots, or a public fork/PR.
+      placeholder: |
+        Commands run:
+        Result:
+        Demo or source link:
+    validations:
+      required: true
+  - type: textarea
+    id: reflection
+    attributes:
+      label: What did you learn? / 你学到了什么？
+      description: Include one trade-off, failure, or limitation you can now explain.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check / 隐私确认
+      options:
+        - label: I removed secrets and private or proprietary data from this post.
+          required: true
