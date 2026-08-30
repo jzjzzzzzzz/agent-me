@@ -29,6 +29,7 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
     if not isinstance(data, list) or not data:
         raise ValueError("evaluation cases must be a non-empty JSON array")
     cases: list[dict[str, Any]] = []
+    seen_ids: dict[str, int] = {}
     for index, item in enumerate(data):
         if not isinstance(item, dict) or set(item) != {
             "id",
@@ -44,6 +45,13 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
             or not isinstance(item["expected_grounded"], bool)
         ):
             raise ValueError(f"case {index} has invalid values")
+        case_id = item["id"]
+        if case_id in seen_ids:
+            raise ValueError(
+                f"duplicate case id {case_id!r} at zero-based positions "
+                f"{seen_ids[case_id]} and {index}"
+            )
+        seen_ids[case_id] = index
         cases.append(item)
     return cases
 
