@@ -48,7 +48,8 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
         case_id = item["id"]
         if case_id in seen_ids:
             raise ValueError(
-                f"duplicate case id {case_id!r} at positions {seen_ids[case_id]} and {index}"
+                f"duplicate case id {case_id!r} at zero-based positions "
+                f"{seen_ids[case_id]} and {index}"
             )
         seen_ids[case_id] = index
         cases.append(item)
