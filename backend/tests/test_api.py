@@ -158,6 +158,24 @@ async def test_blank_and_unknown_fields_are_rejected(client: httpx.AsyncClient) 
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("endpoint", ["/api/v1/chat", "/api/v1/collaborate"])
+async def test_question_total_limit_has_a_stable_error_code(
+    client: httpx.AsyncClient, endpoint: str
+) -> None:
+    settings = get_settings()
+    original = settings.max_question_chars
+    settings.max_question_chars = 5
+    try:
+        response = await client.post(endpoint, json={"question": "123456"})
+    finally:
+        settings.max_question_chars = original
+
+    assert response.status_code == 413
+    assert response.json()["code"] == "question_too_large"
+    assert isinstance(response.json()["detail"], str)
+
+
+@pytest.mark.anyio
 async def test_history_total_limit_is_enforced(client: httpx.AsyncClient) -> None:
     settings = get_settings()
     original = settings.max_history_chars
@@ -174,7 +192,8 @@ async def test_history_total_limit_is_enforced(client: httpx.AsyncClient) -> Non
         settings.max_history_chars = original
 
     assert response.status_code == 413
-    assert response.json() == {"detail": "history exceeds configured limit"}
+    assert response.json()["code"] == "history_too_large"
+    assert isinstance(response.json()["detail"], str)
 
 
 @pytest.mark.anyio

@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -38,6 +38,23 @@ _PROVIDER_ERROR_MESSAGES = {
     "provider_request_failed": "Answer provider rejected the request.",
     "provider_unavailable": "Answer provider is temporarily unavailable.",
 }
+
+
+class SemanticLimitError(Exception):
+    """A route-level size limit with a stable client-facing code."""
+
+    def __init__(self, *, code: str, detail: str) -> None:
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
+@app.exception_handler(SemanticLimitError)
+async def semantic_limit_error(_: Request, error: SemanticLimitError) -> JSONResponse:
+    return JSONResponse(
+        status_code=413,
+        content={"detail": error.detail, "code": error.code},
+    )
 
 
 @app.exception_handler(ProviderError)
@@ -97,9 +114,15 @@ async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
 @app.post("/api/v1/chat", response_model=ChatResponse)
 async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -> ChatResponse:
     if len(payload.question) > config.max_question_chars:
-        raise HTTPException(status_code=413, detail="question exceeds configured limit")
+        raise SemanticLimitError(
+            code="question_too_large",
+            detail="question exceeds configured limit",
+        )
     if sum(len(turn.content) for turn in payload.history) > config.max_history_chars:
-        raise HTTPException(status_code=413, detail="history exceeds configured limit")
+        raise SemanticLimitError(
+            code="history_too_large",
+            detail="history exceeds configured limit",
+        )
     matches = KnowledgeBase(
         config.knowledge_dir, max_document_bytes=config.max_document_bytes
     ).search(payload.question)
@@ -130,7 +153,10 @@ async def collaborate(
     config: Settings = Depends(get_settings),
 ) -> CollaborationResponse:
     if len(payload.question) > config.max_question_chars:
-        raise HTTPException(status_code=413, detail="question exceeds configured limit")
+        raise SemanticLimitError(
+            code="question_too_large",
+            detail="question exceeds configured limit",
+        )
     matches = KnowledgeBase(
         config.knowledge_dir, max_document_bytes=config.max_document_bytes
     ).search(payload.question)

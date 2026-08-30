@@ -62,6 +62,27 @@ The actual response always contains planner, researcher, critic, and writer stag
 
 When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `blocked`, and the writer returns the fixed insufficient-evidence message with zero citations.
 
+## Request-size errors
+
+Size-limit failures use HTTP `413` and the existing flat error shape:
+
+```json
+{
+  "detail": "question exceeds configured limit",
+  "code": "question_too_large"
+}
+```
+
+Clients should branch on `code`, not on the human-readable `detail` text:
+
+| Limit | Affected endpoints | Code |
+| --- | --- | --- |
+| Raw HTTP body exceeds `MAX_REQUEST_BODY_BYTES` | All endpoints | `request_body_too_large` |
+| Normalized question exceeds `MAX_QUESTION_CHARS` | `/api/v1/chat`, `/api/v1/collaborate` | `question_too_large` |
+| Aggregate history content exceeds `MAX_HISTORY_CHARS` | `/api/v1/chat` | `history_too_large` |
+
+Malformed request schemas, unknown fields, invalid roles, and blank strings continue to use FastAPI's standard HTTP `422` validation response rather than these size-limit codes.
+
 
 ## Provider failures
 
