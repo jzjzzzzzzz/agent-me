@@ -14,7 +14,7 @@ permissions:
   security-events: write
 
 concurrency:
-  group: codeql-${{ github.workflow }}-${{ github.ref }}-${{ matrix.language }}
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
