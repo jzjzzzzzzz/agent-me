@@ -7,12 +7,17 @@ from uuid import uuid4
 
 from .knowledge import Match
 
-AgentName: TypeAlias = Literal["planner", "researcher", "critic", "writer"]
+AgentName: TypeAlias = Literal["planner", "researcher", "critic", "writer", "verifier"]
 StageOutcome: TypeAlias = Literal["completed", "blocked"]
 MetricValue: TypeAlias = bool | int | float
+WorkflowName: TypeAlias = Literal[
+    "planner-researcher-critic-writer",
+    "planner-researcher-critic-writer-verifier",
+]
 
 _TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
 _INSUFFICIENT_EVIDENCE = "I could not find a grounded answer in the configured knowledge files."
+_VERIFICATION_FAILED = "I could not return a verified answer from the configured knowledge files."
 
 
 def _tokens(value: str) -> set[str]:
@@ -44,6 +49,14 @@ class WrittenAnswer:
 
 
 @dataclass(frozen=True)
+class Verification:
+    approved: bool
+    citation_paths_valid: bool
+    expected_citation_count: int
+    reported_citation_count: int
+
+
+@dataclass(frozen=True)
 class StageTrace:
     sequence: int
     agent: AgentName
@@ -55,7 +68,7 @@ class StageTrace:
 @dataclass(frozen=True)
 class CollaborationResult:
     run_id: str
-    workflow: str
+    workflow: WorkflowName
     answer: str
     grounded: bool
     matches: tuple[Match, ...]
@@ -122,6 +135,37 @@ class WriterAgent:
         )
 
 
+class VerifierAgent:
+    """Checks public answer invariants without exposing hidden reasoning."""
+
+    name: AgentName = "verifier"
+
+    def run(
+        self,
+        evidence: EvidenceBundle,
+        critique: Critique,
+        written: WrittenAnswer,
+    ) -> Verification:
+        paths = tuple(dict.fromkeys(match.document.path for match in evidence.matches))
+        expected_count = len(paths) if critique.grounded else 0
+        citation_paths_valid = (
+            all(f"[{path}]" in written.content for path in paths)
+            if critique.grounded
+            else written.content == _INSUFFICIENT_EVIDENCE
+        )
+        approved = (
+            written.citation_count == expected_count
+            and citation_paths_valid
+            and bool(written.content.strip())
+        )
+        return Verification(
+            approved=approved,
+            citation_paths_valid=citation_paths_valid,
+            expected_citation_count=expected_count,
+            reported_citation_count=written.citation_count,
+        )
+
+
 class CollaborationOrchestrator:
     """Runs explicit role handoffs and returns auditable operational artifacts.
 
@@ -129,7 +173,8 @@ class CollaborationOrchestrator:
     not model chain-of-thought or hidden reasoning.
     """
 
-    workflow = "planner-researcher-critic-writer"
+    baseline_workflow: WorkflowName = "planner-researcher-critic-writer"
+    verified_workflow: WorkflowName = "planner-researcher-critic-writer-verifier"
 
     def __init__(
         self,
@@ -139,20 +184,22 @@ class CollaborationOrchestrator:
         researcher: ResearcherAgent | None = None,
         critic: CriticAgent | None = None,
         writer: WriterAgent | None = None,
+        verifier: VerifierAgent | None = None,
     ) -> None:
         self.planner = planner or PlannerAgent()
         self.researcher = researcher or ResearcherAgent(retriever)
         self.critic = critic or CriticAgent()
         self.writer = writer or WriterAgent()
+        self.verifier = verifier or VerifierAgent()
 
-    def run(self, *, question: str) -> CollaborationResult:
+    def run(self, *, question: str, verify: bool = False) -> CollaborationResult:
         plan = self.planner.run(question)
         evidence = self.researcher.run(plan)
         critique = self.critic.run(question, evidence)
         written = self.writer.run(evidence, critique)
 
         document_count = len({match.document.path for match in evidence.matches})
-        trace = (
+        trace: tuple[StageTrace, ...] = (
             StageTrace(
                 sequence=1,
                 agent=self.planner.name,
@@ -202,11 +249,34 @@ class CollaborationOrchestrator:
                 },
             ),
         )
+        verification: Verification | None = None
+        if verify:
+            verification = self.verifier.run(evidence, critique, written)
+            trace += (
+                StageTrace(
+                    sequence=5,
+                    agent=self.verifier.name,
+                    outcome="completed" if verification.approved else "blocked",
+                    summary=(
+                        "Verified citation paths and answer metadata."
+                        if verification.approved
+                        else "Blocked the answer because verification invariants failed."
+                    ),
+                    metrics={
+                        "approved": verification.approved,
+                        "citation_paths_valid": verification.citation_paths_valid,
+                        "expected_citation_count": verification.expected_citation_count,
+                        "reported_citation_count": verification.reported_citation_count,
+                    },
+                ),
+            )
+
+        verification_approved = verification is None or verification.approved
         return CollaborationResult(
             run_id=f"run_{uuid4().hex}",
-            workflow=self.workflow,
-            answer=written.content,
-            grounded=critique.grounded,
+            workflow=self.verified_workflow if verify else self.baseline_workflow,
+            answer=written.content if verification_approved else _VERIFICATION_FAILED,
+            grounded=critique.grounded and verification_approved,
             matches=evidence.matches,
             trace=trace,
         )

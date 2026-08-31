@@ -31,6 +31,7 @@ jobs:
       - run: .venv/bin/ruff format --check backend scripts
       - run: .venv/bin/pytest backend/tests
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
+      - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
   frontend:
     runs-on: ubuntu-latest

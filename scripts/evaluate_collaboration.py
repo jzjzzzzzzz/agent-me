@@ -56,13 +56,18 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
     return cases
 
 
-def evaluate(cases_path: Path, knowledge_dir: Path) -> list[EvaluationResult]:
+def evaluate(
+    cases_path: Path,
+    knowledge_dir: Path,
+    *,
+    verify: bool = False,
+) -> list[EvaluationResult]:
     cases = load_cases(cases_path)
     knowledge = KnowledgeBase(str(knowledge_dir))
     orchestrator = CollaborationOrchestrator(retriever=knowledge)
     results: list[EvaluationResult] = []
     for case in cases:
-        run = orchestrator.run(question=case["question"])
+        run = orchestrator.run(question=case["question"], verify=verify)
         critic = next(stage for stage in run.trace if stage.agent == "critic")
         expected = case["expected_grounded"]
         results.append(
@@ -91,10 +96,20 @@ def main() -> int:
     parser.add_argument(
         "--json", action="store_true", help="emit machine-readable output"
     )
+    parser.add_argument(
+        "--workflow",
+        choices=("baseline", "verified"),
+        default="baseline",
+        help="choose the four-stage baseline or five-stage verified policy",
+    )
     args = parser.parse_args()
 
     try:
-        results = evaluate(args.cases, args.knowledge_dir)
+        results = evaluate(
+            args.cases,
+            args.knowledge_dir,
+            verify=args.workflow == "verified",
+        )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         print(f"evaluation setup failed: {error}", file=sys.stderr)
         return 2
@@ -105,7 +120,11 @@ def main() -> int:
             json.dumps(
                 {
                     "results": [asdict(result) for result in results],
-                    "summary": {"passed": passed, "total": len(results)},
+                    "summary": {
+                        "passed": passed,
+                        "total": len(results),
+                        "workflow": args.workflow,
+                    },
                 },
                 indent=2,
             )
