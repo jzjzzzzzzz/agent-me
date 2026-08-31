@@ -4,19 +4,21 @@ import { ApiError, ask, collaborate, loadProfile } from "./api";
 afterEach(() => vi.unstubAllGlobals());
 
 it("returns a typed grounded response", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ answer: "Grounded", mode: "extractive", sources: [] }),
-    }),
-  );
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ answer: "Grounded", mode: "extractive", sources: [] }),
+  });
+  vi.stubGlobal("fetch", fetchMock);
 
   await expect(ask("Question")).resolves.toEqual({
     answer: "Grounded",
     mode: "extractive",
     sources: [],
   });
+  expect(fetchMock).toHaveBeenCalledWith(
+    "/api/v1/chat",
+    expect.objectContaining({ method: "POST" }),
+  );
 });
 
 it("uses a safe structured server error", async () => {

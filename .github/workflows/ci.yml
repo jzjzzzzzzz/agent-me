@@ -75,6 +75,12 @@ jobs:
             --data '{"question":"How does the example agent plan a project?"}' \
             | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["grounded"] and len(data["trace"]) == 4'
           curl --fail --silent --show-error http://127.0.0.1:5173/ >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:5173/api/v1/collaborate \
+            --header 'Content-Type: application/json' \
+            --data '{"question":"How does the example agent plan a project?"}' \
+            | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["grounded"] and len(data["trace"]) == 4'
+          curl --fail --silent --show-error --head http://127.0.0.1:5173/ \
+            | grep --ignore-case '^x-content-type-options: nosniff'
       - name: Show logs after failure
         if: failure()
         run: docker compose logs --no-color
