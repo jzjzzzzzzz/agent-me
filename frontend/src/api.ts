@@ -37,7 +37,10 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+// Use same-origin API requests by default. The development and container web
+// servers proxy /api to the backend, while deployments can still opt into an
+// explicit cross-origin API with VITE_API_BASE_URL.
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
 
 function isSource(value: unknown): value is Source {
   if (!value || typeof value !== "object") return false;

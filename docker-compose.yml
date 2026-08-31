@@ -25,7 +25,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
     ports:
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-5173}:80"
     depends_on:
