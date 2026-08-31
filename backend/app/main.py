@@ -108,6 +108,7 @@ async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
         name=config.app_name,
         description=config.app_description,
         max_question_chars=config.max_question_chars,
+        external_provider_enabled=config.provider_state == "openai-compatible",
     )
 
 

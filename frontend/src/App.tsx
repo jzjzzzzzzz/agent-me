@@ -30,6 +30,11 @@ export function App() {
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("standard");
   const text = messages[locale];
   const maxQuestionChars = profile?.max_question_chars ?? DEFAULT_MAX_QUESTION_CHARS;
+  const privacyMessage = profile
+    ? profile.external_provider_enabled && workflowMode === "standard"
+      ? text.inputPrivacyProvider
+      : text.inputPrivacyLocal
+    : text.inputPrivacyUnconfirmed;
 
   useEffect(() => {
     persistLocale(locale);
@@ -163,7 +168,7 @@ export function App() {
           </button>
         </div>
         <div id="question-meta" className="question-meta">
-          <span>{text.inputPrivacy}</span>
+          <span>{privacyMessage}</span>
           <span>
             {question.length} / {maxQuestionChars} {text.characters}
           </span>

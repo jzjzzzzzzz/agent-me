@@ -10,7 +10,10 @@ Readiness and public document count. It returns HTTP `503` with `status: "not_re
 
 ## `GET /api/v1/profile`
 
-Returns the configured public agent name, description, and `max_question_chars` so the browser can enforce the same input limit.
+Returns the configured public agent name, description, and `max_question_chars` so the browser can
+enforce the same input limit. The safe boolean `external_provider_enabled` lets the browser disclose
+the question's data destination before submission. It never reveals the provider URL, model ID, or
+credentials.
 
 ## `POST /api/v1/chat`
 

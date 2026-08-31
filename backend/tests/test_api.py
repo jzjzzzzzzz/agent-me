@@ -43,7 +43,29 @@ async def test_profile_exposes_public_runtime_configuration(client: httpx.AsyncC
         "name": settings.app_name,
         "description": settings.app_description,
         "max_question_chars": settings.max_question_chars,
+        "external_provider_enabled": False,
     }
+
+
+@pytest.mark.anyio
+async def test_profile_discloses_external_provider_without_exposing_configuration(
+    client: httpx.AsyncClient,
+) -> None:
+    settings = get_settings()
+    originals = (settings.llm_base_url, settings.llm_api_key, settings.llm_model)
+    settings.llm_base_url = "https://private-provider.example/v1"
+    settings.llm_api_key = "private-api-key"
+    settings.llm_model = "private-model"
+    try:
+        response = await client.get("/api/v1/profile")
+    finally:
+        settings.llm_base_url, settings.llm_api_key, settings.llm_model = originals
+
+    assert response.status_code == 200
+    assert response.json()["external_provider_enabled"] is True
+    assert "private-provider" not in response.text
+    assert "private-api-key" not in response.text
+    assert "private-model" not in response.text
 
 
 @pytest.mark.anyio

@@ -24,7 +24,9 @@ type Messages = {
   answer: string;
   groundingSources: string;
   noSources: string;
-  inputPrivacy: string;
+  inputPrivacyUnconfirmed: string;
+  inputPrivacyLocal: string;
+  inputPrivacyProvider: string;
   characters: string;
   requestFailed: string;
   extractiveMode: string;
@@ -57,7 +59,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "Answer",
     groundingSources: "Grounding sources",
     noSources: "No matching source excerpts were found.",
-    inputPrivacy: "Questions are sent only to this deployment.",
+    inputPrivacyUnconfirmed:
+      "External provider use is not confirmed. Questions may be forwarded to a configured provider.",
+    inputPrivacyLocal:
+      "Questions are processed by this deployment and are not sent to an external model provider.",
+    inputPrivacyProvider:
+      "Questions, recent conversation history, and retrieved context are forwarded to the configured model provider.",
     characters: "characters",
     requestFailed: "Request failed",
     extractiveMode: "extractive",
@@ -90,7 +97,9 @@ export const messages: Record<Locale, Messages> = {
     answer: "回答",
     groundingSources: "依据来源",
     noSources: "未找到匹配的来源片段。",
-    inputPrivacy: "问题只会发送到当前部署。",
+    inputPrivacyUnconfirmed: "尚未确认是否使用外部模型服务；问题可能会转发给已配置的服务。",
+    inputPrivacyLocal: "问题由当前部署处理，不会发送给外部模型服务。",
+    inputPrivacyProvider: "问题、近期对话历史和检索到的上下文会转发给当前配置的模型服务。",
     characters: "字符",
     requestFailed: "请求失败",
     extractiveMode: "本地抽取",
@@ -121,7 +130,9 @@ export const messages: Record<Locale, Messages> = {
     answer: "回答",
     groundingSources: "依據來源",
     noSources: "找不到相符的來源片段。",
-    inputPrivacy: "問題只會傳送到目前的部署。",
+    inputPrivacyUnconfirmed: "尚未確認是否使用外部模型服務；問題可能會轉送給已設定的服務。",
+    inputPrivacyLocal: "問題由目前部署處理，不會傳送給外部模型服務。",
+    inputPrivacyProvider: "問題、近期對話記錄和檢索到的內容會轉送給目前設定的模型服務。",
     characters: "字元",
     requestFailed: "請求失敗",
     extractiveMode: "本機擷取",
@@ -152,7 +163,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "回答",
     groundingSources: "根拠となるソース",
     noSources: "一致するソース抜粋は見つかりませんでした。",
-    inputPrivacy: "質問はこのデプロイ先にのみ送信されます。",
+    inputPrivacyUnconfirmed:
+      "外部モデルプロバイダーの使用は未確認です。質問が設定済みプロバイダーに転送される場合があります。",
+    inputPrivacyLocal:
+      "質問はこのデプロイで処理され、外部モデルプロバイダーには送信されません。",
+    inputPrivacyProvider:
+      "質問、最近の会話履歴、取得したコンテキストは、設定済みのモデルプロバイダーに転送されます。",
     characters: "文字",
     requestFailed: "リクエストに失敗しました",
     extractiveMode: "ローカル抽出",
@@ -185,7 +201,11 @@ export const messages: Record<Locale, Messages> = {
     answer: "답변",
     groundingSources: "근거 출처",
     noSources: "일치하는 근거 출처를 찾지 못했습니다.",
-    inputPrivacy: "질문은 현재 배포 환경에만 전송됩니다.",
+    inputPrivacyUnconfirmed:
+      "외부 모델 공급자 사용 여부가 확인되지 않았습니다. 질문이 구성된 공급자에게 전달될 수 있습니다.",
+    inputPrivacyLocal: "질문은 이 배포 환경에서 처리되며 외부 모델 공급자에게 전송되지 않습니다.",
+    inputPrivacyProvider:
+      "질문, 최근 대화 기록 및 검색된 컨텍스트가 구성된 모델 공급자에게 전달됩니다.",
     characters: "자",
     requestFailed: "요청 실패",
     extractiveMode: "로컬 추출",
@@ -218,7 +238,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "Respuesta",
     groundingSources: "Fuentes de respaldo",
     noSources: "No se encontraron fragmentos de fuentes coincidentes.",
-    inputPrivacy: "Las preguntas solo se envían a este despliegue.",
+    inputPrivacyUnconfirmed:
+      "No se ha confirmado el uso de un proveedor externo. Las preguntas pueden reenviarse a un proveedor configurado.",
+    inputPrivacyLocal:
+      "Las preguntas se procesan en este despliegue y no se envían a un proveedor de modelos externo.",
+    inputPrivacyProvider:
+      "Las preguntas, el historial reciente y el contexto recuperado se reenvían al proveedor de modelos configurado.",
     characters: "caracteres",
     requestFailed: "La solicitud ha fallado",
     extractiveMode: "extractivo local",
@@ -251,7 +276,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "Réponse",
     groundingSources: "Sources de référence",
     noSources: "Aucun extrait de source correspondant n’a été trouvé.",
-    inputPrivacy: "Les questions sont envoyées uniquement à ce déploiement.",
+    inputPrivacyUnconfirmed:
+      "L’utilisation d’un fournisseur externe n’est pas confirmée. Les questions peuvent être transmises à un fournisseur configuré.",
+    inputPrivacyLocal:
+      "Les questions sont traitées par ce déploiement et ne sont pas envoyées à un fournisseur de modèle externe.",
+    inputPrivacyProvider:
+      "Les questions, l’historique récent et le contexte récupéré sont transmis au fournisseur de modèle configuré.",
     characters: "caractères",
     requestFailed: "Échec de la requête",
     extractiveMode: "extraction locale",
@@ -284,7 +314,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "Antwort",
     groundingSources: "Belegquellen",
     noSources: "Es wurden keine passenden Quellenauszüge gefunden.",
-    inputPrivacy: "Fragen werden nur an diese Bereitstellung gesendet.",
+    inputPrivacyUnconfirmed:
+      "Die Nutzung eines externen Modellanbieters ist nicht bestätigt. Fragen können an einen konfigurierten Anbieter weitergeleitet werden.",
+    inputPrivacyLocal:
+      "Fragen werden in dieser Bereitstellung verarbeitet und nicht an einen externen Modellanbieter gesendet.",
+    inputPrivacyProvider:
+      "Fragen, der letzte Gesprächsverlauf und abgerufener Kontext werden an den konfigurierten Modellanbieter weitergeleitet.",
     characters: "Zeichen",
     requestFailed: "Anfrage fehlgeschlagen",
     extractiveMode: "lokale Extraktion",
@@ -317,7 +352,12 @@ export const messages: Record<Locale, Messages> = {
     answer: "Resposta",
     groundingSources: "Fontes de referência",
     noSources: "Nenhum trecho de fonte correspondente foi encontrado.",
-    inputPrivacy: "As perguntas são enviadas apenas para esta implantação.",
+    inputPrivacyUnconfirmed:
+      "O uso de provedor externo não foi confirmado. As perguntas podem ser encaminhadas a um provedor configurado.",
+    inputPrivacyLocal:
+      "As perguntas são processadas nesta implantação e não são enviadas a um provedor de modelo externo.",
+    inputPrivacyProvider:
+      "As perguntas, o histórico recente e o contexto recuperado são encaminhados ao provedor de modelo configurado.",
     characters: "caracteres",
     requestFailed: "Falha na solicitação",
     extractiveMode: "extração local",
