@@ -255,8 +255,9 @@ lock means `backend/pyproject.toml` changed without a reviewed `make lock` updat
 
 ### Frontend cannot reach the API
 
-Check `VITE_API_BASE_URL`, published ports, CORS origins, and `/health`. The default browser-facing API
-is `http://localhost:8000`.
+First open `http://localhost:5173/api/v1/profile`. The default Vite and Compose paths proxy
+same-origin `/api` requests to the backend. If you intentionally set `VITE_API_BASE_URL`, verify
+that origin, the published API port, `CORS_ORIGINS`, and `/health`.
 
 ### Readiness reports zero documents
 

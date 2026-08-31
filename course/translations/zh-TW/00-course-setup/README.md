@@ -254,8 +254,9 @@ COLLABORATION_EVAL 4/4 passed
 
 ### 前端無法連上 API
 
-檢查 `VITE_API_BASE_URL`、對外連接埠、CORS 來源與 `/health`。預設提供給瀏覽器使用的 API
-為 `http://localhost:8000`。
+先開啟 `http://localhost:5173/api/v1/profile`。預設 Vite 與 Compose 設定會將同源 `/api`
+請求代理到後端；只有主動設定 `VITE_API_BASE_URL` 時，才需要繼續檢查獨立 API 位址、連接埠、
+`CORS_ORIGINS` 與 `/health`。
 
 ### Readiness 顯示零份文件
 
