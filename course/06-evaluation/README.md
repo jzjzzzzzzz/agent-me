@@ -75,7 +75,7 @@ Expected baseline:
 ```text
 case    expected    actual    sources    critic    result
 ...
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ### Step 2 — run machine-readable output
@@ -173,7 +173,7 @@ recall    = TP / (TP + FN)
 - Low precision means unsupported questions often proceed.
 - Low recall means supported questions often abstain.
 
-Always publish case count and label scope with a metric. “100%” on three simple fixtures is not a
+Always publish case count and label scope with a metric. “100%” on four small fixtures is not a
 general quality claim.
 
 ## Avoid evaluation leakage
@@ -218,7 +218,7 @@ regression test.
 1. Why can all unit tests pass while behavioral quality regresses?
 2. Who should own expected labels?
 3. What does exit code `2` communicate?
-4. Why is 3/3 not enough for a “production accuracy” claim?
+4. Why is 4/4 not enough for a “production accuracy” claim?
 5. How can repeated tuning leak evaluation knowledge into the implementation?
 
 ## Completion checklist

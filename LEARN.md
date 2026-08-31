@@ -52,7 +52,7 @@ make evaluate
 The final command should print:
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ## Build the project in eight checkpoints

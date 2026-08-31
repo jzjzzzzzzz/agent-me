@@ -33,19 +33,21 @@ Agent-Me uses a deliberately small lexical baseline:
 3. turn each nonempty Markdown block into a candidate chunk;
 4. retain ATX heading text while stripping heading markers;
 5. tokenize ASCII words and individual CJK characters;
-6. compute overlap between unique query and chunk tokens;
-7. score `|query ∩ chunk| / |query|`;
-8. sort by descending score, then path and excerpt for stable ties;
-9. return at most four matches by default.
+6. remove a small, explicit set of English stop words from query tokens;
+7. compute overlap between the remaining unique query tokens and chunk tokens;
+8. score `|query ∩ chunk| / |query|` and reject scores below `0.75` by default;
+9. sort by descending score, then path and excerpt for stable ties;
+10. return at most four matches by default.
 
-For query token set \(Q\) and paragraph token set \(P\):
+For meaningful query token set \(Q\) after stop-word removal and paragraph token set \(P\):
 
 ```text
 score(Q, P) = |Q ∩ P| / max(|Q|, 1)
 ```
 
 This resembles query coverage. It does not consider term frequency, document rarity, semantic
-similarity, word order, negation, or whether the paragraph actually answers the question.
+similarity, word order, negation, or whether the paragraph actually answers the question. The
+threshold is a conservative abstention guard, not proof of entailment.
 
 ## Why use a simple baseline?
 
@@ -93,13 +95,13 @@ Use a short Python probe to see the actual tokens:
 
 ```bash
 .venv/bin/python - <<'PY'
-from app.knowledge import _tokens
+from app.knowledge import _query_tokens, _tokens
 q = "How does the agent plan a project?"
 p = "For project planning, the example agent starts with user goals."
-print("query:", sorted(_tokens(q)))
+print("query:", sorted(_query_tokens(q)))
 print("chunk:", sorted(_tokens(p)))
-print("overlap:", sorted(_tokens(q) & _tokens(p)))
-print("score:", len(_tokens(q) & _tokens(p)) / len(_tokens(q)))
+print("overlap:", sorted(_query_tokens(q) & _tokens(p)))
+print("score:", len(_query_tokens(q) & _tokens(p)) / len(_query_tokens(q)))
 PY
 ```
 
@@ -189,11 +191,11 @@ Add one small English/CJK Markdown fixture inside a test temporary directory. Ve
 produce deterministic matches. Describe the important limitation of treating each CJK character as
 a token.
 
-### Intermediate — add a minimum score
+### Intermediate — tune the minimum score
 
-Prototype a `min_score` argument without changing the public default. Add tests for values `0`, a
-boundary equal to a result score, and a threshold above all results. Explain how this changes
-precision, recall, and abstention.
+Call `search(..., min_score=...)` with values `0`, a boundary equal to a result score, and a
+threshold above all results. Add a hard-negative fixture that shares vocabulary with the corpus.
+Explain how the threshold changes precision, recall, and abstention without proving entailment.
 
 ### Advanced — compare a second ranking method
 

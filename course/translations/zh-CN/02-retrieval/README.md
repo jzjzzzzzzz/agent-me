@@ -28,12 +28,13 @@ Agent-Me 使用一个刻意简单的词法基线：
 3. 把每个非空 Markdown block 变成候选 chunk；
 4. 保留 ATX 标题文字但移除 `#`；
 5. 将 ASCII 单词与每个 CJK 字符分词；
-6. 计算 query/chunk 唯一 token 交集；
-7. 分数为 `|Q ∩ P| / max(|Q|, 1)`；
-8. 按分数降序，再按路径和片段稳定排序；
-9. 默认最多返回四个 match。
+6. 从 query token 中移除一小组明确的英文停用词；
+7. 计算其余 query token 与 chunk token 的交集；
+8. 分数为 `|Q ∩ P| / max(|Q|, 1)`，默认拒绝低于 `0.75` 的结果；
+9. 按分数降序，再按路径和片段稳定排序；
+10. 默认最多返回四个 match。
 
-该分数类似 query coverage，但不理解词频、罕见度、语义、顺序、否定或段落是否真的回答问题。
+该分数类似 query coverage，但不理解词频、罕见度、语义、顺序、否定或段落是否真的回答问题。阈值只是保守拒答规则，不能证明语义蕴含。
 
 简单基线的价值在于分数可解释、无外部服务、测试快速稳定，后续改进也有对照；它不是先进检索质量声明。
 
@@ -54,13 +55,13 @@ Agent-Me 使用一个刻意简单的词法基线：
 
 ```bash
 .venv/bin/python - <<'PY'
-from app.knowledge import _tokens
+from app.knowledge import _query_tokens, _tokens
 q = "How does the agent plan a project?"
 p = "For project planning, the example agent starts with user goals."
-print("query:", sorted(_tokens(q)))
+print("query:", sorted(_query_tokens(q)))
 print("chunk:", sorted(_tokens(p)))
-print("overlap:", sorted(_tokens(q) & _tokens(p)))
-print("score:", len(_tokens(q) & _tokens(p)) / len(_tokens(q)))
+print("overlap:", sorted(_query_tokens(q) & _tokens(p)))
+print("score:", len(_query_tokens(q) & _tokens(p)) / len(_query_tokens(q)))
 PY
 ```
 
@@ -112,9 +113,9 @@ PY
 
 在临时测试目录建立英文/CJK 小语料，验证两种语言都有确定性结果，并说明“每个 CJK 字符一个 token”的重要限制。
 
-### 中级：最小分数
+### 中级：调整最小分数
 
-原型实现 `min_score` 参数但不改变默认值。测试 0、恰好等于边界和高于所有结果，解释它对准确率、召回率和拒答的影响。
+用 `search(..., min_score=...)` 测试 0、恰好等于边界和高于所有结果，并新增一个与语料共享词汇的 hard-negative fixture。解释阈值如何改变准确率、召回率和拒答，同时不能证明 entailment。
 
 ### 高级：比较排序方法
 

@@ -45,7 +45,7 @@ make evaluate
 最后一条命令应输出：
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ## 八个构建检查点

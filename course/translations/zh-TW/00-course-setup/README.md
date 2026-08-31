@@ -186,7 +186,7 @@ Invoke-RestMethod http://127.0.0.1:8000/ready
 預期最後一行為：
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ### 步驟 3：理解每個命令
@@ -208,7 +208,7 @@ COLLABORATION_EVAL 3/3 passed
 - Commit tested: `<git rev-parse --short HEAD>`
 - Platform: `<OS, Python, Node, Docker>`
 - Commands: `make lint`, `make test`, `make docs`, `make evaluate`
-- Evaluation: `3/3 passed`
+- Evaluation: `4/4 passed`
 - One surprise: ...
 ```
 
@@ -280,7 +280,7 @@ COLLABORATION_EVAL 3/3 passed
 - [ ] Lint、測試、文件與評估全部通過。
 - [ ] 我觀察過一次刻意造成的評估失敗，並已還原。
 - [ ] 我記錄了工具版本與結果，且未儲存機密。
-- [ ] 我能說明 `3/3` 結果可以證明什麼，以及不能證明什麼。
+- [ ] 我能說明 `4/4` 結果可以證明什麼，以及不能證明什麼。
 
 ## 延伸閱讀
 

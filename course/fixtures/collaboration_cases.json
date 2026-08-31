@@ -13,5 +13,10 @@
     "id": "unsupported-domain",
     "question": "Explain quantum chromodynamics renormalization.",
     "expected_grounded": false
+  },
+  {
+    "id": "shared-terms-unsupported-use",
+    "question": "Does the example agent use automated tests to diagnose medical conditions?",
+    "expected_grounded": false
   }
 ]
