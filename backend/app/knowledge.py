@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from threading import RLock
 
 _TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
 _ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$")
@@ -69,6 +70,15 @@ class Match:
     score: float
 
 
+@dataclass(frozen=True)
+class _KnowledgeFile:
+    resolved: Path
+    relative_path: str
+    size: int
+    modified_ns: int
+    changed_ns: int
+
+
 def _tokens(value: str) -> set[str]:
     return {token.lower() for token in _TOKEN.findall(value)}
 
@@ -106,24 +116,18 @@ class KnowledgeBase:
     def __init__(self, directory: str, *, max_document_bytes: int = 1_000_000) -> None:
         self.directory = Path(directory)
         self.max_document_bytes = max_document_bytes
+        self._cache_lock = RLock()
+        self._cached_root: Path | None = None
+        self._cached_signature: tuple[tuple[str, int, int, int], ...] | None = None
+        self._cached_documents: tuple[Document, ...] = ()
 
-    def documents(self) -> list[Document]:
-        if not self.directory.exists():
-            return []
-
-        try:
-            root = self.directory.resolve(strict=True)
-        except OSError as error:
-            raise KnowledgeLoadError("knowledge_directory_unavailable") from error
-        if not root.is_dir():
-            raise KnowledgeLoadError("knowledge_directory_invalid")
-
-        result: list[Document] = []
+    def _files(self, root: Path) -> list[_KnowledgeFile]:
         try:
             paths = sorted(self.directory.rglob("*.md"))
         except OSError as error:
             raise KnowledgeLoadError("knowledge_directory_unavailable") from error
 
+        result: list[_KnowledgeFile] = []
         for path in paths:
             if path.is_symlink():
                 raise KnowledgeLoadError("knowledge_symlink_rejected")
@@ -135,9 +139,42 @@ class KnowledgeBase:
             if not resolved.is_file():
                 continue
             try:
-                if resolved.stat().st_size > self.max_document_bytes:
+                stat = resolved.stat()
+                if stat.st_size > self.max_document_bytes:
                     raise KnowledgeLoadError("knowledge_document_too_large")
-                text = resolved.read_text(encoding="utf-8")
+            except KnowledgeLoadError:
+                raise
+            except OSError as error:
+                raise KnowledgeLoadError("knowledge_document_unreadable") from error
+
+            result.append(
+                _KnowledgeFile(
+                    resolved=resolved,
+                    relative_path=path.relative_to(self.directory).as_posix(),
+                    size=stat.st_size,
+                    modified_ns=stat.st_mtime_ns,
+                    changed_ns=stat.st_ctime_ns,
+                )
+            )
+        return result
+
+    @staticmethod
+    def _signature(
+        files: list[_KnowledgeFile],
+    ) -> tuple[tuple[str, int, int, int], ...]:
+        return tuple(
+            (item.relative_path, item.size, item.modified_ns, item.changed_ns) for item in files
+        )
+
+    def _read(self, files: list[_KnowledgeFile]) -> list[Document]:
+        result: list[Document] = []
+        for item in files:
+            try:
+                with item.resolved.open("rb") as source:
+                    raw = source.read(self.max_document_bytes + 1)
+                if len(raw) > self.max_document_bytes:
+                    raise KnowledgeLoadError("knowledge_document_too_large")
+                text = raw.decode("utf-8")
             except KnowledgeLoadError:
                 raise
             except (OSError, UnicodeError) as error:
@@ -145,12 +182,47 @@ class KnowledgeBase:
 
             result.append(
                 Document(
-                    title=_title(path, text),
-                    path=path.relative_to(self.directory).as_posix(),
+                    title=_title(Path(item.relative_path), text),
+                    path=item.relative_path,
                     text=text,
                 )
             )
         return result
+
+    def documents(self) -> list[Document]:
+        if not self.directory.exists():
+            with self._cache_lock:
+                self._cached_root = None
+                self._cached_signature = None
+                self._cached_documents = ()
+            return []
+
+        try:
+            root = self.directory.resolve(strict=True)
+        except OSError as error:
+            raise KnowledgeLoadError("knowledge_directory_unavailable") from error
+        if not root.is_dir():
+            raise KnowledgeLoadError("knowledge_directory_invalid")
+
+        files = self._files(root)
+        signature = self._signature(files)
+        with self._cache_lock:
+            for _ in range(2):
+                if root == self._cached_root and signature == self._cached_signature:
+                    return list(self._cached_documents)
+
+                documents = self._read(files)
+                refreshed_files = self._files(root)
+                refreshed_signature = self._signature(refreshed_files)
+                if signature == refreshed_signature:
+                    self._cached_root = root
+                    self._cached_signature = signature
+                    self._cached_documents = tuple(documents)
+                    return list(self._cached_documents)
+                files = refreshed_files
+                signature = refreshed_signature
+
+        raise KnowledgeLoadError("knowledge_corpus_changed")
 
     def search(
         self,

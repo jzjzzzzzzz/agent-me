@@ -61,6 +61,16 @@ A deterministic lexical retriever is useful for teaching because:
 
 Its simplicity is not a claim of state-of-the-art quality.
 
+## Runtime I/O and cache boundary
+
+The API reuses immutable parsed `Document` values only while a filesystem signature is unchanged.
+It still scans metadata and repeats the root, symlink, file-type, and size checks on every access;
+adding, editing, or removing a Markdown file invalidates the cached corpus. API routes run the
+synchronous scan/search in a worker thread so it does not block FastAPI's async event loop.
+
+This is a process-local performance cache, not storage or a source of truth. A restart begins with
+an empty cache, and the configured filesystem remains authoritative.
+
 ## Read the implementation
 
 Open [`backend/app/knowledge.py`](../../backend/app/knowledge.py) and follow:
