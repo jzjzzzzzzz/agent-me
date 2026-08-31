@@ -139,11 +139,14 @@ docker compose up --build
 Open:
 
 - Web application: <http://localhost:5173>
+- Browser API gateway: <http://localhost:5173/api/v1/profile>
 - Interactive API docs: <http://localhost:8000/docs>
 - Health: <http://localhost:8000/health>
 - Readiness: <http://localhost:8000/ready>
 
 Local extractive and multi-agent lab modes require no API key.
+The browser uses the web container's same-origin `/api` gateway by default, so the Compose path
+does not depend on a browser-visible backend hostname or cross-origin requests.
 
 ### Option B — Local toolchain
 

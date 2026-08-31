@@ -10,6 +10,13 @@
 
 The included Compose file is intended for local evaluation. It binds both services to loopback, runs the API with all Linux capabilities dropped, runs both services with read-only root filesystems and `no-new-privileges`, and gives Nginx only the capabilities and temporary filesystems it needs. Set `API_BIND` or `WEB_BIND` only when you intentionally need a non-loopback development listener.
 
+The web image sends browser requests to same-origin `/api` by default. Its Nginx configuration
+proxies that path to the Compose service `api:8000`, avoiding browser-visible internal hostnames and
+cross-origin configuration for the normal stack. If web and API are deployed into different
+networks, either provide an equivalent ingress route or set `VITE_API_BASE_URL` at image build time
+and configure an exact matching `CORS_ORIGINS` value. Do not set `VITE_API_BASE_URL=/api`; it is an
+origin prefix and would duplicate the API path.
+
 Production deployments must keep the application behind a TLS ingress; do not expose the API container directly.  Production deployments should use a managed ingress, runtime secret injection, immutable images, and automated backups for any persistence you add.
 
 ## Refresh locked Python dependencies
