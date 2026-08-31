@@ -1,6 +1,6 @@
 # Lesson 00 — Environment and the Evidence-First Learning Loop
 
-[Course home](../README.md) · [简体中文](../translations/zh-CN/00-course-setup/README.md) · **Next: [Grounded Q&A](../01-grounded-qa/README.md)**
+[Course home](../README.md) · [简体中文](../translations/zh-CN/00-course-setup/README.md) · [繁體中文](../translations/zh-TW/00-course-setup/README.md) · **Next: [Grounded Q&A](../01-grounded-qa/README.md)**
 
 **Time:** 30–45 minutes · **Level:** Beginner · **Produces:** a reproducible baseline
 
