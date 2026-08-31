@@ -123,7 +123,9 @@ make evaluate
 
 ### 高级：公开 workflow 版本
 
-比较新 endpoint、workflow discriminator 和 API 版本，设计四阶段客户端如何识别未来五阶段响应。
+比较已实现的 `baseline` 与 `verified` 策略，解释 workflow discriminator 如何让客户端先选择
+四阶段或五阶段协议，再验证角色顺序。新增一个 parser 测试：给 verified workflow 提供四阶段
+trace，并确认客户端拒绝它。
 
 ## 理解检查
 

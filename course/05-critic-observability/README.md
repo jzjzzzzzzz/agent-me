@@ -22,6 +22,7 @@ By the end, you can:
 - distinguish policy decisions from answer writing;
 - define safe operational trace content;
 - observe approved and blocked flows in the browser and API;
+- compare pre-write evidence policy with post-write contract verification;
 - test response parsing against malformed or unsafe trace shapes;
 - propose stronger evidence checks without promising impossible guarantees.
 
@@ -54,6 +55,32 @@ A stronger critic might evaluate:
 
 Every added check needs false-positive/false-negative evaluation and a defined failure behavior.
 
+## Critic and verifier are different gates
+
+The UI now exposes two collaboration policies:
+
+| Policy | Stages | Purpose |
+| --- | --- | --- |
+| `baseline` | planner → researcher → critic → writer | stable four-stage teaching contract |
+| `verified` | planner → researcher → critic → writer → verifier | add post-write invariant checks |
+
+The critic decides whether the available evidence permits writing. The verifier runs **after** the
+writer and checks the candidate artifact against mechanical rules:
+
+```text
+expected citation count == writer-reported citation count
+every unique evidence path appears as [path] in the answer
+safe insufficient-evidence output has zero citations
+```
+
+If a rule fails, the verifier does not repair or return the candidate. It marks its stage blocked,
+changes `grounded` to false, and substitutes a fixed server-controlled failure message. This is a
+fail-closed output gate and a testable state transition.
+
+These checks catch broken handoffs, citation loss, and incompatible writers. They do **not** prove
+that a sentence is entailed by a source, that sources are correct, or that the corpus is complete.
+Calling the feature “truth verification” would overstate what the implementation demonstrates.
+
 ## Safe trace versus chain-of-thought
 
 | Safe operational trace | Do not expose as a trace |
@@ -71,7 +98,7 @@ chain-of-thought, but the same trace discipline keeps future provider integratio
 
 ## Read the implementation
 
-1. `CriticAgent` and trace construction in [`collaboration.py`](../../backend/app/collaboration.py)
+1. `CriticAgent`, `VerifierAgent`, and trace construction in [`collaboration.py`](../../backend/app/collaboration.py)
 2. public trace schema in [`schemas.py`](../../backend/app/schemas.py)
 3. browser runtime validation in [`api.ts`](../../frontend/src/api.ts)
 4. trace rendering in [`App.tsx`](../../frontend/src/App.tsx)
@@ -128,7 +155,31 @@ A blocked critic is a successful policy outcome, not a crashed request.
 Use browser developer tools or curl. Confirm trace summaries are fixed operational statements and
 metrics contain only finite numbers or booleans.
 
-### Step 5 — prove the browser rejects malformed traces
+### Step 5 — verified output path
+
+Select **Verified multi-agent** and repeat the grounded question. Confirm:
+
+- the workflow identifier ends in `-verifier`;
+- the trace contains five ordered stages;
+- verifier metrics report `approved`, `citation_paths_valid`, expected citations, and reported
+  citations;
+- the answer and source list remain plain text.
+
+Then call the API directly:
+
+```bash
+curl --silent http://localhost:8000/api/v1/collaborate \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "question": "How does the example agent plan a project?",
+    "workflow": "verified"
+  }' | python3 -m json.tool
+```
+
+The verifier is not controlled by a browser-supplied stage list. The request chooses one of two
+closed policies; the backend owns agent order, run ID, checks, outcomes, and fallback content.
+
+### Step 6 — prove the browser rejects malformed traces
 
 Run:
 
@@ -144,6 +195,9 @@ Review tests for:
 - unsupported agent names/outcomes;
 - invalid metrics;
 - wrong workflow or mode.
+
+Also inspect the failure-injection test that injects an `UnsupportedWriter`. It proves a writer that
+drops expected citations cannot make the verified workflow return its candidate answer.
 
 Add one malformed fixture of your own and assert `invalid_trace`.
 
@@ -200,15 +254,19 @@ silently flattened into a normal answer.
 3. Why should a trace avoid complete prompts even when debugging is easier with them?
 4. How does runtime browser validation reduce damage from a compromised or incompatible server?
 5. Which telemetry belongs only in access-controlled operations logs?
+6. Why does the verifier run after the writer rather than replacing the critic?
+7. Which claim about answer quality would still be unjustified after all verifier checks pass?
 
 ## Completion checklist
 
 - [ ] I observed approved and blocked paths in the browser.
+- [ ] I compared baseline and verified traces.
 - [ ] I inspected the raw JSON for both paths.
 - [ ] I can state the critic's exact current rule.
 - [ ] I added one invalid-trace parser test.
 - [ ] I completed a trace-field threat model.
 - [ ] I can distinguish operational trace data from chain-of-thought.
+- [ ] I can explain the verifier's fail-closed behavior and its semantic limitations.
 
 ## Further reading
 

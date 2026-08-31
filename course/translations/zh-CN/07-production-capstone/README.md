@@ -22,7 +22,7 @@
 
 ## 原理：当前保证与缺失保证
 
-当前已实现并测试：严格 request/body 限制、确定性本地检索与角色顺序、服务端 run ID、frozen 工件、批准/阻断路径、严格浏览器解析、安全纯文本、不持久化问题/trace、CI/评估/容器 smoke。
+当前已实现并测试：严格 request/body 限制、确定性本地检索与角色顺序、服务端 run ID、frozen 工件、批准/阻断路径、可选的 fail-closed 引用不变量验证、严格浏览器解析、安全纯文本、不持久化问题/trace、CI/评估/容器 smoke。
 
 当前没有：重启后持久状态、多 Worker 协调、exactly-once、provider 冗余/预算、认证授权/tenant 隔离、加密 trace/retention job、生产规模语义检索、形式化忠实度、SLO 与事故响应。
 
@@ -56,7 +56,7 @@ Worker 原子 claim stage，幂等写输出，再 append event。
 
 只选一个，深度与证据优先于功能数量：
 
-1. **Verifier role：**加入第五个类型化角色，同步后端、schema、前端、测试、评估和图。
+1. **扩展 Verifier 策略：**参考实现已包含第五个类型化角色；继续实现引用语法解析、来源 allowlist 或 claim-to-source mapping，并加入正例、反例和误报用例。不要把机械检查包装成真理验证。
 2. **检索升级：**配置第二种排序，建立 relevance label，对比 precision/recall 和 latency，保留 fallback。
 3. **持久本地 run：**SQLite/PostgreSQL + migration + 幂等状态，加入重启/重复执行测试，默认不保存 raw prompt。
 4. **认证与 tenant 隔离：**使用成熟认证，把 knowledge/run 按 tenant 约束，测试 IDOR、授权、删除、密钥脱敏。
@@ -129,7 +129,9 @@ make build
 
 准确简历写法：
 
-> 构建并测试了一个单进程四角色 multi-agent 编排流程（planner → researcher → critic → writer），包含不可变类型化交接、本地 grounded 检索、拒答、运行轨迹、确定性评估与 FastAPI/React 界面。
+> 构建并测试了向后兼容的单进程 multi-agent 编排 API，包含 baseline（planner → researcher → critic → writer）和 verified（+ verifier）策略、不可变类型化交接、本地 grounded 检索、fail-closed 引用不变量、运行时校验 trace、确定性评估，以及 FastAPI/React/TypeScript 界面。
+
+这句话的证据包括：严格 `workflow` 枚举与不同 workflow ID、Python frozen dataclass/Pydantic/TypeScript 三层协议、拒绝候选回答的失败注入测试、Python route 与浏览器 parser 合同测试，以及经过 Nginx 同源网关的容器 CI。它不代表分布式 Worker、多 LLM、形式化真值保证或生产 SLO。
 
 新增度量后才写具体数字。除非已实现和测试，不要写 distributed、autonomous、production-ready、hallucination-free 或 multiple LLMs。
 

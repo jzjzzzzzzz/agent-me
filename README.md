@@ -39,17 +39,22 @@ with a portfolio-ready capstone. No paid model API is required for the core cour
 
 ## What you will build
 
-You will evolve a small grounded Q&A service into a four-role collaboration workflow:
+You will evolve a small grounded Q&A service into a typed collaboration workflow with an optional
+post-write verification gate:
 
 ```text
 question
    │
    ▼
-planner ──Plan──▶ researcher ──EvidenceBundle──▶ critic ──Critique──▶ writer
+planner ──Plan──▶ researcher ──EvidenceBundle──▶ critic ──Critique──▶ writer ──▶ verifier
                        │                            │                     │
                        ▼                            └── block             ▼
-                Markdown knowledge                           answer + sources + trace
+                Markdown knowledge                    verified answer + sources + trace
 ```
+
+The baseline mode ends at the writer for a stable four-stage teaching contract. **Verified
+multi-agent** adds the fifth stage, checks citation-path and count invariants, and blocks a candidate
+answer when those checks fail.
 
 The repository is both **course material** and the **working reference implementation**. You do
 not study pseudocode and then discover that the real project is different: every lesson points to
@@ -60,6 +65,7 @@ By completing the course, you will be able to:
 - explain retrieval-grounded generation and its failure modes;
 - decide when role decomposition helps—and when one function is better;
 - design immutable, typed handoffs between planner, researcher, critic, and writer roles;
+- add a backward-compatible verifier policy and fail closed when output invariants break;
 - expose operational traces without exposing hidden chain-of-thought;
 - build deterministic behavioral evaluations for grounded and unsupported questions;
 - validate the same API contract in Python and TypeScript;
@@ -111,17 +117,19 @@ flowchart LR
   R --> Search
   R --> C[Critic]
   C --> W[Writer]
+  W -. verified policy .-> V[Verifier]
   Search --> Docs[(Markdown knowledge)]
   Chat -. optional .-> Provider[OpenAI-compatible provider]
-  Flow --> Trace[Answer + sources + safe trace]
+  V --> Trace[Verified answer + sources + safe trace]
+  W --> Trace
   Cases[(Versioned cases)] --> Eval[Evaluator]
   Eval --> CI[GitHub Actions]
 ```
 
-The default collaboration workflow is deterministic, sequential, and runs in one process. It is
-accurately described as **role-based multi-agent orchestration**. It does not claim to use four
-models, four autonomous processes, or a distributed worker platform. Lesson 07 explains what
-those stronger claims would require.
+Both collaboration policies are deterministic, sequential, and run in one process. They are
+accurately described as **role-based multi-agent orchestration with typed policy gates**. They do
+not claim to use five models, autonomous processes, formal truth verification, or a distributed
+worker platform. Lesson 07 explains what those stronger claims would require.
 
 ## Run the project
 

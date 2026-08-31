@@ -23,7 +23,7 @@
 | --- | --- | --- |
 | 单元测试 | 无 match 时 critic 阻断 | 单组件是否保持不变量？ |
 | 协议测试 | 乱序 stage 被拒绝 | 生产者/消费者是否一致？ |
-| 集成测试 | FastAPI 返回四阶段 | 组件能否共同工作？ |
+| 集成测试 | FastAPI 返回四阶段 baseline 或五阶段 verified trace | 组件能否共同工作？ |
 | 安全测试 | 超大 body 被拒绝 | 滥用边界是否有效？ |
 | 行为评估 | grounded 是否符合标签 | 用户可见行为是否符合预期？ |
 | 容器 smoke | 构建服务能回答 | 打包栈是否运行？ |
@@ -58,6 +58,14 @@ make evaluate
 .venv/bin/python scripts/evaluate_collaboration.py --json > /tmp/agent-me-eval.json
 python3 -m json.tool /tmp/agent-me-eval.json
 ```
+
+再让同一组标签用例通过五阶段策略：
+
+```bash
+.venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
+```
+
+预期 grounded 标签保持不变；第二条命令证明 verifier 路径在执行新增协议门控时没有破坏已知决定。它仍不能度量语义蕴含，也不能泛化到已提交 fixture 与知识文件之外。
 
 新增至少三例：直接支持事实、无依据领域问题、较少精确 token 的 paraphrase。ID 必须稳定唯一；标签应来自 committed corpus，而不是“当前代码返回了什么”。
 

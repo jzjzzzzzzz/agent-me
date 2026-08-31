@@ -27,6 +27,19 @@ Critique(grounded: bool, query_coverage: float)
 
 当前策略：有至少一个 match 就批准，否则阻断。Coverage 只记录、不参与阈值。更强版本可以检查最小分数、覆盖率、矛盾、来源时效/权威、claim-to-source entailment、逐句引用或领域权限，但每个检查都必须评估误报/漏报并定义失败行为。
 
+### Critic 与 Verifier 是两个不同的门
+
+页面现在提供两种协作策略：
+
+| 策略 | 阶段 | 作用 |
+| --- | --- | --- |
+| `baseline` | planner → researcher → critic → writer | 稳定的四阶段教学协议 |
+| `verified` | planner → researcher → critic → writer → verifier | 增加写作后的输出不变量检查 |
+
+Critic 在写作前判断证据是否允许继续；Verifier 在写作后检查候选工件：writer 报告的引用数必须等于唯一证据路径数、每个路径必须以 `[path]` 出现在回答中、无证据固定回复必须保持零引用。
+
+任何检查失败时，Verifier 会阻断候选回答，把 `grounded` 改为 `false`，并换成服务端固定失败文案。这能捕获交接损坏、引用丢失和不兼容 writer，但不能证明自然语言 claim 一定被来源蕴含，更不能称为“真理验证”。
+
 ### 安全 trace 与 chain-of-thought
 
 | 可以公开的运行信息 | 不应作为 trace 公开 |
@@ -42,7 +55,7 @@ Telemetry 回答“发生了什么、在哪里”，不声称暴露模型私有�
 
 ## 阅读实现
 
-依次阅读：[`CriticAgent` 与 trace](../../../../backend/app/collaboration.py)、[公开 trace schema](../../../../backend/app/schemas.py)、[浏览器运行校验](../../../../frontend/src/api.ts)、[UI](../../../../frontend/src/App.tsx)、[parser/UI 测试](../../../../frontend/src/api.test.ts)。
+依次阅读：[`CriticAgent`、`VerifierAgent` 与 trace](../../../../backend/app/collaboration.py)、[公开 trace schema](../../../../backend/app/schemas.py)、[浏览器运行校验](../../../../frontend/src/api.ts)、[UI](../../../../frontend/src/App.tsx)、[parser/UI 测试](../../../../frontend/src/api.test.ts)。
 
 ## 动手实验
 
@@ -74,6 +87,19 @@ Explain quantum chromodynamics renormalization.
 ```
 
 确认 researcher 证据为 0、critic `blocked`、writer 正常返回证据不足、来源为空且引用 0。阻断是成功策略结果，不是请求崩溃。
+
+### 验证路径
+
+选择 **已验证多 Agent**，再次提交有依据的问题，确认 workflow 以 `-verifier` 结尾、trace 有五个有序阶段，且 verifier 显示 `approved`、`citation_paths_valid`、期望引用数和报告引用数。
+
+```bash
+curl --silent http://localhost:8000/api/v1/collaborate \
+  --header 'Content-Type: application/json' \
+  --data '{"question":"How does the example agent plan a project?","workflow":"verified"}' \
+  | python3 -m json.tool
+```
+
+请求只能从封闭枚举中选择策略；角色顺序、run ID、检查结果与失败文案都由服务端控制。阅读注入 `UnsupportedWriter` 的后端测试，确认丢失引用的候选回答不能通过。
 
 ### 检查原始 JSON 与 parser
 
@@ -113,6 +139,8 @@ npm test -- --run src/api.test.ts
 3. 为什么调试方便也不应保存完整 prompt？
 4. 浏览器运行校验如何降低不兼容/被破坏服务端风险？
 5. 哪些 telemetry 只应在受权限保护的日志？
+6. 为什么 Verifier 位于 Writer 之后，而不能替代 Critic？
+7. 所有机械检查通过后，仍然不能声称哪种质量保证？
 
 ## 完成清单
 
@@ -122,6 +150,7 @@ npm test -- --run src/api.test.ts
 - [ ] 新增一个非法 trace parser 测试。
 - [ ] 完成 trace 字段威胁模型。
 - [ ] 能区分运行轨迹和 chain-of-thought。
+- [ ] 对比 baseline 与 verified trace，并能解释 fail-closed 及其语义限制。
 
 ## 延伸阅读
 
