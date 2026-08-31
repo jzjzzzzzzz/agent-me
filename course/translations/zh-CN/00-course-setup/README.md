@@ -72,7 +72,7 @@ curl --fail http://127.0.0.1:5173/ >/dev/null
 docker compose down --volumes
 ```
 
-本地工具链（Python 3.11+、uv 0.11/0.12、Node 20+）：
+本地工具链（Python 3.11+、uv 0.11/0.12、Node 22+）：
 
 ```bash
 make setup

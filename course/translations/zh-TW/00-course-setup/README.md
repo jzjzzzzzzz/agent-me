@@ -106,7 +106,7 @@ npm --version
 git --version
 ```
 
-Python 必須為 3.11 或更新版本，uv 必須為 0.11 或 0.12，Node.js 必須為 20 或更新版本。安裝並驗證：
+Python 必須為 3.11 或更新版本，uv 必須為 0.11 或 0.12，Node.js 必須為 22 或更新版本。安裝並驗證：
 
 ```bash
 make setup

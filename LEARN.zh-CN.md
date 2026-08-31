@@ -28,7 +28,7 @@ Demo，而是通过小而可测试的步骤逐渐构建完整系统。核心学�
 ## 开始之前
 
 你需要 Git、Python 3.11+、[uv](https://docs.astral.sh/uv/getting-started/installation/)
-0.11 或 0.12、Node.js 20+ 与 npm；推荐但不强制安装带 Compose 的 Docker。
+0.11 或 0.12、Node.js 22+ 与 npm；推荐但不强制安装带 Compose 的 Docker。
 extractive 与 collaboration 实验都不需要 API Key。
 
 如果希望学习记录出现在自己的 GitHub 主页，可先 Fork 再克隆；也可以直接克隆本仓库：

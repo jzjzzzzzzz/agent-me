@@ -105,7 +105,7 @@ npm --version
 git --version
 ```
 
-Python must be 3.11 or newer, uv must be 0.11 or 0.12, and Node.js must be 20 or newer.
+Python must be 3.11 or newer, uv must be 0.11 or 0.12, and Node.js must be 22 or newer.
 [Install uv](https://docs.astral.sh/uv/getting-started/installation/), then install and validate:
 
 ```bash
