@@ -100,12 +100,13 @@ docker compose down --volumes
 
 ```bash
 python3 --version
+uv --version
 node --version
 npm --version
 git --version
 ```
 
-Python 必須為 3.11 或更新版本，Node.js 必須為 20 或更新版本。安裝並驗證：
+Python 必須為 3.11 或更新版本，uv 必須為 0.11 或 0.12，Node.js 必須為 20 或更新版本。安裝並驗證：
 
 ```bash
 make setup
@@ -121,14 +122,14 @@ Windows 預設不包含 Make。請從儲存庫根目錄使用以下原生 PowerS
 
 ```powershell
 python --version
+uv --version
 node --version
 npm --version
 git --version
 
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e "backend[dev]"
+$env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location) ".venv"
+uv sync --project backend --locked --extra dev
 
 Set-Location frontend
 npm ci
@@ -246,10 +247,10 @@ COLLABORATION_EVAL 4/4 passed
 
 ## 常見問題
 
-### `make setup` 無法建立虛擬環境
+### `make setup` 找不到 uv 或 lock 已過期
 
-確認 `python3 -m venv --help` 可以執行。部分 Linux 發行版需要另外安裝 venv 套件。只有在
-確認部分建立的 `.venv` 不含需要保留的工作後，才將其移除。
+安裝 uv 0.11.x 或 0.12.x，並執行 `uv lock --project backend --check`。如果 manifest 是有意
+變更，請執行 `make lock` 並審查完整 lock diff；不要繞過 `--locked`。
 
 ### 前端無法連上 API
 
