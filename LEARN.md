@@ -29,7 +29,7 @@ By the end, you will be able to:
 ## Before you begin
 
 You need Git, Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/)
-0.11 or 0.12, Node.js 20+, and npm. Docker with Compose is optional but recommended.
+0.11 or 0.12, Node.js 22+, and npm. Docker with Compose is optional but recommended.
 You do **not** need an API key for the extractive or collaboration labs.
 
 Fork the repository if you want your work to remain visible on your GitHub profile, then clone your

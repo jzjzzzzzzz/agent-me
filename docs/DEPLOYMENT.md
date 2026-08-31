@@ -46,7 +46,9 @@ docker buildx imagetools inspect nginx:1.31-alpine
 ```
 
 Copy the reported top-level `Digest` into the matching `FROM tag@sha256:...` instruction without
-removing the tag or changing its major version. Then run the same container checks as CI:
+removing the readable tag. Keep digest-only refreshes separate from version changes; for a version
+change, review upstream release/support notes and explain the compatibility decision. Then run the
+same container checks as CI:
 
 ```bash
 cp -n .env.example .env
