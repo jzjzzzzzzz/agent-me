@@ -34,6 +34,7 @@ The baseline implements and tests:
 - server-controlled run IDs;
 - frozen internal handoff artifacts;
 - approved and blocked critic paths;
+- optional post-write verification with fail-closed citation invariants;
 - strict browser response parsing;
 - safe plain-text rendering;
 - no persistence of questions or collaboration traces;
@@ -107,10 +108,11 @@ For each file, write which guarantee would be lost or need redesign after adding
 
 Choose **one** bounded implementation. Depth and evidence matter more than feature count.
 
-### Option A — Verifier role
+### Option A — Extend the verifier policy
 
-Add a fifth typed role that checks mechanical invariants. Update backend, public schema, frontend
-parser/UI, tests, evaluation, and diagrams.
+The reference implementation now includes a fifth typed verifier role. Extend it with one measured
+policy such as citation syntax parsing, per-source allowlists, or claim-to-source mapping. Add
+positive, negative, and false-positive cases; do not rename mechanical checks as truth verification.
 
 ### Option B — Retrieval quality upgrade
 
@@ -237,9 +239,23 @@ Produce:
 
 Base course:
 
-> Built and tested a four-role, in-process multi-agent orchestration workflow (planner → researcher
-> → critic → writer) with typed immutable handoffs, grounded Markdown retrieval, abstention,
-> inspectable operational traces, deterministic evaluations, and a FastAPI/React interface.
+> Built and tested a backward-compatible in-process multi-agent orchestration API with baseline
+> (planner → researcher → critic → writer) and verified (+ verifier) policies, typed immutable
+> handoffs, grounded Markdown retrieval, fail-closed citation invariants, runtime-validated traces,
+> deterministic evaluations, and a FastAPI/React/TypeScript interface.
+
+What that sentence is evidence for:
+
+| Claim | Repository evidence |
+| --- | --- |
+| backward-compatible policies | strict `workflow` request enum and separate workflow identifiers |
+| typed handoffs | frozen Python dataclasses, Pydantic response models, TypeScript types |
+| fail-closed verification | verifier replaces a rejected candidate with a fixed safe response |
+| contract validation | Python route tests plus TypeScript runtime parser tests |
+| end-to-end integration | container CI calls the API through the same-origin Nginx gateway |
+
+It is not evidence for distributed workers, multiple LLMs, semantic truth guarantees, or production
+SLOs. State those as future design work unless you implement and measure them.
 
 After your capstone, add only measured facts:
 

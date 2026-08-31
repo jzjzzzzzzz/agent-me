@@ -27,7 +27,7 @@ By the end, you can:
 | --- | --- | --- |
 | Unit test | critic with no matches blocks | Does one component preserve an invariant? |
 | Contract test | malformed stage order is rejected | Do producer and consumer agree on shape? |
-| Integration test | FastAPI route returns four stages | Do components work together? |
+| Integration test | FastAPI route returns four baseline or five verified stages | Do components work together? |
 | Security test | oversized body is rejected | Does an abuse boundary hold? |
 | Behavioral evaluation | expected grounded decision | Does user-visible behavior match labeled cases? |
 | Container smoke test | built services answer a request | Does the packaged stack run? |
@@ -86,6 +86,16 @@ python3 -m json.tool /tmp/agent-me-eval.json
 ```
 
 CI uses this form because it is deterministic and parsable.
+
+Run the same labeled cases through the five-stage policy:
+
+```bash
+.venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
+```
+
+The expected grounded labels stay unchanged; the second command proves the verifier path preserves
+the known decisions while exercising its additional contract gate. It still does not measure
+semantic entailment or generalize beyond the committed fixture and knowledge files.
 
 ### Step 3 — add a small evaluation matrix
 

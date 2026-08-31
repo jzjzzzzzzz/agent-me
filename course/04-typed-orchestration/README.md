@@ -188,7 +188,10 @@ evaluation, diagram, and docs. Do not use an arbitrary dictionary handoff.
 
 ### Advanced — version a public workflow
 
-Design how a client can distinguish the four-stage response from a future five-stage response.
+Compare the implemented `baseline` and `verified` policies. Explain how the workflow discriminator
+lets a client select the expected four- or five-stage contract before validating agent order.
+Add a parser test that gives the verified workflow identifier a four-stage trace and confirms it is
+rejected.
 Compare a new endpoint, workflow discriminator, and media/API version. Explain your compatibility
 choice.
 

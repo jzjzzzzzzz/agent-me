@@ -28,13 +28,19 @@ The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES`
 
 ## `POST /api/v1/collaborate`
 
-Runs the local planner → researcher → critic → writer learning workflow. The request is a strict object containing only a required nonblank `question`, capped by `MAX_QUESTION_CHARS`:
+Runs the local planner → researcher → critic → writer learning workflow. The request is a strict
+object containing a required nonblank `question`, capped by `MAX_QUESTION_CHARS`, and an optional
+`workflow` policy:
 
 ```json
 {
-  "question": "How does the example agent plan a project?"
+  "question": "How does the example agent plan a project?",
+  "workflow": "baseline"
 }
 ```
+
+`workflow` is either `baseline` (the default four-stage contract) or `verified` (the same four
+stages followed by a mechanical verifier). Unknown values and fields are rejected with `422`.
 
 The response contains a server-generated run ID, the fixed workflow and mode identifiers, a grounded decision, sources, and four ordered operational trace stages:
 
@@ -63,7 +69,25 @@ The response contains a server-generated run ID, the fixed workflow and mode ide
 
 The actual response always contains planner, researcher, critic, and writer stages in that order. The shortened example shows only the first stage. Trace summaries describe workflow operations and counts; they are not hidden model reasoning. This endpoint is deterministic, local, and does not use `LLM_BASE_URL`.
 
-When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `blocked`, and the writer returns the fixed insufficient-evidence message with zero citations.
+For the verified policy, submit:
+
+```json
+{
+  "question": "How does the example agent plan a project?",
+  "workflow": "verified"
+}
+```
+
+Its response uses `workflow: "planner-researcher-critic-writer-verifier"` and appends a fifth
+`verifier` stage. The verifier independently checks that the writer-reported citation count matches
+the unique evidence paths and that every expected path occurs in the answer. If an invariant fails,
+the stage is `blocked`, the candidate answer is discarded, `grounded` becomes `false`, and the API
+returns a fixed safe verification-failure message. This is output-contract verification, not a
+semantic proof that every natural-language claim is true.
+
+When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `blocked`, and the
+writer returns the fixed insufficient-evidence message with zero citations. In verified mode, the
+verifier records that this safe fallback satisfies the zero-citation invariant.
 
 ## Request-size errors
 
