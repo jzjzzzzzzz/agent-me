@@ -18,7 +18,7 @@ import {
 import "./styles.css";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
-type WorkflowMode = "standard" | "collaboration";
+type WorkflowMode = "standard" | "collaboration" | "verified";
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
@@ -72,9 +72,12 @@ export function App() {
     setResult(null);
     try {
       setResult(
-        workflowMode === "collaboration"
-          ? await collaborate(question.trim())
-          : await ask(question.trim()),
+        workflowMode === "standard"
+          ? await ask(question.trim())
+          : await collaborate(
+              question.trim(),
+              workflowMode === "verified" ? "verified" : "baseline",
+            ),
       );
     } catch (reason) {
       const detail = reason instanceof ApiError ? reason.message : "";
@@ -86,7 +89,9 @@ export function App() {
 
   const modeLabel =
     result?.mode === "multi-agent-local"
-      ? text.collaborationModeLabel
+      ? result.workflow === "planner-researcher-critic-writer-verifier"
+        ? text.verifiedModeLabel
+        : text.collaborationModeLabel
       : result?.mode === "extractive"
       ? text.extractiveMode
       : result?.mode === "openai-compatible"
@@ -147,9 +152,23 @@ export function App() {
               />
               {text.collaborationWorkflow}
             </label>
+            <label>
+              <input
+                type="radio"
+                name="workflow"
+                value="verified"
+                checked={workflowMode === "verified"}
+                onChange={() => setWorkflowMode("verified")}
+                disabled={loading}
+              />
+              {text.verifiedWorkflow}
+            </label>
           </div>
           {workflowMode === "collaboration" && (
             <p className="workflow-hint">{text.collaborationHint}</p>
+          )}
+          {workflowMode === "verified" && (
+            <p className="workflow-hint">{text.verifiedHint}</p>
           )}
         </fieldset>
         <label htmlFor="question">{text.formLabel}</label>

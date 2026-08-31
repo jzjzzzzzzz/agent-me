@@ -277,7 +277,48 @@ it("runs the multi-agent lab and renders its ordered operational trace", async (
     expect.stringContaining("/api/v1/collaborate"),
     expect.objectContaining({
       method: "POST",
-      body: JSON.stringify({ question: "How should I plan?" }),
+      body: JSON.stringify({ question: "How should I plan?", workflow: "baseline" }),
+    }),
+  );
+});
+
+it("runs verified collaboration and renders the verifier handoff", async () => {
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    return Promise.resolve({
+      ok: true,
+      json: async () => ({
+        run_id: `run_${"c".repeat(32)}`,
+        workflow: "planner-researcher-critic-writer-verifier",
+        mode: "multi-agent-local",
+        answer: "Verified answer.\n\nSources: [example.md]",
+        grounded: true,
+        sources: [],
+        trace: ["planner", "researcher", "critic", "writer", "verifier"].map(
+          (agent, index) => ({
+            sequence: index + 1,
+            agent,
+            outcome: "completed",
+            summary: `${agent} completed its handoff.`,
+            metrics: { approved: true },
+          }),
+        ),
+      }),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await userEvent.click(screen.getByRole("radio", { name: "Verified multi-agent" }));
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "Verify this answer");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(await screen.findByText("verifier")).toBeInTheDocument();
+  expect(screen.getByText("verified multi-agent")).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining("/api/v1/collaborate"),
+    expect.objectContaining({
+      body: JSON.stringify({ question: "Verify this answer", workflow: "verified" }),
     }),
   );
 });

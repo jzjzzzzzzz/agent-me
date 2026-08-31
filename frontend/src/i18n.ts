@@ -32,10 +32,13 @@ type Messages = {
   extractiveMode: string;
   providerMode: string;
   collaborationModeLabel: string;
+  verifiedModeLabel: string;
   workflowMode: string;
   standardWorkflow: string;
   collaborationWorkflow: string;
+  verifiedWorkflow: string;
   collaborationHint: string;
+  verifiedHint: string;
   workflowTrace: string;
   grounded: string;
   notGrounded: string;
@@ -70,11 +73,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "extractive",
     providerMode: "provider",
     collaborationModeLabel: "multi-agent lab",
+    verifiedModeLabel: "verified multi-agent",
     workflowMode: "Workflow",
     standardWorkflow: "Standard Q&A",
     collaborationWorkflow: "Multi-agent lab",
+    verifiedWorkflow: "Verified multi-agent",
     collaborationHint:
       "Runs planner, researcher, critic, and writer roles with typed, inspectable handoffs.",
+    verifiedHint:
+      "Adds a final verifier that checks citation paths and answer metadata, blocking output when invariants fail.",
     workflowTrace: "Collaboration trace",
     grounded: "Grounded",
     notGrounded: "Insufficient evidence",
@@ -105,10 +112,13 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "本地抽取",
     providerMode: "模型服务",
     collaborationModeLabel: "多 Agent 实验",
+    verifiedModeLabel: "已验证多 Agent",
     workflowMode: "工作流",
     standardWorkflow: "标准问答",
     collaborationWorkflow: "多 Agent 实验",
+    verifiedWorkflow: "已验证多 Agent",
     collaborationHint: "依次运行规划、研究、审查和写作角色，并展示类型化、可检查的交接记录。",
+    verifiedHint: "增加最终验证器，检查引用路径和回答元数据；验证失败时阻止输出。",
     workflowTrace: "协作轨迹",
     grounded: "已有依据",
     notGrounded: "依据不足",
@@ -138,10 +148,13 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "本機擷取",
     providerMode: "模型服務",
     collaborationModeLabel: "多 Agent 實驗",
+    verifiedModeLabel: "已驗證多 Agent",
     workflowMode: "工作流程",
     standardWorkflow: "標準問答",
     collaborationWorkflow: "多 Agent 實驗",
+    verifiedWorkflow: "已驗證多 Agent",
     collaborationHint: "依序執行規劃、研究、審查與寫作角色，並顯示具型別且可檢查的交接紀錄。",
+    verifiedHint: "加入最終驗證器，檢查引用路徑與回答中繼資料；驗證失敗時阻擋輸出。",
     workflowTrace: "協作軌跡",
     grounded: "已有依據",
     notGrounded: "依據不足",
@@ -174,11 +187,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "ローカル抽出",
     providerMode: "モデルプロバイダー",
     collaborationModeLabel: "マルチエージェント演習",
+    verifiedModeLabel: "検証付きマルチエージェント",
     workflowMode: "ワークフロー",
     standardWorkflow: "標準 Q&A",
     collaborationWorkflow: "マルチエージェント演習",
+    verifiedWorkflow: "検証付きマルチエージェント",
     collaborationHint:
       "プランナー、リサーチャー、批評者、ライターを順に実行し、型付きの引き継ぎを表示します。",
+    verifiedHint:
+      "最後に検証役を追加し、引用パスと回答メタデータを確認して、不変条件に違反する出力をブロックします。",
     workflowTrace: "協働トレース",
     grounded: "根拠あり",
     notGrounded: "根拠不足",
@@ -211,11 +228,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "로컬 추출",
     providerMode: "모델 공급자",
     collaborationModeLabel: "멀티 에이전트 실습",
+    verifiedModeLabel: "검증된 멀티 에이전트",
     workflowMode: "워크플로",
     standardWorkflow: "표준 Q&A",
     collaborationWorkflow: "멀티 에이전트 실습",
+    verifiedWorkflow: "검증된 멀티 에이전트",
     collaborationHint:
       "계획자, 조사자, 비평가, 작성자 역할을 순서대로 실행하고 형식화된 인계 기록을 표시합니다.",
+    verifiedHint:
+      "마지막 검증자가 인용 경로와 답변 메타데이터를 확인하고 불변 조건을 위반한 출력을 차단합니다.",
     workflowTrace: "협업 추적",
     grounded: "근거 있음",
     notGrounded: "근거 부족",
@@ -249,11 +270,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "extractivo local",
     providerMode: "proveedor",
     collaborationModeLabel: "laboratorio multiagente",
+    verifiedModeLabel: "multiagente verificado",
     workflowMode: "Flujo de trabajo",
     standardWorkflow: "Preguntas y respuestas",
     collaborationWorkflow: "Laboratorio multiagente",
+    verifiedWorkflow: "Multiagente verificado",
     collaborationHint:
       "Ejecuta los roles de planificación, investigación, crítica y redacción con entregas tipadas e inspeccionables.",
+    verifiedHint:
+      "Añade un verificador final que comprueba rutas de citas y metadatos, bloqueando salidas que incumplan las invariantes.",
     workflowTrace: "Traza de colaboración",
     grounded: "Fundamentado",
     notGrounded: "Evidencia insuficiente",
@@ -287,11 +312,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "extraction locale",
     providerMode: "fournisseur",
     collaborationModeLabel: "atelier multi-agent",
+    verifiedModeLabel: "multi-agent vérifié",
     workflowMode: "Flux de travail",
     standardWorkflow: "Questions-réponses standard",
     collaborationWorkflow: "Atelier multi-agent",
+    verifiedWorkflow: "Multi-agent vérifié",
     collaborationHint:
       "Exécute les rôles de planification, recherche, critique et rédaction avec des transmissions typées et inspectables.",
+    verifiedHint:
+      "Ajoute un vérificateur final pour les chemins de citation et les métadonnées, puis bloque toute sortie non conforme.",
     workflowTrace: "Trace de collaboration",
     grounded: "Fondé sur les sources",
     notGrounded: "Preuves insuffisantes",
@@ -325,11 +354,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "lokale Extraktion",
     providerMode: "Modellanbieter",
     collaborationModeLabel: "Multi-Agent-Labor",
+    verifiedModeLabel: "verifiziertes Multi-Agent-System",
     workflowMode: "Arbeitsablauf",
     standardWorkflow: "Standard-Q&A",
     collaborationWorkflow: "Multi-Agent-Labor",
+    verifiedWorkflow: "Verifiziertes Multi-Agent-System",
     collaborationHint:
       "Führt Planer, Recherche, Kritik und Redaktion mit typisierten, prüfbaren Übergaben aus.",
+    verifiedHint:
+      "Ergänzt einen abschließenden Prüfer für Zitatpfade und Antwortmetadaten und blockiert Ausgaben bei verletzten Invarianten.",
     workflowTrace: "Zusammenarbeitsprotokoll",
     grounded: "Quellengestützt",
     notGrounded: "Unzureichende Belege",
@@ -363,11 +396,15 @@ export const messages: Record<Locale, Messages> = {
     extractiveMode: "extração local",
     providerMode: "provedor",
     collaborationModeLabel: "laboratório multiagente",
+    verifiedModeLabel: "multiagente verificado",
     workflowMode: "Fluxo de trabalho",
     standardWorkflow: "Perguntas e respostas",
     collaborationWorkflow: "Laboratório multiagente",
+    verifiedWorkflow: "Multiagente verificado",
     collaborationHint:
       "Executa os papéis de planejamento, pesquisa, crítica e redação com transferências tipadas e inspecionáveis.",
+    verifiedHint:
+      "Adiciona um verificador final para caminhos de citação e metadados, bloqueando saídas que violem as invariantes.",
     workflowTrace: "Rastro de colaboração",
     grounded: "Fundamentado",
     notGrounded: "Evidências insuficientes",

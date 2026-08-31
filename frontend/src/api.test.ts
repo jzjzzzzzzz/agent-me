@@ -78,8 +78,66 @@ it("returns a typed multi-agent collaboration trace", async () => {
   await expect(collaborate("Question")).resolves.toEqual(payload);
   expect(fetchMock).toHaveBeenCalledWith(
     expect.stringContaining("/api/v1/collaborate"),
-    expect.objectContaining({ body: JSON.stringify({ question: "Question" }) }),
+    expect.objectContaining({
+      body: JSON.stringify({ question: "Question", workflow: "baseline" }),
+    }),
   );
+});
+
+it("accepts the verified five-stage workflow and submits the explicit policy", async () => {
+  const payload = {
+    run_id: `run_${"c".repeat(32)}`,
+    workflow: "planner-researcher-critic-writer-verifier",
+    mode: "multi-agent-local",
+    answer: "Verified answer",
+    grounded: true,
+    sources: [],
+    trace: ["planner", "researcher", "critic", "writer", "verifier"].map(
+      (agent, index) => ({
+        sequence: index + 1,
+        agent,
+        outcome: "completed",
+        summary: `${agent} completed`,
+        metrics: { approved: true },
+      }),
+    ),
+  };
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload });
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(collaborate("Question", "verified")).resolves.toEqual(payload);
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining("/api/v1/collaborate"),
+    expect.objectContaining({
+      body: JSON.stringify({ question: "Question", workflow: "verified" }),
+    }),
+  );
+});
+
+it("rejects a verified workflow that omits its verifier stage", async () => {
+  const payload = {
+    run_id: `run_${"d".repeat(32)}`,
+    workflow: "planner-researcher-critic-writer-verifier",
+    mode: "multi-agent-local",
+    answer: "Incomplete trace",
+    grounded: true,
+    sources: [],
+    trace: ["planner", "researcher", "critic", "writer"].map((agent, index) => ({
+      sequence: index + 1,
+      agent,
+      outcome: "completed",
+      summary: `${agent} completed`,
+      metrics: {},
+    })),
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: async () => payload }),
+  );
+
+  await expect(collaborate("Question", "verified")).rejects.toMatchObject({
+    code: "invalid_trace",
+  });
 });
 
 it("rejects malformed multi-agent traces", async () => {
