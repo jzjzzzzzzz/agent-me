@@ -11,6 +11,7 @@ const profileResponse = {
     name: "My Answer Agent",
     description: "A grounded question-answering agent built from your documents.",
     max_question_chars: 8000,
+    external_provider_enabled: false,
   }),
 };
 
@@ -172,6 +173,7 @@ it("applies the configured public profile and question limit", async () => {
         name: "Documentation Helper",
         description: "Answers from reviewed documentation.",
         max_question_chars: 42,
+        external_provider_enabled: false,
       }),
     }),
   );
@@ -187,6 +189,48 @@ it("applies the configured public profile and question limit", async () => {
   );
   expect(screen.getByLabelText(/ask the example/i)).toHaveAttribute("maxlength", "42");
   expect(screen.getByText(/0 \/ 42 characters/)).toBeInTheDocument();
+});
+
+it("discloses external provider forwarding before question submission", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        name: "Provider-backed Agent",
+        description: "Answers using a configured provider.",
+        max_question_chars: 8000,
+        external_provider_enabled: true,
+      }),
+    }),
+  );
+
+  render(<App />);
+
+  expect(
+    await screen.findByText(
+      "Questions, recent conversation history, and retrieved context are forwarded to the configured model provider.",
+    ),
+  ).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("radio", { name: "Multi-agent lab" }));
+  expect(
+    screen.getByText(
+      "Questions are processed by this deployment and are not sent to an external model provider.",
+    ),
+  ).toBeInTheDocument();
+});
+
+it("uses a conservative disclosure when profile metadata is unavailable", () => {
+  vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
+
+  render(<App />);
+
+  expect(
+    screen.getByText(
+      "External provider use is not confirmed. Questions may be forwarded to a configured provider.",
+    ),
+  ).toBeInTheDocument();
 });
 
 it("runs the multi-agent lab and renders its ordered operational trace", async () => {

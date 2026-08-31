@@ -105,6 +105,7 @@ it("validates public profile metadata", async () => {
         name: "My Agent",
         description: "My description",
         max_question_chars: 1200,
+        external_provider_enabled: true,
       }),
     }),
   );
@@ -113,5 +114,22 @@ it("validates public profile metadata", async () => {
     name: "My Agent",
     description: "My description",
     max_question_chars: 1200,
+    external_provider_enabled: true,
   });
+});
+
+it("rejects a profile without an explicit provider disclosure flag", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        name: "My Agent",
+        description: "My description",
+        max_question_chars: 1200,
+      }),
+    }),
+  );
+
+  await expect(loadProfile()).rejects.toMatchObject({ code: "invalid_profile" });
 });

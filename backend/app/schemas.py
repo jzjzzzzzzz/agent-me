@@ -74,3 +74,4 @@ class ProfileResponse(BaseModel):
     name: str
     description: str
     max_question_chars: int
+    external_provider_enabled: bool

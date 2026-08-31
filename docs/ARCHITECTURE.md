@@ -4,7 +4,9 @@
 
 1. Browser questions are untrusted and validated by Pydantic.
 2. Knowledge files are operator-controlled but bounded by the configured root and file-size limit; symbolic links are rejected and content is rendered as plain text.
-3. Provider output is untrusted and rendered as text, never inserted as HTML.
+3. Provider output is untrusted and rendered as text, never inserted as HTML. Before submission,
+   the browser uses the public `external_provider_enabled` flag to disclose whether the question,
+   recent history, and retrieved context will be forwarded to the configured provider.
 4. Secrets are loaded from environment variables and excluded from source control.
 
 ## Request path

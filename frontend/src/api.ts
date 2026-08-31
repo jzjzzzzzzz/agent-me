@@ -19,7 +19,12 @@ export type CollaborationResponse = {
   sources: Source[];
   trace: CollaborationStage[];
 };
-export type ProfileResponse = { name: string; description: string; max_question_chars: number };
+export type ProfileResponse = {
+  name: string;
+  description: string;
+  max_question_chars: number;
+  external_provider_enabled: boolean;
+};
 
 export class ApiError extends Error {
   constructor(
@@ -79,7 +84,8 @@ function parseProfileResponse(value: unknown): ProfileResponse {
     typeof profile.description !== "string" ||
     typeof profile.max_question_chars !== "number" ||
     !Number.isInteger(profile.max_question_chars) ||
-    profile.max_question_chars < 1
+    profile.max_question_chars < 1 ||
+    typeof profile.external_provider_enabled !== "boolean"
   ) {
     throw new ApiError("Server returned an invalid profile.", 502, "invalid_profile");
   }
