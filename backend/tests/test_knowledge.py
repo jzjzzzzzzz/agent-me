@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -100,3 +101,40 @@ def test_search_minimum_score_is_inclusive_and_validated(tmp_path: Path) -> None
     assert knowledge.search("Alpha Python Rust", min_score=0.67) == []
     with pytest.raises(ValueError, match="min_score"):
         knowledge.search("Alpha", min_score=1.1)
+
+
+def test_documents_cache_is_reused_and_invalidated_by_corpus_changes(
+    tmp_path: Path,
+) -> None:
+    profile = tmp_path / "profile.md"
+    profile.write_text("# Profile\n\nFirst version.", encoding="utf-8")
+    knowledge = KnowledgeBase(str(tmp_path))
+
+    first = knowledge.documents()
+    second = knowledge.documents()
+
+    assert first is not second
+    assert first[0] is second[0]
+
+    profile.write_text("# Profile\n\nA longer second version.", encoding="utf-8")
+    changed = knowledge.documents()
+    assert changed[0].text.endswith("A longer second version.")
+    assert changed[0] is not first[0]
+
+    extra = tmp_path / "extra.md"
+    extra.write_text("# Extra\n\nAnother document.", encoding="utf-8")
+    assert [document.path for document in knowledge.documents()] == ["extra.md", "profile.md"]
+
+    profile.unlink()
+    assert [document.path for document in knowledge.documents()] == ["extra.md"]
+
+
+def test_concurrent_document_reads_publish_one_consistent_cache(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text("# Profile\n\nStable content.", encoding="utf-8")
+    knowledge = KnowledgeBase(str(tmp_path))
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(lambda _: knowledge.documents(), range(32)))
+
+    assert all([document.path for document in result] == ["profile.md"] for result in results)
+    assert len({id(result[0]) for result in results}) == 1

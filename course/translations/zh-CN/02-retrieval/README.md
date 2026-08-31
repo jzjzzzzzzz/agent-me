@@ -38,6 +38,14 @@ Agent-Me 使用一个刻意简单的词法基线：
 
 简单基线的价值在于分数可解释、无外部服务、测试快速稳定，后续改进也有对照；它不是先进检索质量声明。
 
+## 运行时 I/O 与缓存边界
+
+只有文件系统签名不变时，API 才会复用不可变的 `Document` 解析结果。每次访问仍会扫描元数据，
+并重新执行根目录、symlink、文件类型和大小检查；新增、修改或删除 Markdown 都会让缓存失效。
+API route 会在线程池运行同步扫描与检索，避免阻塞 FastAPI 的 async event loop。
+
+这是进程内性能缓存，不是存储或事实来源。进程重启后缓存为空，配置的文件系统始终是权威来源。
+
 ## 阅读实现
 
 打开 [`backend/app/knowledge.py`](../../../../backend/app/knowledge.py)，依次读 `_TOKEN`、`_tokens`、`_content_chunks`、`documents`、`search` 和数据类；再阅读

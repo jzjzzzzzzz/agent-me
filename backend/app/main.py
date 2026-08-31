@@ -1,6 +1,9 @@
+from functools import lru_cache
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
@@ -49,6 +52,11 @@ class SemanticLimitError(Exception):
         self.detail = detail
 
 
+@lru_cache(maxsize=16)
+def _knowledge_base(directory: str, max_document_bytes: int) -> KnowledgeBase:
+    return KnowledgeBase(directory, max_document_bytes=max_document_bytes)
+
+
 @app.exception_handler(SemanticLimitError)
 async def semantic_limit_error(_: Request, error: SemanticLimitError) -> JSONResponse:
     return JSONResponse(
@@ -90,9 +98,8 @@ async def health() -> dict[str, str]:
 async def ready(
     config: Settings = Depends(get_settings),
 ) -> JSONResponse:
-    documents = KnowledgeBase(
-        config.knowledge_dir, max_document_bytes=config.max_document_bytes
-    ).documents()
+    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    documents = await run_in_threadpool(knowledge.documents)
     is_ready = bool(documents) and config.provider_state != "misconfigured"
     content: dict[str, object] = {
         "status": "ready" if is_ready else "not_ready",
@@ -124,9 +131,8 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
             code="history_too_large",
             detail="history exceeds configured limit",
         )
-    matches = KnowledgeBase(
-        config.knowledge_dir, max_document_bytes=config.max_document_bytes
-    ).search(payload.question)
+    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    matches = await run_in_threadpool(knowledge.search, payload.question)
     answer, mode = await generate_answer(
         question=payload.question,
         history=payload.history,
@@ -158,9 +164,11 @@ async def collaborate(
             code="question_too_large",
             detail="question exceeds configured limit",
         )
-    result = CollaborationOrchestrator(
-        retriever=KnowledgeBase(config.knowledge_dir, max_document_bytes=config.max_document_bytes)
-    ).run(question=payload.question)
+    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    result = await run_in_threadpool(
+        CollaborationOrchestrator(retriever=knowledge).run,
+        question=payload.question,
+    )
     return CollaborationResponse(
         run_id=result.run_id,
         workflow=result.workflow,

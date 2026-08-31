@@ -17,6 +17,13 @@ and returns up to four sources that meet the default `0.75` threshold. If all pr
 present, the service calls the provider's `/chat/completions` route using a grounded system message.
 Otherwise it returns the highest-ranked excerpt.
 
+The API reuses `KnowledgeBase` instances for identical roots and size limits. Every access still
+rescans bounded file metadata and re-enforces the root, symlink, file-type, and size rules; unchanged
+signatures reuse immutable parsed documents, while add/edit/remove operations invalidate the cache.
+Readiness, search, and the local collaboration run execute through Starlette's worker thread pool so
+synchronous filesystem work does not block the async event loop. The cache is process-local only;
+the filesystem remains authoritative after edits and process restarts.
+
 ## Multi-agent learning path
 
 `POST /api/v1/collaborate` injects the same bounded Markdown retriever used by the single-path API

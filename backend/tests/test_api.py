@@ -1,8 +1,10 @@
+import threading
 from pathlib import Path
 
 import httpx
 import pytest
 
+import app.main as main_module
 from app.config import get_settings
 from app.main import app
 
@@ -155,6 +157,31 @@ async def test_multi_agent_collaboration_returns_typed_trace(
     ]
     assert "[profile.md]" in body["answer"]
     assert body["sources"][0]["path"] == "profile.md"
+
+
+@pytest.mark.anyio
+async def test_knowledge_search_runs_outside_the_async_event_loop(
+    client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    event_loop_thread = threading.get_ident()
+    search_threads: list[int] = []
+
+    class RecordingKnowledgeBase:
+        def search(self, question: str, *, limit: int = 4) -> list:
+            search_threads.append(threading.get_ident())
+            return []
+
+    knowledge = RecordingKnowledgeBase()
+    monkeypatch.setattr(main_module, "_knowledge_base", lambda *_: knowledge)
+
+    chat = await client.post("/api/v1/chat", json={"question": "Unknown fact?"})
+    collaboration = await client.post("/api/v1/collaborate", json={"question": "Unknown fact?"})
+
+    assert chat.status_code == 200
+    assert collaboration.status_code == 200
+    assert len(search_threads) == 2
+    assert all(thread != event_loop_thread for thread in search_threads)
 
 
 @pytest.mark.anyio
