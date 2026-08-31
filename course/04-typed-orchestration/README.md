@@ -46,7 +46,7 @@ contain only stable, safe, caller-relevant information.
 
 | Artifact | Important invariants |
 | --- | --- |
-| `Plan` | tasks are ordered; query count is nonnegative |
+| `Plan` | retrieval query is normalized; tasks are ordered; query count is nonnegative |
 | `EvidenceBundle` | matches preserve rank order; every source came from retrieval |
 | `Critique` | grounded decision and bounded coverage describe current evidence |
 | `WrittenAnswer` | blocked evidence yields zero citations |
@@ -79,7 +79,7 @@ Run:
 from dataclasses import FrozenInstanceError
 from app.collaboration import Plan
 
-plan = Plan(tasks=("retrieve",), query_term_count=1)
+plan = Plan(retrieval_query="agent planning", tasks=("retrieve",), query_term_count=2)
 try:
     plan.query_term_count = 99
 except FrozenInstanceError as error:

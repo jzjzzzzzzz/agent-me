@@ -35,7 +35,7 @@ CollaborationResult
 
 | 工件 | 关键不变量 |
 | --- | --- |
-| `Plan` | 任务有序，query count 非负 |
+| `Plan` | retrieval query 已规范化，任务有序，query count 非负 |
 | `EvidenceBundle` | match 保留排序，来源只来自检索 |
 | `Critique` | 决定与覆盖率描述当前证据 |
 | `WrittenAnswer` | 阻断时引用为 0 |
@@ -63,7 +63,7 @@ TypeScript 编译类型无法校验任意网络 JSON，所以必须保留运行�
 .venv/bin/python - <<'PY'
 from dataclasses import FrozenInstanceError
 from app.collaboration import Plan
-plan = Plan(tasks=("retrieve",), query_term_count=1)
+plan = Plan(retrieval_query="agent planning", tasks=("retrieve",), query_term_count=2)
 try:
     plan.query_term_count = 99
 except FrozenInstanceError as error:
