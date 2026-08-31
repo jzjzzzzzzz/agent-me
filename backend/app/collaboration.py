@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Literal, Protocol, TypeAlias
 from uuid import uuid4
 
 from .knowledge import Match
@@ -21,6 +21,7 @@ def _tokens(value: str) -> set[str]:
 
 @dataclass(frozen=True)
 class Plan:
+    retrieval_query: str
     tasks: tuple[str, ...]
     query_term_count: int
 
@@ -61,25 +62,34 @@ class CollaborationResult:
     trace: tuple[StageTrace, ...]
 
 
+class Retriever(Protocol):
+    def search(self, question: str, *, limit: int = 4) -> list[Match]: ...
+
+
 class PlannerAgent:
     name: AgentName = "planner"
 
     def run(self, question: str) -> Plan:
+        retrieval_query = question.strip()
         return Plan(
+            retrieval_query=retrieval_query,
             tasks=(
                 "Retrieve evidence from the configured knowledge base.",
                 "Check whether the evidence supports the requested answer.",
                 "Write a concise answer with source-path citations.",
             ),
-            query_term_count=len(_tokens(question)),
+            query_term_count=len(_tokens(retrieval_query)),
         )
 
 
 class ResearcherAgent:
     name: AgentName = "researcher"
 
-    def run(self, matches: list[Match]) -> EvidenceBundle:
-        return EvidenceBundle(matches=tuple(matches))
+    def __init__(self, retriever: Retriever) -> None:
+        self.retriever = retriever
+
+    def run(self, plan: Plan) -> EvidenceBundle:
+        return EvidenceBundle(matches=tuple(self.retriever.search(plan.retrieval_query)))
 
 
 class CriticAgent:
@@ -124,19 +134,20 @@ class CollaborationOrchestrator:
     def __init__(
         self,
         *,
+        retriever: Retriever,
         planner: PlannerAgent | None = None,
         researcher: ResearcherAgent | None = None,
         critic: CriticAgent | None = None,
         writer: WriterAgent | None = None,
     ) -> None:
         self.planner = planner or PlannerAgent()
-        self.researcher = researcher or ResearcherAgent()
+        self.researcher = researcher or ResearcherAgent(retriever)
         self.critic = critic or CriticAgent()
         self.writer = writer or WriterAgent()
 
-    def run(self, *, question: str, matches: list[Match]) -> CollaborationResult:
+    def run(self, *, question: str) -> CollaborationResult:
         plan = self.planner.run(question)
-        evidence = self.researcher.run(matches)
+        evidence = self.researcher.run(plan)
         critique = self.critic.run(question, evidence)
         written = self.writer.run(evidence, critique)
 

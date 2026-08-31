@@ -157,10 +157,9 @@ async def collaborate(
             code="question_too_large",
             detail="question exceeds configured limit",
         )
-    matches = KnowledgeBase(
-        config.knowledge_dir, max_document_bytes=config.max_document_bytes
-    ).search(payload.question)
-    result = CollaborationOrchestrator().run(question=payload.question, matches=matches)
+    result = CollaborationOrchestrator(
+        retriever=KnowledgeBase(config.knowledge_dir, max_document_bytes=config.max_document_bytes)
+    ).run(question=payload.question)
     return CollaborationResponse(
         run_id=result.run_id,
         workflow=result.workflow,

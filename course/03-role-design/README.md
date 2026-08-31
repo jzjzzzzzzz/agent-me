@@ -42,8 +42,8 @@ function until a real boundary appears.
 
 | Role | Receives | Produces | Owns | Does not own |
 | --- | --- | --- | --- | --- |
-| Planner | normalized question | `Plan` | evidence-first task outline | retrieval results |
-| Researcher | ranked `Match` objects | `EvidenceBundle` | evidence packaging | final approval |
+| Planner | normalized question | `Plan` | retrieval intent and evidence-first task outline | retrieval results |
+| Researcher | `Plan` + injected retriever | `EvidenceBundle` | retrieval and evidence packaging | final approval |
 | Critic | question + evidence | `Critique` | grounded/block decision | answer wording |
 | Writer | evidence + critique | `WrittenAnswer` | response composition | source discovery |
 
@@ -127,9 +127,10 @@ Record:
 
 ### Step 3 — test dependency substitution
 
-`CollaborationOrchestrator` accepts role instances in its constructor. Create a small test double
-for one role and verify the orchestrator uses it. The double must return the same typed artifact;
-do not bypass the contract with an arbitrary dictionary.
+`CollaborationOrchestrator` accepts a retriever and optional role instances in its constructor.
+Create a planner test double that changes `Plan.retrieval_query`, then use a recording retriever to
+verify that the researcher searches for exactly that value. Do not bypass the contract with an
+arbitrary dictionary.
 
 This demonstrates an important property: **separate roles are useful when behavior can be changed
 or tested at a boundary**.
@@ -179,10 +180,11 @@ Choose one proposed role: verifier, router, privacy reviewer, or formatter. Writ
 - expected cost and latency;
 - rejection criteria if it adds no value.
 
-### Intermediate — remove a ceremonial role
+### Intermediate — detect a ceremonial role
 
-Imagine the planner always returns the same three tasks and no downstream role reads them. Argue
-for retaining, changing, or removing it. Base the decision on observable behavior, not the role name.
+Temporarily change the planner's `retrieval_query` while leaving the original HTTP question intact.
+Write a test that fails if the researcher ignores the plan and searches for the original question.
+Then explain what evidence would justify retaining or removing the planner boundary.
 
 ### Advanced — parallel research design
 

@@ -59,11 +59,10 @@ def load_cases(path: Path) -> list[dict[str, Any]]:
 def evaluate(cases_path: Path, knowledge_dir: Path) -> list[EvaluationResult]:
     cases = load_cases(cases_path)
     knowledge = KnowledgeBase(str(knowledge_dir))
-    orchestrator = CollaborationOrchestrator()
+    orchestrator = CollaborationOrchestrator(retriever=knowledge)
     results: list[EvaluationResult] = []
     for case in cases:
-        matches = knowledge.search(case["question"])
-        run = orchestrator.run(question=case["question"], matches=matches)
+        run = orchestrator.run(question=case["question"])
         critic = next(stage for stage in run.trace if stage.agent == "critic")
         expected = case["expected_grounded"]
         results.append(

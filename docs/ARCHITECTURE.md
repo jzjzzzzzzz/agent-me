@@ -13,7 +13,8 @@
 
 ## Multi-agent learning path
 
-`POST /api/v1/collaborate` uses the same bounded Markdown retrieval layer and runs four local roles in a fixed order:
+`POST /api/v1/collaborate` injects the same bounded Markdown retriever used by the single-path API
+into the collaboration workflow and runs four local roles in a fixed order:
 
 ```mermaid
 sequenceDiagram
@@ -29,7 +30,12 @@ sequenceDiagram
   W-->>API: WrittenAnswer
 ```
 
-The role artifacts are frozen dataclasses. The orchestrator owns ordering and produces a server-controlled run ID plus four operational trace stages. A trace stage contains a role identifier, outcome, safe summary, and numeric/boolean metrics. It is an audit-friendly workflow record, not model chain-of-thought.
+The planner stores the normalized retrieval query in an immutable `Plan`. The researcher receives
+that exact plan and owns the retriever call that turns it into an `EvidenceBundle`; retrieval is not
+precomputed at the HTTP boundary. The remaining role artifacts are also frozen dataclasses. The
+orchestrator owns ordering and produces a server-controlled run ID plus four operational trace
+stages. A trace stage contains a role identifier, outcome, safe summary, and numeric/boolean
+metrics. It is an audit-friendly workflow record, not model chain-of-thought.
 
 The critic approves synthesis only when retrieval produced evidence. Without evidence it emits a blocked outcome and the writer returns a fixed insufficient-evidence response with zero citations. The default collaboration workflow never calls the optional external provider.
 

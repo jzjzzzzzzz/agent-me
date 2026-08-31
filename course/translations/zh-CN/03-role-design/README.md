@@ -31,8 +31,8 @@
 
 | 角色 | 输入 | 输出 | 负责 | 不负责 |
 | --- | --- | --- | --- | --- |
-| Planner | 规范化问题 | `Plan` | 证据优先任务 | 检索结果 |
-| Researcher | 排序 `Match` | `EvidenceBundle` | 封装证据 | 最终批准 |
+| Planner | 规范化问题 | `Plan` | 检索意图与证据优先任务 | 检索结果 |
+| Researcher | `Plan` + 注入的 retriever | `EvidenceBundle` | 执行检索并封装证据 | 最终批准 |
 | Critic | 问题 + 证据 | `Critique` | grounded/block 决定 | 回答措辞 |
 | Writer | 证据 + critique | `WrittenAnswer` | 组合回答 | 发现来源 |
 
@@ -69,7 +69,7 @@ curl --silent http://localhost:8000/api/v1/collaborate \
 
 ### 依赖替换实验
 
-`CollaborationOrchestrator` 构造器可接收角色实例。为一个角色写 test double，返回同样的类型化工件，证明 orchestrator 使用它。不要用任意 `dict` 绕开协议。
+`CollaborationOrchestrator` 构造器接收 retriever 和可选角色实例。编写 planner test double 改变 `Plan.retrieval_query`，再用 recording retriever 证明 researcher 检索的正是该值。不要用任意 `dict` 绕开协议。
 
 ### 诚实度量开销
 
@@ -89,9 +89,9 @@ curl --silent http://localhost:8000/api/v1/collaborate \
 
 选择 verifier、router、privacy reviewer 或 formatter，写一页说明：当前失败、输入/输出字段、它拥有的不变量、序列位置、阻断/重试、测试/评估、预计成本，以及在什么条件下拒绝加入。
 
-### 中级：删除仪式化角色
+### 中级：识别仪式化角色
 
-Planner 总是返回相同三项任务，且下游从不读取 `Plan`。论证应保留、改变还是删除，必须基于可观察行为。
+在不改变原始 HTTP 问题的前提下，临时修改 planner 的 `retrieval_query`。编写测试，确保 researcher 如果忽略 plan、仍检索原问题，测试就会失败。再说明什么证据能支持保留或删除 planner 边界。
 
 ### 高级：并行研究设计
 
