@@ -1,4 +1,10 @@
-from app.collaboration import CollaborationOrchestrator, Plan, PlannerAgent
+from app.collaboration import (
+    CollaborationOrchestrator,
+    Plan,
+    PlannerAgent,
+    WriterAgent,
+    WrittenAnswer,
+)
 from app.knowledge import Document, Match
 
 
@@ -27,6 +33,11 @@ class RewritingPlanner(PlannerAgent):
             tasks=("Retrieve evidence for the rewritten query.",),
             query_term_count=3,
         )
+
+
+class UnsupportedWriter(WriterAgent):
+    def run(self, evidence, critique) -> WrittenAnswer:
+        return WrittenAnswer(content="An unsupported answer.", citation_count=0)
 
 
 def test_role_handoffs_are_ordered_and_grounded() -> None:
@@ -80,3 +91,55 @@ def test_planner_output_controls_the_researcher_query() -> None:
 
     assert retriever.queries == ["rewritten retrieval query"]
     assert result.trace[0].metrics == {"task_count": 1, "query_term_count": 3}
+
+
+def test_verified_workflow_appends_a_typed_verifier_stage() -> None:
+    result = CollaborationOrchestrator(retriever=StubRetriever([match()])).run(
+        question="How does the agent plan from user goals?",
+        verify=True,
+    )
+
+    assert result.workflow == "planner-researcher-critic-writer-verifier"
+    assert result.grounded is True
+    assert [stage.agent for stage in result.trace] == [
+        "planner",
+        "researcher",
+        "critic",
+        "writer",
+        "verifier",
+    ]
+    assert result.trace[-1].outcome == "completed"
+    assert result.trace[-1].metrics == {
+        "approved": True,
+        "citation_paths_valid": True,
+        "expected_citation_count": 1,
+        "reported_citation_count": 1,
+    }
+
+
+def test_verified_workflow_blocks_an_answer_that_loses_its_citation() -> None:
+    result = CollaborationOrchestrator(
+        retriever=StubRetriever([match()]),
+        writer=UnsupportedWriter(),
+    ).run(question="How does the agent plan from user goals?", verify=True)
+
+    assert result.workflow == "planner-researcher-critic-writer-verifier"
+    assert result.grounded is False
+    assert result.answer == (
+        "I could not return a verified answer from the configured knowledge files."
+    )
+    assert result.trace[-1].agent == "verifier"
+    assert result.trace[-1].outcome == "blocked"
+    assert result.trace[-1].metrics["approved"] is False
+
+
+def test_verified_workflow_approves_the_safe_insufficient_evidence_response() -> None:
+    result = CollaborationOrchestrator(retriever=StubRetriever([])).run(
+        question="Unknown fact?",
+        verify=True,
+    )
+
+    assert result.grounded is False
+    assert result.trace[2].outcome == "blocked"
+    assert result.trace[-1].outcome == "completed"
+    assert result.trace[-1].metrics["expected_citation_count"] == 0

@@ -168,6 +168,7 @@ async def collaborate(
     result = await run_in_threadpool(
         CollaborationOrchestrator(retriever=knowledge).run,
         question=payload.question,
+        verify=payload.workflow == "verified",
     )
     return CollaborationResponse(
         run_id=result.run_id,

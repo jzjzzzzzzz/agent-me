@@ -160,6 +160,40 @@ async def test_multi_agent_collaboration_returns_typed_trace(
 
 
 @pytest.mark.anyio
+async def test_verified_collaboration_returns_a_five_stage_trace(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/v1/collaborate",
+        json={"question": "prefers Python tools?", "workflow": "verified"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["workflow"] == "planner-researcher-critic-writer-verifier"
+    assert [stage["agent"] for stage in body["trace"]] == [
+        "planner",
+        "researcher",
+        "critic",
+        "writer",
+        "verifier",
+    ]
+    assert body["trace"][-1]["metrics"]["approved"] is True
+
+
+@pytest.mark.anyio
+async def test_collaboration_rejects_an_unknown_workflow(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.post(
+        "/api/v1/collaborate",
+        json={"question": "prefers Python tools?", "workflow": "attacker-controlled"},
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.anyio
 async def test_knowledge_search_runs_outside_the_async_event_loop(
     client: httpx.AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

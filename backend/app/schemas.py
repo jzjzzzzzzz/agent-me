@@ -29,6 +29,7 @@ class CollaborationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     question: str = Field(min_length=1)
+    workflow: Literal["baseline", "verified"] = "baseline"
 
     @field_validator("question")
     @classmethod
@@ -54,7 +55,7 @@ class ChatResponse(BaseModel):
 
 class CollaborationStage(BaseModel):
     sequence: int = Field(ge=1)
-    agent: Literal["planner", "researcher", "critic", "writer"]
+    agent: Literal["planner", "researcher", "critic", "writer", "verifier"]
     outcome: Literal["completed", "blocked"]
     summary: str
     metrics: dict[str, bool | int | float]
@@ -62,7 +63,10 @@ class CollaborationStage(BaseModel):
 
 class CollaborationResponse(BaseModel):
     run_id: str = Field(pattern=r"^run_[0-9a-f]{32}$")
-    workflow: Literal["planner-researcher-critic-writer"]
+    workflow: Literal[
+        "planner-researcher-critic-writer",
+        "planner-researcher-critic-writer-verifier",
+    ]
     mode: Literal["multi-agent-local"] = "multi-agent-local"
     answer: str
     grounded: bool
