@@ -173,7 +173,7 @@ npm run dev
 Expected deterministic evaluation summary:
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 If setup differs on your platform, use the troubleshooting section in

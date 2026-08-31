@@ -153,7 +153,7 @@ Invoke-RestMethod http://127.0.0.1:8000/ready
 预期最后一行：
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ### 3. 理解命令边界
@@ -168,7 +168,7 @@ COLLABORATION_EVAL 3/3 passed
 
 ### 4. 记录基线
 
-在自己的 Fork 建立 `LEARNING_NOTES.md`，记录 commit、系统、Python/Node/Docker 版本、执行命令、`3/3` 结果和一个意外点。不要粘贴 `.env`、token 或完整系统环境。
+在自己的 Fork 建立 `LEARNING_NOTES.md`，记录 commit、系统、Python/Node/Docker 版本、执行命令、`4/4` 结果和一个意外点。不要粘贴 `.env`、token 或完整系统环境。
 
 ## 练习
 
@@ -202,7 +202,7 @@ COLLABORATION_EVAL 3/3 passed
 - [ ] Lint、测试、文档与评估通过。
 - [ ] 观察过一次评估失败并恢复。
 - [ ] 记录结果但没有存储密钥。
-- [ ] 能解释 `3/3` 能证明和不能证明什么。
+- [ ] 能解释 `4/4` 能证明和不能证明什么。
 
 ## 延伸阅读
 

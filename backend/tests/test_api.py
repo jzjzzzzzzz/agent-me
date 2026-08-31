@@ -124,7 +124,7 @@ async def test_unsafe_knowledge_returns_safe_service_error(
 
 @pytest.mark.anyio
 async def test_grounded_extractive_answer(client: httpx.AsyncClient) -> None:
-    response = await client.post("/api/v1/chat", json={"question": "preferred Python tools?"})
+    response = await client.post("/api/v1/chat", json={"question": "prefers Python tools?"})
     assert response.status_code == 200
     body = response.json()
     assert body["mode"] == "extractive"
@@ -138,7 +138,7 @@ async def test_multi_agent_collaboration_returns_typed_trace(
 ) -> None:
     response = await client.post(
         "/api/v1/collaborate",
-        json={"question": "preferred Python tools?"},
+        json={"question": "prefers Python tools?"},
     )
 
     assert response.status_code == 200

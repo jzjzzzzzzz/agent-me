@@ -185,7 +185,7 @@ The web application is then available at http://localhost:5173/.
 Expected final line:
 
 ```text
-COLLABORATION_EVAL 3/3 passed
+COLLABORATION_EVAL 4/4 passed
 ```
 
 ### Step 3 — Understand each command
@@ -207,7 +207,7 @@ Create `LEARNING_NOTES.md` in your fork (the upstream course does not require yo
 - Commit tested: `<git rev-parse --short HEAD>`
 - Platform: `<OS, Python, Node, Docker>`
 - Commands: `make lint`, `make test`, `make docs`, `make evaluate`
-- Evaluation: `3/3 passed`
+- Evaluation: `4/4 passed`
 - One surprise: ...
 ```
 
@@ -279,7 +279,7 @@ Set `API_PORT` or `WEB_PORT` in `.env`, then rerun `docker compose config` befor
 - [ ] Lint, tests, docs, and evaluation pass.
 - [ ] I observed a deliberate evaluation failure and restored it.
 - [ ] I recorded tool versions and results without storing secrets.
-- [ ] I can explain what the `3/3` result proves and what it does not prove.
+- [ ] I can explain what the `4/4` result proves and what it does not prove.
 
 ## Further reading
 

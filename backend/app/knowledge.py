@@ -6,6 +6,45 @@ from pathlib import Path
 
 _TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
 _ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$")
+_MIN_QUERY_COVERAGE = 0.75
+_STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "do",
+        "does",
+        "for",
+        "from",
+        "how",
+        "i",
+        "in",
+        "is",
+        "it",
+        "of",
+        "on",
+        "or",
+        "that",
+        "the",
+        "this",
+        "to",
+        "was",
+        "what",
+        "when",
+        "where",
+        "which",
+        "who",
+        "why",
+        "with",
+        "you",
+        "your",
+    }
+)
 
 
 class KnowledgeLoadError(RuntimeError):
@@ -32,6 +71,10 @@ class Match:
 
 def _tokens(value: str) -> set[str]:
     return {token.lower() for token in _TOKEN.findall(value)}
+
+
+def _query_tokens(value: str) -> set[str]:
+    return _tokens(value) - _STOP_WORDS
 
 
 def _title(path: Path, text: str) -> str:
@@ -109,8 +152,16 @@ class KnowledgeBase:
             )
         return result
 
-    def search(self, question: str, *, limit: int = 4) -> list[Match]:
-        query = _tokens(question)
+    def search(
+        self,
+        question: str,
+        *,
+        limit: int = 4,
+        min_score: float = _MIN_QUERY_COVERAGE,
+    ) -> list[Match]:
+        if not 0 <= min_score <= 1:
+            raise ValueError("min_score must be between 0 and 1")
+        query = _query_tokens(question)
         if not query:
             return []
         matches: list[Match] = []
@@ -118,9 +169,9 @@ class KnowledgeBase:
             for paragraph in _content_chunks(document.text):
                 paragraph_tokens = _tokens(paragraph)
                 overlap = query & paragraph_tokens
-                if not overlap:
+                score = len(overlap) / len(query)
+                if score < min_score:
                     continue
-                score = len(overlap) / max(len(query), 1)
                 matches.append(
                     Match(
                         document=document,

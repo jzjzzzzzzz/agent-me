@@ -66,3 +66,37 @@ def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
     matches = KnowledgeBase(str(tmp_path)).search("Alpha Python", limit=1)
 
     assert [match.document.path for match in matches] == ["a.md"]
+
+
+def test_search_ignores_stop_words_instead_of_treating_them_as_evidence(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "profile.md").write_text(
+        "The example agent builds reliable developer tools.", encoding="utf-8"
+    )
+
+    assert KnowledgeBase(str(tmp_path)).search("the and") == []
+    assert KnowledgeBase(str(tmp_path)).search("What is the capital of France?") == []
+    assert KnowledgeBase(str(tmp_path)).search("Is the example agent a doctor?") == []
+
+
+def test_search_blocks_a_hard_negative_with_shared_vocabulary(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text(
+        "The example agent verifies project work with automated tests.", encoding="utf-8"
+    )
+
+    matches = KnowledgeBase(str(tmp_path)).search(
+        "Does the example agent use automated tests to diagnose medical conditions?"
+    )
+
+    assert matches == []
+
+
+def test_search_minimum_score_is_inclusive_and_validated(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text("Alpha Python", encoding="utf-8")
+    knowledge = KnowledgeBase(str(tmp_path))
+
+    assert len(knowledge.search("Alpha Python Rust", min_score=2 / 3)) == 1
+    assert knowledge.search("Alpha Python Rust", min_score=0.67) == []
+    with pytest.raises(ValueError, match="min_score"):
+        knowledge.search("Alpha", min_score=1.1)

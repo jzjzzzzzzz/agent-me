@@ -11,7 +11,11 @@
 
 ## Request path
 
-`POST /api/v1/chat` validates the body, enforces the configured question limit, tokenizes the question, scores Markdown paragraphs by token overlap, and returns up to four sources. If all provider settings are present, the service calls the provider's `/chat/completions` route using a grounded system message. Otherwise it returns the highest-ranked excerpt.
+`POST /api/v1/chat` validates the body, enforces the configured question limit, removes a small
+set of English stop words from the query, scores Markdown paragraphs by meaningful-token coverage,
+and returns up to four sources that meet the default `0.75` threshold. If all provider settings are
+present, the service calls the provider's `/chat/completions` route using a grounded system message.
+Otherwise it returns the highest-ranked excerpt.
 
 ## Multi-agent learning path
 
