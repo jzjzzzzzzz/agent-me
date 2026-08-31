@@ -9,7 +9,7 @@ course or a project overview.
 | --- | --- | --- | --- | --- |
 | English | yes | yes | [yes](README.md) | canonical |
 | 简体中文 (`zh-CN`) | [yes](../docs/i18n/README.zh-CN.md) | yes | [yes](translations/zh-CN/README.md) | maintained |
-| 繁體中文 (`zh-TW`) | [yes](../docs/i18n/README.zh-TW.md) | yes | not yet | contributions welcome |
+| 繁體中文 (`zh-TW`) | [yes](../docs/i18n/README.zh-TW.md) | yes | not yet ([Lesson 00](translations/zh-TW/00-course-setup/README.md)) | partial |
 | 日本語 (`ja`) | [yes](../docs/i18n/README.ja.md) | yes | not yet | contributions welcome |
 | 한국어 (`ko`) | [yes](../docs/i18n/README.ko.md) | yes | not yet | contributions welcome |
 | Español (`es`) | [yes](../docs/i18n/README.es.md) | yes | not yet | contributions welcome |

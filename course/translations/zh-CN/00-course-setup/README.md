@@ -1,6 +1,6 @@
 # 第 00 课：环境与证据优先的学习闭环
 
-[课程首页](../README.md) · [English](../../../00-course-setup/README.md) · **下一课：[有依据问答](../01-grounded-qa/README.md)**
+[课程首页](../README.md) · [English](../../../00-course-setup/README.md) · [繁體中文](../../zh-TW/00-course-setup/README.md) · **下一课：[有依据问答](../01-grounded-qa/README.md)**
 
 **时间：**30–45 分钟 · **难度：**入门 · **产物：**可复现的基线
 
@@ -81,6 +81,74 @@ make test
 make docs
 make evaluate
 ```
+
+#### Windows PowerShell
+
+Windows 默认不包含 Make。请从仓库根目录运行以下原生 PowerShell 等效命令：
+
+```powershell
+python --version
+node --version
+npm --version
+git --version
+
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e "backend[dev]"
+
+Set-Location frontend
+npm ci
+Set-Location ..
+```
+
+不依赖 Make，运行同样的四组质量门禁：
+
+```powershell
+# Lint 与类型检查
+.\.venv\Scripts\ruff.exe check backend scripts
+.\.venv\Scripts\ruff.exe format --check backend scripts
+Set-Location frontend
+npm run lint
+npm run typecheck
+Set-Location ..
+
+# 测试
+.\.venv\Scripts\pytest.exe backend\tests
+Set-Location frontend
+npm test
+Set-Location ..
+
+# 文档
+.\.venv\Scripts\python.exe scripts\check_docs.py
+
+# 确定性评估
+.\.venv\Scripts\python.exe scripts\evaluate_collaboration.py
+```
+
+如需在本地运行应用，请在两个独立的 PowerShell 终端中分别启动后端和前端。
+
+后端（从仓库根目录运行）：
+
+```powershell
+.\.venv\Scripts\uvicorn.exe app.main:app --app-dir backend --reload
+```
+
+前端（从仓库根目录运行）：
+
+```powershell
+Set-Location frontend
+npm run dev
+```
+
+在另一个 PowerShell 终端中验证后端：
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/health
+Invoke-RestMethod http://127.0.0.1:8000/ready
+```
+
+随后可通过 <http://localhost:5173/> 打开 Web 应用。
 
 预期最后一行：
 

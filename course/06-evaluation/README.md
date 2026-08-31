@@ -46,12 +46,15 @@ No single layer substitutes for all others.
 }
 ```
 
-The evaluator validates exact keys and value types, runs retrieval and orchestration, records source
-count and critic outcome, and exits:
+The evaluator enforces unique case IDs, validates exact keys and value types, runs retrieval and
+orchestration, records source count and critic outcome, and exits:
 
 - `0` when all expectations pass;
 - `1` when behavior disagrees with labels;
 - `2` when fixture or environment setup is invalid.
+
+Stable, unique case IDs let CI map a case across runs and compare regressions without confusing two
+different examples that share a label.
 
 That distinction helps CI separate a product regression from a broken evaluation file.
 
