@@ -1,7 +1,11 @@
 export type AnswerMode = "extractive" | "openai-compatible";
 export type Source = { title: string; path: string; excerpt: string; score: number };
 export type ChatResponse = { answer: string; mode: AnswerMode; sources: Source[] };
-export type CollaborationAgent = "planner" | "researcher" | "critic" | "writer";
+export type CollaborationAgent = "planner" | "researcher" | "critic" | "writer" | "verifier";
+export type CollaborationPolicy = "baseline" | "verified";
+export type CollaborationWorkflow =
+  | "planner-researcher-critic-writer"
+  | "planner-researcher-critic-writer-verifier";
 export type CollaborationOutcome = "completed" | "blocked";
 export type CollaborationStage = {
   sequence: number;
@@ -12,7 +16,7 @@ export type CollaborationStage = {
 };
 export type CollaborationResponse = {
   run_id: string;
-  workflow: "planner-researcher-critic-writer";
+  workflow: CollaborationWorkflow;
   mode: "multi-agent-local";
   answer: string;
   grounded: boolean;
@@ -64,7 +68,8 @@ function isCollaborationStage(value: unknown): value is CollaborationStage {
     (stage.agent === "planner" ||
       stage.agent === "researcher" ||
       stage.agent === "critic" ||
-      stage.agent === "writer") &&
+      stage.agent === "writer" ||
+      stage.agent === "verifier") &&
     (stage.outcome === "completed" || stage.outcome === "blocked") &&
     typeof stage.summary === "string" &&
     !!metrics &&
@@ -117,18 +122,33 @@ function parseCollaborationResponse(value: unknown): CollaborationResponse {
     throw new ApiError("Server returned an invalid collaboration trace.", 502, "invalid_trace");
   }
   const response = value as Record<string, unknown>;
-  const expectedAgents: CollaborationAgent[] = ["planner", "researcher", "critic", "writer"];
+  const workflows: Record<CollaborationWorkflow, CollaborationAgent[]> = {
+    "planner-researcher-critic-writer": ["planner", "researcher", "critic", "writer"],
+    "planner-researcher-critic-writer-verifier": [
+      "planner",
+      "researcher",
+      "critic",
+      "writer",
+      "verifier",
+    ],
+  };
+  const workflow = response.workflow;
+  const expectedAgents =
+    workflow === "planner-researcher-critic-writer" ||
+    workflow === "planner-researcher-critic-writer-verifier"
+      ? workflows[workflow]
+      : undefined;
   if (
     typeof response.run_id !== "string" ||
     !/^run_[0-9a-f]{32}$/.test(response.run_id) ||
-    response.workflow !== "planner-researcher-critic-writer" ||
+    !expectedAgents ||
     response.mode !== "multi-agent-local" ||
     typeof response.answer !== "string" ||
     typeof response.grounded !== "boolean" ||
     !Array.isArray(response.sources) ||
     !response.sources.every(isSource) ||
     !Array.isArray(response.trace) ||
-    response.trace.length !== 4 ||
+    response.trace.length !== expectedAgents.length ||
     !response.trace.every(
       (stage, index) =>
         isCollaborationStage(stage) &&
@@ -167,12 +187,13 @@ export async function ask(question: string, signal?: AbortSignal): Promise<ChatR
 
 export async function collaborate(
   question: string,
+  workflow: CollaborationPolicy = "baseline",
   signal?: AbortSignal,
 ): Promise<CollaborationResponse> {
   const response = await fetch(`${API_BASE}/api/v1/collaborate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ question, workflow }),
     signal,
   });
   if (!response.ok) throw await responseError(response);
