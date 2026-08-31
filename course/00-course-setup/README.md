@@ -99,12 +99,14 @@ Check prerequisites:
 
 ```bash
 python3 --version
+uv --version
 node --version
 npm --version
 git --version
 ```
 
-Python must be 3.11 or newer and Node.js must be 20 or newer. Install and validate:
+Python must be 3.11 or newer, uv must be 0.11 or 0.12, and Node.js must be 20 or newer.
+[Install uv](https://docs.astral.sh/uv/getting-started/installation/), then install and validate:
 
 ```bash
 make setup
@@ -120,14 +122,14 @@ Make is not included with Windows by default. From the repository root, use the 
 
 ```powershell
 python --version
+uv --version
 node --version
 npm --version
 git --version
 
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e "backend[dev]"
+$env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location) ".venv"
+uv sync --project backend --locked --extra dev
 
 Set-Location frontend
 npm ci
@@ -245,10 +247,11 @@ If results differ, investigate before continuing.
 
 ## Common failures
 
-### `make setup` cannot create the virtual environment
+### `make setup` reports that uv is missing or the lock is stale
 
-Confirm `python3 -m venv --help` works. On some Linux distributions the venv package is separate.
-Remove a partially created `.venv` only after confirming it contains no work you need.
+Install a supported uv 0.11.x or 0.12.x release and run `uv lock --project backend --check`. A stale
+lock means `backend/pyproject.toml` changed without a reviewed `make lock` update; do not bypass
+`--locked` with an unconstrained install.
 
 ### Frontend cannot reach the API
 

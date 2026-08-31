@@ -147,7 +147,8 @@ Local extractive and multi-agent lab modes require no API key.
 
 ### Option B — Local toolchain
 
-**Prerequisites:** Python 3.11+, Node.js 20+, npm, and Git.
+**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/getting-started/installation/)
+0.11 or 0.12, Node.js 20+, npm, and Git.
 
 ```bash
 git clone https://github.com/jzjzzzzzzz/agent-me.git
@@ -218,6 +219,7 @@ agent-me/
 │   ├── fixtures/                   Versioned behavioral evaluation cases
 │   └── translations/zh-CN/         Complete Simplified Chinese course
 ├── backend/                        FastAPI app, retriever, orchestrator, tests
+│   └── uv.lock                     Locked direct and transitive Python dependencies
 ├── frontend/                       React app, strict response parser, UI tests
 ├── knowledge/                      Reviewable Markdown corpus
 ├── scripts/                        Evaluation and documentation checks

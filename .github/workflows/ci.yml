@@ -18,13 +18,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with: { python-version: "3.12", cache: pip }
-      - run: python -m pip install -e 'backend[dev]'
-      - run: ruff check backend scripts
-      - run: ruff format --check backend scripts
-      - run: pytest backend/tests
-      - run: python scripts/evaluate_collaboration.py --json
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv lock --project backend --check
+      - run: uv sync --project backend --locked --extra dev
+        env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
+      - run: .venv/bin/ruff check backend scripts
+      - run: .venv/bin/ruff format --check backend scripts
+      - run: .venv/bin/pytest backend/tests
+      - run: .venv/bin/python scripts/evaluate_collaboration.py --json
 
   frontend:
     runs-on: ubuntu-latest

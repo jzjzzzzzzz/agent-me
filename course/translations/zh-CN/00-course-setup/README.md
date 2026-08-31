@@ -72,7 +72,7 @@ curl --fail http://127.0.0.1:5173/ >/dev/null
 docker compose down --volumes
 ```
 
-本地工具链（Python 3.11+、Node 20+）：
+本地工具链（Python 3.11+、uv 0.11/0.12、Node 20+）：
 
 ```bash
 make setup
@@ -88,14 +88,14 @@ Windows 默认不包含 Make。请从仓库根目录运行以下原生 PowerShel
 
 ```powershell
 python --version
+uv --version
 node --version
 npm --version
 git --version
 
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e "backend[dev]"
+$env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location) ".venv"
+uv sync --project backend --locked --extra dev
 
 Set-Location frontend
 npm ci
@@ -182,7 +182,7 @@ COLLABORATION_EVAL 4/4 passed
 
 ## 常见问题
 
-- **无法创建 `.venv`：**确认 `python3 -m venv --help` 可用；部分 Linux 需单独安装 venv 包。
+- **找不到 uv 或 lock 已过期：**安装 uv 0.11.x/0.12.x，并运行 `uv lock --project backend --check`。若 manifest 有意变更，运行 `make lock` 并审查完整 lock diff；不要绕过 `--locked`。
 - **前端连不上 API：**检查 `VITE_API_BASE_URL`、端口、CORS 和 `/health`。
 - **Ready 显示 0 文档：**检查 `KNOWLEDGE_DIR` 和 UTF-8 Markdown 文件。
 - **端口占用：**在 `.env` 修改 `API_PORT`/`WEB_PORT`，先运行 `docker compose config`。

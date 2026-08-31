@@ -12,6 +12,26 @@ The included Compose file is intended for local evaluation. It binds both servic
 
 Production deployments must keep the application behind a TLS ingress; do not expose the API container directly.  Production deployments should use a managed ingress, runtime secret injection, immutable images, and automated backups for any persistence you add.
 
+## Refresh locked Python dependencies
+
+The backend image installs the exact direct and transitive graph recorded in `backend/uv.lock`.
+CI runs a locked sync and fails when `backend/pyproject.toml` and the lock disagree. For an
+intentional dependency change:
+
+```bash
+# Edit backend/pyproject.toml first, then:
+make lock
+uv lock --project backend --check
+make lint
+make test
+make evaluate
+make build
+```
+
+Review the complete lock diff, including source URLs and hashes. Do not hand-edit the lock or
+replace the locked install with an unconstrained `pip install`. The backend Dockerfile also pins
+the uv installer image by digest so both the resolver input and installer are reviewable.
+
 ## Refresh pinned base images
 
 Each Dockerfile keeps a readable image tag and pins the corresponding multi-platform image index
@@ -19,9 +39,10 @@ by digest. Dependabot checks the backend and frontend Dockerfiles weekly so dige
 visible and reviewable. To inspect the current tags manually, run:
 
 ```bash
-docker buildx imagetools inspect python:3.12-slim
+docker buildx imagetools inspect python:3.14-slim
+docker buildx imagetools inspect ghcr.io/astral-sh/uv:0.12.7
 docker buildx imagetools inspect node:22-alpine
-docker buildx imagetools inspect nginx:1.27-alpine
+docker buildx imagetools inspect nginx:1.31-alpine
 ```
 
 Copy the reported top-level `Digest` into the matching `FROM tag@sha256:...` instruction without

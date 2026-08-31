@@ -57,8 +57,14 @@ Use a descriptive branch such as `fix/retrieval-heading`, `docs/lesson-04-contra
 Local toolchain:
 
 ```bash
+uv --version  # supported range: 0.11.x or 0.12.x
 make setup
 ```
+
+`make setup`, CI, and the backend image all enforce `backend/uv.lock`. When intentionally changing
+Python dependencies, edit `backend/pyproject.toml`, run `make lock`, review the complete lock diff,
+then run the full gate. Do not hand-edit `uv.lock` or merge a manifest change without its lock
+update.
 
 Or use the repository's Docker Compose path:
 
