@@ -27,7 +27,7 @@ Agent-Me 使用一个刻意简单的词法基线：
 2. 拒绝 symlink、越界路径、非法 UTF-8 和过大文件；
 3. 把每个非空 Markdown block 变成候选 chunk；
 4. 保留 ATX 标题文字但移除 `#`；
-5. 将 ASCII 单词与每个 CJK 字符分词；
+5. 先做 Unicode NFKC 规范化与大小写折叠，再将 Unicode 单词和每个汉字分词；
 6. 从 query token 中移除一小组明确的英文停用词；
 7. 计算其余 query token 与 chunk token 的交集；
 8. 分数为 `|Q ∩ P| / max(|Q|, 1)`，默认拒绝低于 `0.75` 的结果；
@@ -48,7 +48,9 @@ API route 会在线程池运行同步扫描与检索，避免阻塞 FastAPI 的 
 
 ## 阅读实现
 
-打开 [`backend/app/knowledge.py`](../../../../backend/app/knowledge.py)，依次读 `_TOKEN`、`_tokens`、`_content_chunks`、`documents`、`search` 和数据类；再阅读
+先打开 [`backend/app/text.py`](../../../../backend/app/text.py) 阅读 `normalized_tokens`，再打开
+[`backend/app/knowledge.py`](../../../../backend/app/knowledge.py)，依次读 `_query_tokens`、
+`_content_chunks`、`documents`、`search` 和数据类；再阅读
 [`test_knowledge.py`](../../../../backend/tests/test_knowledge.py)，把每个安全分支对应到测试。
 
 ## 动手实验
@@ -63,17 +65,20 @@ API route 会在线程池运行同步扫描与检索，避免阻塞 FastAPI 的 
 
 ```bash
 .venv/bin/python - <<'PY'
-from app.knowledge import _query_tokens, _tokens
+from app.knowledge import _query_tokens
+from app.text import normalized_tokens
 q = "How does the agent plan a project?"
 p = "For project planning, the example agent starts with user goals."
 print("query:", sorted(_query_tokens(q)))
-print("chunk:", sorted(_tokens(p)))
-print("overlap:", sorted(_query_tokens(q) & _tokens(p)))
-print("score:", len(_query_tokens(q) & _tokens(p)) / len(_query_tokens(q)))
+print("chunk:", sorted(normalized_tokens(p)))
+print("overlap:", sorted(_query_tokens(q) & normalized_tokens(p)))
+print("score:", len(_query_tokens(q) & normalized_tokens(p)) / len(_query_tokens(q)))
 PY
 ```
 
-`_tokens` 是私有 helper，这里只用于学习探针，不应成为应用外部依赖。
+`_query_tokens` 是私有 helper，这里只用于学习探针，不应成为应用外部依赖。
+`normalized_tokens` 由检索评分与协作覆盖率指标共同使用。它采用 NFKC 加大小写折叠，
+所以组合形式 `résumé` 与分解形式 `re\u0301sume\u0301` 会得到相同 token。
 
 打印排序结果：
 

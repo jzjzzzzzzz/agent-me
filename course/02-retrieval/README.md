@@ -32,7 +32,8 @@ Agent-Me uses a deliberately small lexical baseline:
 2. reject symlinks, paths outside the root, invalid UTF-8, and oversized files;
 3. turn each nonempty Markdown block into a candidate chunk;
 4. retain ATX heading text while stripping heading markers;
-5. tokenize ASCII words and individual CJK characters;
+5. apply Unicode NFKC normalization and case folding, then tokenize Unicode words and individual
+   Han characters;
 6. remove a small, explicit set of English stop words from query tokens;
 7. compute overlap between the remaining unique query tokens and chunk tokens;
 8. score `|query ∩ chunk| / |query|` and reject scores below `0.75` by default;
@@ -73,10 +74,11 @@ an empty cache, and the configured filesystem remains authoritative.
 
 ## Read the implementation
 
-Open [`backend/app/knowledge.py`](../../backend/app/knowledge.py) and follow:
+Open [`backend/app/text.py`](../../backend/app/text.py) and then
+[`backend/app/knowledge.py`](../../backend/app/knowledge.py). Follow:
 
-1. `_TOKEN` and `_tokens`;
-2. `_ATX_HEADING` and `_content_chunks`;
+1. `normalized_tokens`;
+2. `_query_tokens`, `_ATX_HEADING`, and `_content_chunks`;
 3. `KnowledgeBase.documents`;
 4. `KnowledgeBase.search`;
 5. `Match`, `Document`, and `KnowledgeLoadError`.
@@ -105,18 +107,21 @@ Use a short Python probe to see the actual tokens:
 
 ```bash
 .venv/bin/python - <<'PY'
-from app.knowledge import _query_tokens, _tokens
+from app.knowledge import _query_tokens
+from app.text import normalized_tokens
 q = "How does the agent plan a project?"
 p = "For project planning, the example agent starts with user goals."
 print("query:", sorted(_query_tokens(q)))
-print("chunk:", sorted(_tokens(p)))
-print("overlap:", sorted(_query_tokens(q) & _tokens(p)))
-print("score:", len(_query_tokens(q) & _tokens(p)) / len(_query_tokens(q)))
+print("chunk:", sorted(normalized_tokens(p)))
+print("overlap:", sorted(_query_tokens(q) & normalized_tokens(p)))
+print("score:", len(_query_tokens(q) & normalized_tokens(p)) / len(_query_tokens(q)))
 PY
 ```
 
-The underscore-prefixed function is used here only as a learning probe; application code should
-not depend on a private helper.
+The underscore-prefixed query helper is used here only as a learning probe; application code
+should not depend on it. `normalized_tokens` is shared by retrieval and collaboration metrics. It
+uses NFKC plus case folding, so composed `résumé` and decomposed `re\u0301sume\u0301` produce the
+same term.
 
 ### Step 3 — inspect ranked matches
 
