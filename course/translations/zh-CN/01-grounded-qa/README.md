@@ -39,7 +39,7 @@ Agent-Me 返回检索片段，让你检查这些失败，而不是只看最终�
 
 ### OpenAI-compatible provider 模式
 
-配置 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL` 后，检索仍在本地完成；有限上下文和近期历史会发往指定端点，再校验回答大小和错误。这个模式增加了隐私和网络边界。
+配置 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL` 后，检索仍在本地完成；有限上下文和近期历史会发往指定端点。服务会先以 `MAX_PROVIDER_RESPONSE_BYTES` 限制完整流式响应，再以 `MAX_ANSWER_CHARS` 限制答案文本，并校验 provider 错误。这个模式增加了隐私和网络边界。
 
 ## 阅读实现
 

@@ -63,7 +63,8 @@ When `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` are configured:
 1. retrieval still happens locally;
 2. limited source context and recent history are assembled;
 3. the provider generates an answer;
-4. response size and provider failures are validated;
+4. the complete streamed response is bounded by `MAX_PROVIDER_RESPONSE_BYTES` before JSON parsing,
+   then answer text is bounded by `MAX_ANSWER_CHARS`;
 5. source excerpts remain visible to the caller.
 
 Sampling settings cannot repair missing retrieval evidence. Provider mode also changes the privacy
