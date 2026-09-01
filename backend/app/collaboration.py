@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from typing import Literal, Protocol, TypeAlias
 from uuid import uuid4
 
 from .knowledge import Match
+from .text import normalized_tokens
 
 AgentName: TypeAlias = Literal["planner", "researcher", "critic", "writer", "verifier"]
 StageOutcome: TypeAlias = Literal["completed", "blocked"]
@@ -15,13 +15,8 @@ WorkflowName: TypeAlias = Literal[
     "planner-researcher-critic-writer-verifier",
 ]
 
-_TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
 _INSUFFICIENT_EVIDENCE = "I could not find a grounded answer in the configured knowledge files."
 _VERIFICATION_FAILED = "I could not return a verified answer from the configured knowledge files."
-
-
-def _tokens(value: str) -> set[str]:
-    return {token.lower() for token in _TOKEN.findall(value)}
 
 
 @dataclass(frozen=True)
@@ -91,7 +86,7 @@ class PlannerAgent:
                 "Check whether the evidence supports the requested answer.",
                 "Write a concise answer with source-path citations.",
             ),
-            query_term_count=len(_tokens(retrieval_query)),
+            query_term_count=len(normalized_tokens(retrieval_query)),
         )
 
 
@@ -109,8 +104,8 @@ class CriticAgent:
     name: AgentName = "critic"
 
     def run(self, question: str, evidence: EvidenceBundle) -> Critique:
-        query_tokens = _tokens(question)
-        evidence_tokens = _tokens("\n".join(match.excerpt for match in evidence.matches))
+        query_tokens = normalized_tokens(question)
+        evidence_tokens = normalized_tokens("\n".join(match.excerpt for match in evidence.matches))
         covered = query_tokens & evidence_tokens
         coverage = len(covered) / max(len(query_tokens), 1)
         return Critique(
