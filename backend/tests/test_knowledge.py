@@ -69,6 +69,49 @@ def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
     assert [match.document.path for match in matches] == ["a.md"]
 
 
+@pytest.mark.parametrize(
+    ("document_text", "question"),
+    [
+        ("Expérience en ingénierie et rédaction.", "expérience ingénierie"),
+        ("Zuverlässige Systeme lösen größere Probleme.", "zuverlässige größere"),
+        ("Automação confiável para produção.", "automação produção"),
+        ("Evaluación técnica en español.", "evaluación español"),
+    ],
+)
+def test_search_supports_accented_words(
+    tmp_path: Path,
+    document_text: str,
+    question: str,
+) -> None:
+    (tmp_path / "profile.md").write_text(document_text, encoding="utf-8")
+
+    matches = KnowledgeBase(str(tmp_path)).search(question)
+
+    assert len(matches) == 1
+    assert matches[0].score == 1.0
+
+
+def test_search_treats_composed_and_decomposed_accents_equally(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text(
+        "The candidate maintains a résumé for technical interviews.",
+        encoding="utf-8",
+    )
+
+    matches = KnowledgeBase(str(tmp_path)).search("re\u0301sume\u0301 technical")
+
+    assert len(matches) == 1
+    assert matches[0].score == 1.0
+
+
+def test_search_keeps_han_characters_as_individual_terms(tmp_path: Path) -> None:
+    (tmp_path / "profile.md").write_text("可靠的知识检索系统", encoding="utf-8")
+
+    matches = KnowledgeBase(str(tmp_path)).search("可靠检索")
+
+    assert len(matches) == 1
+    assert matches[0].score == 1.0
+
+
 def test_search_ignores_stop_words_instead_of_treating_them_as_evidence(
     tmp_path: Path,
 ) -> None:

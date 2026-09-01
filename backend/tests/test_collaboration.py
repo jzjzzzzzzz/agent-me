@@ -93,6 +93,17 @@ def test_planner_output_controls_the_researcher_query() -> None:
     assert result.trace[0].metrics == {"task_count": 1, "query_term_count": 3}
 
 
+def test_collaboration_metrics_use_normalized_unicode_terms() -> None:
+    retriever = StubRetriever([match(excerpt="Le résumé décrit une expérience fiable.")])
+
+    result = CollaborationOrchestrator(retriever=retriever).run(
+        question="RE\u0301SUME\u0301 expérience"
+    )
+
+    assert result.trace[0].metrics["query_term_count"] == 2
+    assert result.trace[2].metrics["query_coverage"] == 1.0
+
+
 def test_verified_workflow_appends_a_typed_verifier_stage() -> None:
     result = CollaborationOrchestrator(retriever=StubRetriever([match()])).run(
         question="How does the agent plan from user goals?",

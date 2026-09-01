@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 
-_TOKEN = re.compile(r"[a-z0-9]+|[\u3400-\u9fff]", re.IGNORECASE)
+from .text import normalized_tokens
+
 _ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$")
 _MIN_QUERY_COVERAGE = 0.75
 _STOP_WORDS = frozenset(
@@ -79,12 +80,8 @@ class _KnowledgeFile:
     changed_ns: int
 
 
-def _tokens(value: str) -> set[str]:
-    return {token.lower() for token in _TOKEN.findall(value)}
-
-
 def _query_tokens(value: str) -> set[str]:
-    return _tokens(value) - _STOP_WORDS
+    return normalized_tokens(value) - _STOP_WORDS
 
 
 def _title(path: Path, text: str) -> str:
@@ -239,7 +236,7 @@ class KnowledgeBase:
         matches: list[Match] = []
         for document in self.documents():
             for paragraph in _content_chunks(document.text):
-                paragraph_tokens = _tokens(paragraph)
+                paragraph_tokens = normalized_tokens(paragraph)
                 overlap = query & paragraph_tokens
                 score = len(overlap) / len(query)
                 if score < min_score:
