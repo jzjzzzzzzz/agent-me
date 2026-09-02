@@ -1,7 +1,8 @@
 # Course Design and Source References
 
-Agent-Me is tutorial-first: the working application is the laboratory for a numbered learning path,
-not a code dump followed by a short README.
+Agent-Me is an open-source reference implementation first. Its engineering curriculum uses that
+same working application as the laboratory for a numbered learning path, rather than presenting a
+separate code dump or an opaque finished demo.
 
 ## Repositories studied
 
@@ -21,10 +22,11 @@ patterns and applies them to this repository's own implementation.
 
 ## Design principles
 
-### Course before feature catalog
+### Curriculum connected to the implementation
 
-The root README sends new learners to a path, states prerequisites and time, and shows what they
-will produce. Reference documentation remains available after the curriculum.
+The root README establishes the runnable system, architecture, evaluation, and trust boundaries.
+The curriculum then gives learners a path with prerequisites, time estimates, and observable
+outputs for rebuilding and extending that system.
 
 ### One observable artifact per lesson
 

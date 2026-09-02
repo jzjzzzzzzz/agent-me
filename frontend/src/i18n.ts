@@ -53,10 +53,10 @@ type Messages = {
 export const messages: Record<Locale, Messages> = {
   en: {
     language: "Language",
-    projectLabel: "OPEN-SOURCE STARTER",
-    title: "Build an answer agent from knowledge you control.",
+    projectLabel: "REFERENCE IMPLEMENTATION",
+    title: "Inspect an auditable RAG workflow.",
     intro:
-      "Add Markdown documents, choose an OpenAI-compatible provider—or run local extractive mode—and ship a transparent, grounded Q&A experience.",
+      "Run local retrieval or inspect a role-based workflow with typed handoffs, evidence sources, critique, and verification.",
     formLabel: "Ask the example knowledge base",
     placeholder: "How does the example agent plan a project?",
     searching: "Searching…",
@@ -74,11 +74,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Request failed",
     extractiveMode: "extractive",
     providerMode: "provider",
-    collaborationModeLabel: "multi-agent lab",
+    collaborationModeLabel: "role-based multi-agent",
     verifiedModeLabel: "verified multi-agent",
     workflowMode: "Workflow",
     standardWorkflow: "Standard Q&A",
-    collaborationWorkflow: "Multi-agent lab",
+    collaborationWorkflow: "Role-based multi-agent",
     verifiedWorkflow: "Verified multi-agent",
     collaborationHint:
       "Runs planner, researcher, critic, and writer roles with typed, inspectable handoffs.",
@@ -97,10 +97,10 @@ export const messages: Record<Locale, Messages> = {
   },
   "zh-CN": {
     language: "语言",
-    projectLabel: "开源启动框架",
-    title: "用你掌控的知识构建问答 Agent。",
+    projectLabel: "开源参考实现",
+    title: "检查可审计的 RAG 工作流。",
     intro:
-      "添加 Markdown 文档，选择 OpenAI 兼容服务，或使用本地抽取模式，构建透明且有来源依据的问答体验。",
+      "运行本地检索，或检查包含类型化交接、证据来源、审查与验证的角色工作流。",
     formLabel: "向示例知识库提问",
     placeholder: "示例 Agent 如何规划一个项目？",
     searching: "正在检索…",
@@ -115,11 +115,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "请求失败",
     extractiveMode: "本地抽取",
     providerMode: "模型服务",
-    collaborationModeLabel: "多 Agent 实验",
+    collaborationModeLabel: "基于角色的多 Agent",
     verifiedModeLabel: "已验证多 Agent",
     workflowMode: "工作流",
     standardWorkflow: "标准问答",
-    collaborationWorkflow: "多 Agent 实验",
+    collaborationWorkflow: "基于角色的多 Agent",
     verifiedWorkflow: "已验证多 Agent",
     collaborationHint: "依次运行规划、研究、审查和写作角色，并展示类型化、可检查的交接记录。",
     verifiedHint: "增加最终验证器，检查引用路径和回答元数据；验证失败时阻止输出。",
@@ -135,7 +135,7 @@ export const messages: Record<Locale, Messages> = {
   },
   "zh-TW": {
     language: "語言",
-    projectLabel: "開源起始框架",
+    projectLabel: "開源參考實作",
     title: "用你掌控的知識建立問答 Agent。",
     intro:
       "加入 Markdown 文件，選擇 OpenAI 相容服務，或使用本機擷取模式，建立透明且有來源依據的問答體驗。",
@@ -153,11 +153,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "請求失敗",
     extractiveMode: "本機擷取",
     providerMode: "模型服務",
-    collaborationModeLabel: "多 Agent 實驗",
+    collaborationModeLabel: "角色式多 Agent",
     verifiedModeLabel: "已驗證多 Agent",
     workflowMode: "工作流程",
     standardWorkflow: "標準問答",
-    collaborationWorkflow: "多 Agent 實驗",
+    collaborationWorkflow: "角色式多 Agent",
     verifiedWorkflow: "已驗證多 Agent",
     collaborationHint: "依序執行規劃、研究、審查與寫作角色，並顯示具型別且可檢查的交接紀錄。",
     verifiedHint: "加入最終驗證器，檢查引用路徑與回答中繼資料；驗證失敗時阻擋輸出。",
@@ -173,7 +173,7 @@ export const messages: Record<Locale, Messages> = {
   },
   ja: {
     language: "言語",
-    projectLabel: "オープンソース・スターター",
+    projectLabel: "オープンソース参照実装",
     title: "自分で管理する知識から回答エージェントを構築。",
     intro:
       "Markdown 文書を追加し、OpenAI 互換プロバイダーまたはローカル抽出モードを選んで、根拠が明確な Q&A を公開できます。",
@@ -194,11 +194,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "リクエストに失敗しました",
     extractiveMode: "ローカル抽出",
     providerMode: "モデルプロバイダー",
-    collaborationModeLabel: "マルチエージェント演習",
+    collaborationModeLabel: "ロールベース・マルチエージェント",
     verifiedModeLabel: "検証付きマルチエージェント",
     workflowMode: "ワークフロー",
     standardWorkflow: "標準 Q&A",
-    collaborationWorkflow: "マルチエージェント演習",
+    collaborationWorkflow: "ロールベース・マルチエージェント",
     verifiedWorkflow: "検証付きマルチエージェント",
     collaborationHint:
       "プランナー、リサーチャー、批評者、ライターを順に実行し、型付きの引き継ぎを表示します。",
@@ -217,7 +217,7 @@ export const messages: Record<Locale, Messages> = {
   },
   ko: {
     language: "언어",
-    projectLabel: "오픈 소스 스타터",
+    projectLabel: "오픈 소스 참조 구현",
     title: "직접 관리하는 지식으로 답변 에이전트를 구축하세요.",
     intro:
       "Markdown 문서를 추가하고 OpenAI 호환 공급자 또는 로컬 추출 모드를 선택해 근거가 투명한 Q&A를 제공하세요.",
@@ -237,11 +237,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "요청 실패",
     extractiveMode: "로컬 추출",
     providerMode: "모델 공급자",
-    collaborationModeLabel: "멀티 에이전트 실습",
+    collaborationModeLabel: "역할 기반 멀티 에이전트",
     verifiedModeLabel: "검증된 멀티 에이전트",
     workflowMode: "워크플로",
     standardWorkflow: "표준 Q&A",
-    collaborationWorkflow: "멀티 에이전트 실습",
+    collaborationWorkflow: "역할 기반 멀티 에이전트",
     verifiedWorkflow: "검증된 멀티 에이전트",
     collaborationHint:
       "계획자, 조사자, 비평가, 작성자 역할을 순서대로 실행하고 형식화된 인계 기록을 표시합니다.",
@@ -260,7 +260,7 @@ export const messages: Record<Locale, Messages> = {
   },
   es: {
     language: "Idioma",
-    projectLabel: "PLANTILLA DE CÓDIGO ABIERTO",
+    projectLabel: "IMPLEMENTACIÓN DE REFERENCIA",
     title: "Crea un agente de respuestas con el conocimiento que controlas.",
     intro:
       "Añade documentos Markdown, elige un proveedor compatible con OpenAI o usa el modo extractivo local para ofrecer respuestas transparentes y fundamentadas.",
@@ -281,11 +281,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "La solicitud ha fallado",
     extractiveMode: "extractivo local",
     providerMode: "proveedor",
-    collaborationModeLabel: "laboratorio multiagente",
+    collaborationModeLabel: "multiagente basado en roles",
     verifiedModeLabel: "multiagente verificado",
     workflowMode: "Flujo de trabajo",
     standardWorkflow: "Preguntas y respuestas",
-    collaborationWorkflow: "Laboratorio multiagente",
+    collaborationWorkflow: "Multiagente basado en roles",
     verifiedWorkflow: "Multiagente verificado",
     collaborationHint:
       "Ejecuta los roles de planificación, investigación, crítica y redacción con entregas tipadas e inspeccionables.",
@@ -304,7 +304,7 @@ export const messages: Record<Locale, Messages> = {
   },
   fr: {
     language: "Langue",
-    projectLabel: "KIT DE DÉMARRAGE OPEN SOURCE",
+    projectLabel: "IMPLÉMENTATION DE RÉFÉRENCE",
     title: "Créez un agent de réponse à partir des connaissances que vous maîtrisez.",
     intro:
       "Ajoutez des documents Markdown, choisissez un fournisseur compatible OpenAI ou le mode d'extraction local, puis proposez des réponses transparentes et sourcées.",
@@ -325,11 +325,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Échec de la requête",
     extractiveMode: "extraction locale",
     providerMode: "fournisseur",
-    collaborationModeLabel: "atelier multi-agent",
+    collaborationModeLabel: "multi-agent par rôles",
     verifiedModeLabel: "multi-agent vérifié",
     workflowMode: "Flux de travail",
     standardWorkflow: "Questions-réponses standard",
-    collaborationWorkflow: "Atelier multi-agent",
+    collaborationWorkflow: "Multi-agent par rôles",
     verifiedWorkflow: "Multi-agent vérifié",
     collaborationHint:
       "Exécute les rôles de planification, recherche, critique et rédaction avec des transmissions typées et inspectables.",
@@ -348,7 +348,7 @@ export const messages: Record<Locale, Messages> = {
   },
   de: {
     language: "Sprache",
-    projectLabel: "OPEN-SOURCE-STARTER",
+    projectLabel: "OPEN-SOURCE-REFERENZIMPLEMENTIERUNG",
     title: "Erstelle einen Antwort-Agenten mit Wissen, das du kontrollierst.",
     intro:
       "Füge Markdown-Dokumente hinzu, wähle einen OpenAI-kompatiblen Anbieter oder den lokalen Extraktionsmodus und veröffentliche transparente, belegte Antworten.",
@@ -369,11 +369,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Anfrage fehlgeschlagen",
     extractiveMode: "lokale Extraktion",
     providerMode: "Modellanbieter",
-    collaborationModeLabel: "Multi-Agent-Labor",
+    collaborationModeLabel: "rollenbasierter Multi-Agent",
     verifiedModeLabel: "verifiziertes Multi-Agent-System",
     workflowMode: "Arbeitsablauf",
     standardWorkflow: "Standard-Q&A",
-    collaborationWorkflow: "Multi-Agent-Labor",
+    collaborationWorkflow: "Rollenbasierter Multi-Agent",
     verifiedWorkflow: "Verifiziertes Multi-Agent-System",
     collaborationHint:
       "Führt Planer, Recherche, Kritik und Redaktion mit typisierten, prüfbaren Übergaben aus.",
@@ -392,7 +392,7 @@ export const messages: Record<Locale, Messages> = {
   },
   "pt-BR": {
     language: "Idioma",
-    projectLabel: "PROJETO INICIAL DE CÓDIGO ABERTO",
+    projectLabel: "IMPLEMENTAÇÃO DE REFERÊNCIA",
     title: "Crie um agente de respostas com o conhecimento que você controla.",
     intro:
       "Adicione documentos Markdown, escolha um provedor compatível com OpenAI ou use o modo extrativo local para oferecer respostas transparentes e fundamentadas.",
@@ -413,11 +413,11 @@ export const messages: Record<Locale, Messages> = {
     requestFailed: "Falha na solicitação",
     extractiveMode: "extração local",
     providerMode: "provedor",
-    collaborationModeLabel: "laboratório multiagente",
+    collaborationModeLabel: "multiagente baseado em papéis",
     verifiedModeLabel: "multiagente verificado",
     workflowMode: "Fluxo de trabalho",
     standardWorkflow: "Perguntas e respostas",
-    collaborationWorkflow: "Laboratório multiagente",
+    collaborationWorkflow: "Multiagente baseado em papéis",
     verifiedWorkflow: "Multiagente verificado",
     collaborationHint:
       "Executa os papéis de planejamento, pesquisa, crítica e redação com transferências tipadas e inspecionáveis.",

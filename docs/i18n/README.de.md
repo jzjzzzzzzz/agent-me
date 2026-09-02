@@ -2,9 +2,9 @@
 
 # Agent-Me
 
-**Erstelle einen transparenten, belegten Antwort-Agenten mit Wissen, das du kontrollierst.**
+**Prüfbare Multi-Agent-RAG-Systeme entwickeln, untersuchen und evaluieren.**
 
-Eine datenschutzorientierte Open-Source-Basis mit typisiertem FastAPI-Backend, React-Oberfläche, lokaler Dokumentsuche und optionalem OpenAI-kompatiblem Anbieter.
+Agent-Me ist eine Open-Source-Referenzimplementierung für prüfbare, rollenbasierte Multi-Agent-RAG-Abläufe mit einem zweisprachigen praxisorientierten Engineering-Curriculum.
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Português](README.pt-BR.md)
 
@@ -12,19 +12,17 @@ Eine datenschutzorientierte Open-Source-Basis mit typisiertem FastAPI-Backend, R
 
 > Dies ist die deutsche Übersetzung der Projektübersicht. Die technische Referenz bilden die [englische README](../../README.md) und die Dokumente unter <code>docs/</code>.
 
-## Kostenloser, praxisorientierter Kurs
+## Was Agent-Me ist
 
-Agent-Me ist jetzt zuerst als strukturierter 8-Lektionen-Kurs organisiert: Voraussetzungen, Theorie, Quellcode-Lesepfade, ausführbare Labs, Übungen, Verständnisfragen und eine Portfolio-Abschlussaufgabe. Der vollständige Kurs ist derzeit auf [Englisch](../../course/README.md) und [vereinfachtem Chinesisch](../../course/translations/zh-CN/README.md) verfügbar. Übersetzungsbeiträge sind willkommen; der [Sprachstatus](../../course/LANGUAGES.md) weist unvollständige Inhalte ausdrücklich aus.
+Die ausführbare FastAPI- und React-Implementierung führt Planner, Researcher, Critic, Writer und optional Verifier nacheinander in einem Prozess aus. Typisierte Übergaben, abgerufene Belege, Sperrentscheidungen, sichere Ablaufspuren und deterministische Evaluation bleiben sichtbar. Der lokale Kernpfad benötigt keine kostenpflichtige Modell-API.
 
-## Überblick
+## Was Agent-Me nicht ist
 
-Agent-Me ist ein kleines, prüfbares Framework zur Veröffentlichung eines Frage-Antwort-Agenten auf Grundlage von Markdown-Dokumenten.
+Agent-Me ist derzeit keine verteilte Multi-Agent-Laufzeit, kein allgemeines Agent-SDK und keine gehostete Unternehmensplattform. Der Verifier prüft mechanische Ausgabeinvarianten, nicht die faktische Wahrheit.
 
-- Der **lokale Extraktionsmodus** funktioniert ohne externes Modell und ohne API-Schlüssel.
-- Der **Anbietermodus** sendet nur den gefundenen Kontext und den jüngsten Gesprächsverlauf an den von dir konfigurierten OpenAI-kompatiblen Endpunkt.
-- Antworten können die verwendeten Dokumentauszüge als Quellen enthalten.
+## Engineering-Curriculum
 
-Das öffentliche Repository enthält ausschließlich wiederverwendbaren Code – keine Produktionsdatenbank, privaten Erinnerungen, Analysedaten, Zugangsdaten oder Deployment-Geheimnisse.
+Das Curriculum erklärt und rekonstruiert dieselbe Architektur wie die Referenzimplementierung. Die vollständige Fassung ist auf [Englisch](../../course/README.md) und [vereinfachtem Chinesisch](../../course/translations/zh-CN/README.md) verfügbar.
 
 ## Funktionen
 

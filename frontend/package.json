@@ -1,7 +1,8 @@
 {
   "name": "agent-me-starter-web",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "description": "React interface for the Agent-Me auditable multi-agent RAG reference implementation",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",

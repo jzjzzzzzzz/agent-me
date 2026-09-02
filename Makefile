@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs evaluate build lock lock-check
+.PHONY: setup dev test lint format docs evaluate build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -20,7 +20,7 @@ test:
 	.venv/bin/pytest backend/tests
 	cd frontend && npm test
 
-lint: lock-check
+lint: lock-check version-check
 	.venv/bin/ruff check backend scripts
 	.venv/bin/ruff format --check backend scripts
 	cd frontend && npm run lint && npm run typecheck
@@ -30,6 +30,9 @@ format:
 
 docs:
 	python3 scripts/check_docs.py
+
+version-check:
+	python3 scripts/check_versions.py
 
 evaluate:
 	.venv/bin/python scripts/evaluate_collaboration.py

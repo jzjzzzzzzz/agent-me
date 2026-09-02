@@ -12,7 +12,10 @@ Do not send real credentials or private user data in a report. Maintainers will 
 
 ## Operator responsibilities
 
-This framework cannot make private documents safe to publish. Operators must review knowledge content, configure rate limiting and TLS, protect provider credentials, and publish an accurate privacy notice for their deployment.
+This reference implementation cannot make private documents safe to publish. Operators must review
+knowledge content, configure rate limiting and TLS, protect provider credentials, and publish an
+accurate privacy notice for their deployment. The shipped data flows and limitations are documented
+in [docs/TRUST.md](docs/TRUST.md).
 
 ## Automated checks
 

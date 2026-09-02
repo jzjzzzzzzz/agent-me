@@ -13,7 +13,7 @@ def normalized_tokens(value: str) -> set[str]:
 
     Letters and numbers stay grouped into words. Combining marks stay attached to
     the word they modify, while Han characters remain individual terms so the
-    starter's existing CJK matching behavior does not change.
+    reference implementation's existing CJK matching behavior does not change.
     """
 
     normalized = unicodedata.normalize("NFKC", value).casefold()

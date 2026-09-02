@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 import app.main as main_module
+from app import __version__
 from app.config import get_settings
 from app.main import app
 
@@ -33,6 +34,19 @@ async def test_health(client: httpx.AsyncClient) -> None:
     response = await client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
+
+
+@pytest.mark.anyio
+async def test_openapi_metadata_uses_project_brand_and_version(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get("/openapi.json")
+
+    assert response.status_code == 200
+    info = response.json()["info"]
+    assert info["title"] == "Agent-Me API"
+    assert info["version"] == __version__
+    assert "reference implementation" in info["description"]
 
 
 @pytest.mark.anyio

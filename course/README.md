@@ -1,11 +1,11 @@
-# Agent-Me Course: Build a Grounded Multi-Agent System
+# Agent-Me Engineering Curriculum
 
 [English](README.md) · [简体中文](translations/zh-CN/README.md) · [Language coverage](LANGUAGES.md) · [Repository home](../README.md)
 
-This is an implementation-first course for developers who want to understand agent systems beyond
-a framework demo. You will run a real FastAPI and React application, inspect its retrieval and
-collaboration contracts, change the implementation, measure behavior, and defend the design in an
-interview or review.
+The curriculum explains and rebuilds the same architecture used by the Agent-Me reference
+implementation. You will run the FastAPI and React system, inspect its retrieval and collaboration
+contracts, change the implementation, measure behavior, and defend the design in an interview or
+review.
 
 **Course promise:** every implemented claim is connected to source code, a runnable command, and an
 observable result. The core path is deterministic and local, so you can learn without a paid model
@@ -50,23 +50,28 @@ sequenceDiagram
   participant R as Researcher
   participant C as Critic
   participant W as Writer
+  participant V as Verifier
 
   U->>A: POST /api/v1/collaborate
   A->>A: validate body and limits
-  A->>K: search(normalized question)
-  K-->>A: ranked Match[]
   A->>P: question
   P-->>R: Plan
-  A->>R: Match[]
+  R->>K: search(Plan.retrieval_query)
+  K-->>R: ranked Match[]
   R-->>C: EvidenceBundle
   C-->>W: Critique(grounded, coverage)
   W-->>A: WrittenAnswer
+  opt verified policy
+    W-->>V: WrittenAnswer + EvidenceBundle
+    V-->>A: approved or blocked
+  end
   A-->>U: answer + sources + safe trace
 ```
 
-The current roles are local Python objects coordinated synchronously in one process. This keeps the
-learning surface small enough to inspect. The capstone asks you to preserve these contracts while
-designing a more production-shaped execution model.
+The current roles are local Python objects coordinated synchronously in one process. The baseline
+ends at Writer; the verified policy appends Verifier. This keeps the learning surface small enough
+to inspect. The capstone asks you to preserve these contracts while designing a more
+production-shaped execution model.
 
 ## Curriculum
 

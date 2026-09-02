@@ -28,7 +28,7 @@ The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES`
 
 ## `POST /api/v1/collaborate`
 
-Runs the local planner → researcher → critic → writer learning workflow. The request is a strict
+Runs the local planner → researcher → critic → writer role-based workflow. The request is a strict
 object containing a required nonblank `question`, capped by `MAX_QUESTION_CHARS`, and an optional
 `workflow` policy:
 

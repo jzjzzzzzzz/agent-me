@@ -25,6 +25,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
       - run: uv lock --project backend --check
+      - run: python3 scripts/check_versions.py
       - run: uv sync --project backend --locked --extra dev
         env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
       - run: .venv/bin/ruff check backend scripts
@@ -82,6 +83,7 @@ jobs:
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
           .\.venv\Scripts\python.exe scripts\check_docs.py
+          .\.venv\Scripts\python.exe scripts\check_versions.py
           Set-Location frontend
           npm run lint
           npm run typecheck

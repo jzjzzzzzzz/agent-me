@@ -2,9 +2,9 @@
 
 # Agent-Me
 
-**Crea un agente de respuestas transparente y fundamentado con el conocimiento que controlas.**
+**Construye, inspecciona y evalúa sistemas RAG multiagente auditables.**
 
-Una base de código abierto centrada en la privacidad, con backend tipado en FastAPI, interfaz React, recuperación local de documentos y un proveedor opcional compatible con OpenAI.
+Agent-Me es una implementación de referencia de código abierto para flujos RAG multiagente auditables y basados en roles, acompañada de un currículo práctico bilingüe de ingeniería.
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Português](README.pt-BR.md)
 
@@ -12,19 +12,17 @@ Una base de código abierto centrada en la privacidad, con backend tipado en Fas
 
 > Esta es la traducción al español de la descripción general. La [documentación en inglés](../../README.md) y <code>docs/</code> constituyen la especificación técnica canónica.
 
-## Curso práctico y gratuito
+## Qué es Agent-Me
 
-Agent-Me está organizado primero como un curso estructurado de 8 lecciones: requisitos, teoría, recorridos del código, laboratorios ejecutables, ejercicios, preguntas de comprensión y un proyecto final para el portafolio. El curso completo está disponible actualmente en [inglés](../../course/README.md) y [chino simplificado](../../course/translations/zh-CN/README.md). Se aceptan traducciones; la [cobertura de idiomas](../../course/LANGUAGES.md) identifica con claridad el contenido incompleto.
+La implementación ejecutable con FastAPI y React coordina secuencialmente Planner, Researcher, Critic, Writer y, de forma opcional, Verifier en un solo proceso. Expone entregas tipadas, evidencia recuperada, decisiones de bloqueo, trazas operativas seguras y evaluación determinista. La ruta local principal no requiere una API de modelo de pago.
 
-## Descripción
+## Qué no es Agent-Me
 
-Agent-Me es un framework pequeño y auditable para publicar un agente de preguntas y respuestas basado en documentos Markdown.
+Actualmente no es un runtime multiagente distribuido, un SDK general de agentes ni una plataforma empresarial alojada. El verificador comprueba invariantes mecánicas de salida; no garantiza la verdad factual.
 
-- El **modo extractivo local** funciona sin modelos externos ni claves de API.
-- El **modo proveedor** envía únicamente el contexto recuperado y la conversación reciente al endpoint compatible con OpenAI que configures.
-- Las respuestas pueden incluir los fragmentos de documentos utilizados como fuentes.
+## Currículo de ingeniería
 
-El repositorio público contiene solo código reutilizable. No incluye bases de datos de producción, memoria privada, analítica, credenciales ni secretos de despliegue.
+El currículo explica y reconstruye la misma arquitectura de la implementación de referencia. Está completo en [inglés](../../course/README.md) y [chino simplificado](../../course/translations/zh-CN/README.md).
 
 ## Capacidades
 

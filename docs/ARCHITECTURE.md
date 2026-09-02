@@ -1,5 +1,9 @@
 # Architecture
 
+Agent-Me is an inspectable reference implementation of an in-process, role-based multi-agent RAG
+workflow. It favors explicit contracts and deterministic behavior over general-purpose framework
+abstractions. See [Trust, Data Flow, and Deployment Boundaries](TRUST.md) for the complete scope.
+
 ## Trust boundaries
 
 1. Browser questions are untrusted and validated by Pydantic.
@@ -19,7 +23,7 @@ Otherwise it returns the highest-ranked excerpt.
 
 Tokenization applies Unicode NFKC normalization followed by case folding. Unicode letters and
 numbers remain word tokens, while Han characters remain individual tokens to preserve the
-starter's deterministic CJK behavior. Retrieval scoring and collaboration coverage metrics share
+reference implementation's deterministic CJK behavior. Retrieval scoring and collaboration coverage metrics share
 this implementation so canonically equivalent text is treated consistently.
 
 The API reuses `KnowledgeBase` instances for identical roots and size limits. Every access still
@@ -29,7 +33,7 @@ Readiness, search, and the local collaboration run execute through Starlette's w
 synchronous filesystem work does not block the async event loop. The cache is process-local only;
 the filesystem remains authoritative after edits and process restarts.
 
-## Multi-agent learning path
+## Role-based multi-agent workflow
 
 `POST /api/v1/collaborate` injects the same bounded Markdown retriever used by the single-path API
 into the collaboration workflow. The default policy runs four local roles in a fixed order; the
@@ -68,6 +72,10 @@ the candidate with a server-controlled fallback instead of leaking an unverified
 not perform entailment, contradiction detection, or formal truth verification; those require a
 labeled evaluation set and a stronger policy.
 
-This is intentionally an in-process, sequential teaching implementation. Moving stages to distributed workers would require durable state, idempotency, delivery semantics, timeouts, retries, cancellation, authorization, and trace-retention controls. See the [hands-on course](../course/README.md) for the implementation and design exercises.
+This is intentionally an in-process, sequential reference implementation. Moving stages to
+distributed workers would require durable state, idempotency, delivery semantics, timeouts,
+retries, cancellation, authorization, and trace-retention controls. The
+[engineering curriculum](../course/README.md) rebuilds these contracts and examines those tradeoffs.
 
-The starter does not persist requests. Add a database only when the product needs persistence, and document the purpose, retention, and access controls before collecting data.
+The reference implementation does not persist requests. Add a database only when the product needs
+persistence, and document the purpose, retention, and access controls before collecting data.

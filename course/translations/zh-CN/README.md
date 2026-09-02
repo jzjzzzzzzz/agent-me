@@ -1,8 +1,10 @@
-# Agent-Me 课程：从零构建有依据的 Multi-Agent 系统
+# Agent-Me 工程课程
 
 [English](../../../course/README.md) · [简体中文](README.md) · [语言覆盖](../../../course/LANGUAGES.md) · [仓库首页](../../../README.md)
 
-这是一套以实现为核心的免费课程。你会运行一个真实的 FastAPI + React 应用，阅读检索与协作协议，亲手修改代码，度量行为，并最终把项目准确地展示在简历、作品集或技术面试中。
+这套课程解释并重建 Agent-Me 参考实现所使用的同一套架构。你会运行 FastAPI + React 系统，
+阅读检索与协作协议，亲手修改代码、度量行为，并最终把项目准确地展示在简历、作品集或
+技术面试中。
 
 **课程承诺：**每一个已实现的能力，都能对应到源代码、可运行命令和可观察结果。核心路径完全在本地确定性运行，不需要付费模型 API。
 
@@ -41,21 +43,27 @@ sequenceDiagram
   participant R as Researcher
   participant C as Critic
   participant W as Writer
+  participant V as Verifier
 
   U->>A: POST /api/v1/collaborate
   A->>A: 校验请求与限制
-  A->>K: search(规范化问题)
-  K-->>A: 排序后的 Match[]
   A->>P: question
   P-->>R: Plan
-  A->>R: Match[]
+  R->>K: search(Plan.retrieval_query)
+  K-->>R: 排序后的 Match[]
   R-->>C: EvidenceBundle
   C-->>W: Critique
   W-->>A: WrittenAnswer
+  opt verified policy
+    W-->>V: WrittenAnswer + EvidenceBundle
+    V-->>A: 通过或阻断
+  end
   A-->>U: answer + sources + 安全 trace
 ```
 
-当前角色是在同一进程中由 orchestrator 同步协调的 Python 对象。这样学习者可以检查每个边界。结课项目会要求你在保留这些协议的同时，设计更接近生产的执行方式。
+当前角色是在同一进程中由 orchestrator 同步协调的 Python 对象。基线到 Writer 为止，
+verified 策略会追加 Verifier。这样学习者可以检查每个边界。结课项目会要求你在保留这些
+协议的同时，设计更接近生产的执行方式。
 
 ## 课程目录
 

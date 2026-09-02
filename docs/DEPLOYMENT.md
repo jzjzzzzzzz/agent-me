@@ -1,5 +1,8 @@
 # Deployment
 
+Read [Trust, Data Flow, and Deployment Boundaries](TRUST.md) before deploying. The included stack is
+a reproducible local reference environment, not a production-ready hosted platform.
+
 1. Copy `.env.example` into a secret-managed environment configuration.
 2. Set exact `CORS_ORIGINS`; do not use a wildcard for credentialed applications.
 3. Mount a reviewed, read-only knowledge directory.

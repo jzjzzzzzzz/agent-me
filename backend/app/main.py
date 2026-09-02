@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+from . import __version__
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
@@ -20,7 +21,14 @@ from .schemas import (
     Source,
 )
 
-app = FastAPI(title="Agent-Me Starter API", version="1.0.0")
+app = FastAPI(
+    title="Agent-Me API",
+    description=(
+        "Agent-Me — an open-source reference implementation for building and evaluating "
+        "auditable multi-agent RAG systems."
+    ),
+    version=__version__,
+)
 settings = get_settings()
 app.add_middleware(RequestBodyLimitMiddleware, settings=settings)
 app.add_middleware(

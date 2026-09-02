@@ -59,7 +59,7 @@ export function App() {
     loadProfile(controller.signal)
       .then(setProfile)
       .catch(() => {
-        // The localized starter copy remains usable when profile metadata is unavailable.
+        // The localized reference copy remains usable when profile metadata is unavailable.
       });
     return () => controller.abort();
   }, []);

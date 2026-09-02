@@ -85,7 +85,7 @@ does not prove that every supported sentence is semantically entailed by its sou
 
 ## Security and privacy review
 
-- Questions and traces remain process-local and are not persisted by this starter.
+- Questions and traces remain process-local and are not persisted by the reference implementation.
 - Run IDs are server-controlled and contain no question text.
 - Trace summaries and metrics are bounded operational artifacts, not hidden reasoning.
 - The verifier performs no network call and receives no secret.

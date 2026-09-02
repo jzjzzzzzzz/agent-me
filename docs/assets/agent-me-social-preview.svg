@@ -1,84 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">Agent-Me grounded multi-agent systems course</title>
-  <desc id="desc">A clean editorial course cover in off-white, deep navy, magenta, and blue.</desc>
+  <title id="title">Agent-Me auditable multi-agent RAG reference implementation</title>
+  <desc id="desc">An editorial project cover showing typed role handoffs, evidence tracing, and deterministic evaluation.</desc>
   <defs>
-    <linearGradient id="courseAccent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#74136F"/>
-      <stop offset="0.58" stop-color="#B72DB4"/>
-      <stop offset="1" stop-color="#E34BE7"/>
+    <linearGradient id="systemAccent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1B3C73"/>
+      <stop offset="0.58" stop-color="#356DB3"/>
+      <stop offset="1" stop-color="#45A3A7"/>
     </linearGradient>
   </defs>
-
-  <rect width="1280" height="640" fill="#FCFBFD"/>
-  <rect width="1280" height="10" fill="url(#courseAccent)"/>
-
+  <rect width="1280" height="640" fill="#F8FAFC"/>
+  <rect width="1280" height="10" fill="url(#systemAccent)"/>
   <g font-family="Inter, Aptos, Segoe UI, ui-sans-serif, system-ui, sans-serif">
-    <text x="72" y="82" fill="#74136F" font-size="18" font-weight="700" letter-spacing="3.2">OPEN-SOURCE · HANDS-ON · BILINGUAL</text>
-
-    <text x="66" y="226" fill="#17172F" font-size="100" font-weight="760" letter-spacing="-4">Agent-Me</text>
-    <text x="72" y="290" fill="#17172F" font-size="34" font-weight="560">Grounded multi-agent systems</text>
-    <text x="72" y="334" fill="#67647A" font-size="25" font-weight="420">from first principles to a portfolio-ready capstone</text>
-
-    <line x1="72" y1="386" x2="730" y2="386" stroke="#DDD8E3" stroke-width="2"/>
-
+    <text x="72" y="82" fill="#28578F" font-size="18" font-weight="700" letter-spacing="3.2">OPEN SOURCE · REFERENCE IMPLEMENTATION</text>
+    <text x="66" y="226" fill="#142943" font-size="100" font-weight="760" letter-spacing="-4">Agent-Me</text>
+    <text x="72" y="290" fill="#142943" font-size="34" font-weight="560">Auditable multi-agent RAG</text>
+    <text x="72" y="334" fill="#607086" font-size="25" font-weight="420">build · inspect · evaluate every handoff</text>
+    <line x1="72" y1="386" x2="730" y2="386" stroke="#D7E0EA" stroke-width="2"/>
     <g transform="translate(72 426)">
-      <text fill="#17172F" font-size="21" font-weight="700">8 lessons</text>
-      <circle cx="128" cy="-7" r="3.5" fill="#B72DB4"/>
-      <text x="147" fill="#17172F" font-size="21">FastAPI + React</text>
-      <circle cx="323" cy="-7" r="3.5" fill="#2E76DC"/>
-      <text x="342" fill="#17172F" font-size="21">No paid API required</text>
+      <text fill="#142943" font-size="20" font-weight="700">Typed handoffs</text>
+      <circle cx="158" cy="-7" r="3.5" fill="#356DB3"/>
+      <text x="177" fill="#142943" font-size="20">Evidence tracing</text>
+      <circle cx="339" cy="-7" r="3.5" fill="#45A3A7"/>
+      <text x="358" fill="#142943" font-size="20">Deterministic evaluation</text>
     </g>
-
     <g transform="translate(72 511)">
-      <text fill="#777286" font-size="15" font-weight="700" letter-spacing="2">WORKFLOW</text>
-      <text y="38" fill="#74136F" font-size="22" font-weight="650">planner</text>
-      <text x="92" y="38" fill="#AAA2B1" font-size="21">→</text>
-      <text x="124" y="38" fill="#74136F" font-size="22" font-weight="650">researcher</text>
-      <text x="245" y="38" fill="#AAA2B1" font-size="21">→</text>
-      <text x="277" y="38" fill="#74136F" font-size="22" font-weight="650">critic</text>
-      <text x="337" y="38" fill="#AAA2B1" font-size="21">→</text>
-      <text x="369" y="38" fill="#74136F" font-size="22" font-weight="650">writer</text>
+      <text fill="#6E7F92" font-size="15" font-weight="700" letter-spacing="2">WORKFLOW</text>
+      <text y="38" fill="#28578F" font-size="20" font-weight="650">planner</text>
+      <text x="84" y="38" fill="#9AABBC" font-size="19">→</text>
+      <text x="113" y="38" fill="#28578F" font-size="20" font-weight="650">researcher</text>
+      <text x="225" y="38" fill="#9AABBC" font-size="19">→</text>
+      <text x="254" y="38" fill="#28578F" font-size="20" font-weight="650">critic</text>
+      <text x="310" y="38" fill="#9AABBC" font-size="19">→</text>
+      <text x="339" y="38" fill="#28578F" font-size="20" font-weight="650">writer</text>
+      <text x="399" y="38" fill="#9AABBC" font-size="19">→</text>
+      <text x="428" y="38" fill="#28578F" font-size="20" font-weight="650">verifier</text>
     </g>
-
-    <text x="72" y="608" fill="#777286" font-size="16">github.com/jzjzzzzzzz/agent-me</text>
-    <text x="734" y="608" fill="#777286" font-size="16" text-anchor="end">English + 简体中文</text>
+    <text x="72" y="608" fill="#6E7F92" font-size="16">github.com/jzjzzzzzzz/agent-me</text>
+    <text x="734" y="608" fill="#6E7F92" font-size="16" text-anchor="end">FastAPI + React · English + 中文</text>
   </g>
-
-  <line x1="792" y1="70" x2="792" y2="570" stroke="#E6E0EA" stroke-width="2"/>
-
+  <line x1="792" y1="70" x2="792" y2="570" stroke="#DCE4ED" stroke-width="2"/>
   <g transform="translate(850 75)" font-family="Inter, Aptos, Segoe UI, ui-sans-serif, system-ui, sans-serif">
-    <text x="0" y="7" fill="#777286" font-size="15" font-weight="700" letter-spacing="2.4">COURSE MAP</text>
-    <text x="0" y="67" fill="#17172F" font-size="25" font-weight="700">Build the system.</text>
-    <text x="0" y="100" fill="#67647A" font-size="20">Then learn how to defend it.</text>
-
-    <line x1="25" y1="154" x2="25" y2="414" stroke="#D7C6DE" stroke-width="4"/>
-
+    <text x="0" y="7" fill="#6E7F92" font-size="15" font-weight="700" letter-spacing="2.4">INSPECTABLE SYSTEM</text>
+    <text x="0" y="67" fill="#142943" font-size="25" font-weight="700">Follow the evidence.</text>
+    <text x="0" y="100" fill="#607086" font-size="20">See why output passed or stopped.</text>
+    <line x1="25" y1="154" x2="25" y2="414" stroke="#CAD8E6" stroke-width="4"/>
     <g transform="translate(0 142)">
-      <circle cx="25" cy="25" r="25" fill="#74136F"/>
+      <circle cx="25" cy="25" r="25" fill="#1B3C73"/>
       <text x="25" y="32" fill="#FFFFFF" font-size="18" font-weight="750" text-anchor="middle">01</text>
-      <text x="74" y="21" fill="#17172F" font-size="20" font-weight="700">Ground the answer</text>
-      <text x="74" y="47" fill="#777286" font-size="16">retrieval · evidence · abstention</text>
+      <text x="74" y="21" fill="#142943" font-size="20" font-weight="700">Retrieve</text>
+      <text x="74" y="47" fill="#6E7F92" font-size="16">bounded local Markdown evidence</text>
     </g>
-
     <g transform="translate(0 232)">
-      <circle cx="25" cy="25" r="25" fill="#2E76DC"/>
+      <circle cx="25" cy="25" r="25" fill="#356DB3"/>
       <text x="25" y="32" fill="#FFFFFF" font-size="18" font-weight="750" text-anchor="middle">02</text>
-      <text x="74" y="21" fill="#17172F" font-size="20" font-weight="700">Design the roles</text>
-      <text x="74" y="47" fill="#777286" font-size="16">responsibilities · typed handoffs</text>
+      <text x="74" y="21" fill="#142943" font-size="20" font-weight="700">Hand off</text>
+      <text x="74" y="47" fill="#6E7F92" font-size="16">explicit typed role contracts</text>
     </g>
-
     <g transform="translate(0 322)">
-      <circle cx="25" cy="25" r="25" fill="#B72DB4"/>
+      <circle cx="25" cy="25" r="25" fill="#45A3A7"/>
       <text x="25" y="32" fill="#FFFFFF" font-size="18" font-weight="750" text-anchor="middle">03</text>
-      <text x="74" y="21" fill="#17172F" font-size="20" font-weight="700">Test the behavior</text>
-      <text x="74" y="47" fill="#777286" font-size="16">critic gates · traces · evaluation</text>
+      <text x="74" y="21" fill="#142943" font-size="20" font-weight="700">Trace</text>
+      <text x="74" y="47" fill="#6E7F92" font-size="16">sources · gates · safe metrics</text>
     </g>
-
     <g transform="translate(0 412)">
-      <circle cx="25" cy="25" r="25" fill="#17172F"/>
+      <circle cx="25" cy="25" r="25" fill="#142943"/>
       <text x="25" y="32" fill="#FFFFFF" font-size="18" font-weight="750" text-anchor="middle">04</text>
-      <text x="74" y="21" fill="#17172F" font-size="20" font-weight="700">Ship the capstone</text>
-      <text x="74" y="47" fill="#777286" font-size="16">Docker · CI · production trade-offs</text>
+      <text x="74" y="21" fill="#142943" font-size="20" font-weight="700">Evaluate</text>
+      <text x="74" y="47" fill="#6E7F92" font-size="16">versioned cases · repeatable checks</text>
     </g>
   </g>
 </svg>

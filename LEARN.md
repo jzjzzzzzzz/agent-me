@@ -8,12 +8,12 @@
 
 </div>
 
-## What this learning project teaches
+## How the curriculum uses the reference implementation
 
-Agent-Me is a free, runnable course about engineering grounded agent systems. You will build one
-system in small, testable increments instead of copying an opaque final demo. The core path works
-without a paid model API and keeps retrieval, orchestration, evaluation, and privacy boundaries
-visible in the source code.
+Agent-Me is an open-source reference implementation for auditable multi-agent RAG systems. This
+free, runnable engineering curriculum rebuilds the same system in small, testable increments instead
+of copying an opaque final demo. The core path works without a paid model API and keeps retrieval,
+orchestration, evaluation, and privacy boundaries visible in the source code.
 
 By the end, you will be able to:
 

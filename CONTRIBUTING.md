@@ -1,6 +1,6 @@
 # Contributing to Agent-Me
 
-Thank you for improving the course or reference implementation. Contributions from first-time
+Thank you for improving the reference implementation or engineering curriculum. Contributions from first-time
 learners, educators, translators, frontend/backend engineers, security reviewers, and operators are
 welcome.
 
@@ -107,7 +107,12 @@ Course and evaluation:
 ```bash
 make docs
 make evaluate
+make version-check
 ```
+
+`VERSION` records the repository release represented by backend, frontend, lockfile, and FastAPI
+metadata. Do not invent a tag or bump one package independently; make an explicit release decision,
+update all checked metadata, regenerate locks, and let `scripts/check_versions.py` detect drift.
 
 ### 5. Run the complete gate before a pull request
 

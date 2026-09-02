@@ -31,14 +31,14 @@ function routeFetch(chatResponse: object) {
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.lang = "en";
-  document.title = "Agent-Me Starter";
+  document.title = "Agent-Me | Auditable multi-agent RAG";
   let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
   if (!description) {
     description = document.createElement("meta");
     description.name = "description";
     document.head.append(description);
   }
-  description.content = "A grounded personal Q&A agent starter.";
+  description.content = "Agent-Me auditable multi-agent RAG reference implementation.";
   vi.restoreAllMocks();
 });
 
@@ -49,11 +49,11 @@ it("sets useful localized metadata before the profile is available", () => {
 
   expect(document.documentElement.lang).toBe("en");
   expect(document.title).toBe(
-    "OPEN-SOURCE STARTER | Build an answer agent from knowledge you control.",
+    "REFERENCE IMPLEMENTATION | Inspect an auditable RAG workflow.",
   );
   expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
     "content",
-    expect.stringContaining("Add Markdown documents"),
+    expect.stringContaining("typed handoffs"),
   );
 });
 
@@ -89,13 +89,13 @@ it("switches locale, translates the interface, and remembers the choice", async 
 
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
 
-  expect(screen.getByRole("heading", { name: "用你掌控的知识构建问答 Agent。" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "检查可审计的 RAG 工作流。" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "提问" })).toBeDisabled();
   expect(document.documentElement.lang).toBe("zh-CN");
-  expect(document.title).toContain("用你掌控的知识构建问答 Agent。");
+  expect(document.title).toContain("检查可审计的 RAG 工作流。");
   expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
     "content",
-    expect.stringContaining("添加 Markdown 文档"),
+    expect.stringContaining("类型化交接"),
   );
   expect(window.localStorage.getItem("agent-me-locale")).toBe("zh-CN");
 });
@@ -218,7 +218,7 @@ it("discloses external provider forwarding before question submission", async ()
     ),
   ).toBeInTheDocument();
 
-  await userEvent.click(screen.getByRole("radio", { name: "Multi-agent lab" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Role-based multi-agent" }));
   expect(
     screen.getByText(
       "Questions are processed by this deployment and are not sent to an external model provider.",
@@ -270,7 +270,7 @@ it("runs the multi-agent lab and renders its ordered operational trace", async (
   vi.stubGlobal("fetch", fetchMock);
 
   render(<App />);
-  await userEvent.click(screen.getByRole("radio", { name: "Multi-agent lab" }));
+  await userEvent.click(screen.getByRole("radio", { name: "Role-based multi-agent" }));
   await userEvent.type(screen.getByLabelText(/ask the example/i), "How should I plan?");
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
 

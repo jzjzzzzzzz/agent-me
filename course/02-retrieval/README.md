@@ -18,7 +18,7 @@ quality measures—not as a mysterious database call.
 By the end, you can:
 
 - trace loading → chunking → tokenization → scoring → ranking;
-- calculate the starter's overlap score by hand;
+- calculate the reference implementation's overlap score by hand;
 - explain deterministic tie-breaking;
 - distinguish retrieval precision from recall;
 - add a focused regression test for multiple documents;

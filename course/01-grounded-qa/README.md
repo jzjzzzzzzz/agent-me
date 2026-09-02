@@ -148,7 +148,7 @@ Expected properties:
 
 ## Interpreting `grounded` correctly
 
-In this starter, the critic marks a run grounded when retrieval returned at least one match. Query
+In this reference implementation, the critic marks a run grounded when retrieval returned at least one match. Query
 coverage is exposed as a metric, but it is not currently a threshold. Therefore:
 
 ```text

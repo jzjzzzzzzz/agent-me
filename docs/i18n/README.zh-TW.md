@@ -2,9 +2,9 @@
 
 # Agent-Me
 
-**用你掌控的知識，建立透明且有依據的問答 Agent。**
+**建立、檢查並評估可稽核的多 Agent RAG 系統。**
 
-一個重視隱私的開源基礎框架：FastAPI 型別化後端、React 介面、本機文件檢索，以及可選的 OpenAI 相容模型服務。
+Agent-Me 是可稽核、角色式多 Agent RAG 工作流程的開源參考實作，並附有中英雙語的實作工程課程。
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Português](README.pt-BR.md)
 
@@ -12,19 +12,17 @@
 
 > 本文是專案概覽的繁體中文翻譯。完整技術規格以[英文 README](../../README.md)與 <code>docs/</code> 文件為準。
 
-## 免費實作課程
+## Agent-Me 是什麼
 
-Agent-Me 現在以一套結構化的 8 課教程為第一目標：包含先備條件、原理、原始碼閱讀順序、可執行實驗、練習、理解問題，以及可放入作品集的結課專案。完整課程目前提供[英文](../../course/README.md)與[簡體中文](../../course/translations/zh-CN/README.md)。歡迎翻譯貢獻；[語言覆蓋表](../../course/LANGUAGES.md)會如實標示尚未完成的內容。
+Agent-Me 是可執行的 FastAPI + React 參考實作。Planner、Researcher、Critic、Writer 與可選的 Verifier 會在單一程序內依序執行；型別化交接、檢索證據、阻擋決策、安全軌跡與驗證結果都可供檢查。本機核心路徑不需要付費模型 API。
 
-## 專案簡介
+## Agent-Me 不是什麼
 
-Agent-Me 是一個小型且可稽核的開源框架，用於依據 Markdown 文件發布問答 Agent。檢索與回答生成彼此分離：
+它目前不是分散式多 Agent Runtime、通用 Agent SDK、企業託管平台，也不保證事實正確。這裡的 Agent 是具有明確合約的角色階段，由 orchestrator 依序協調。
 
-- **本機擷取模式**不需要外部模型或 API Key。
-- **模型服務模式**只會把檢索到的內容與近期對話傳送至你設定的 OpenAI 相容端點。
-- 回答可以同時回傳作為依據的原始文件片段。
+## 工程課程
 
-公開儲存庫只包含可重複使用的程式碼，不包含正式環境資料庫、私人記憶、分析紀錄、憑證或部署密鑰。
+課程會逐步重建參考實作使用的相同架構。完整課程目前提供[英文](../../course/README.md)與[簡體中文](../../course/translations/zh-CN/README.md)；[語言覆蓋表](../../course/LANGUAGES.md)會標示其他翻譯的範圍。
 
 ## 核心能力
 
@@ -68,7 +66,7 @@ docker compose up --build
 - 將提示詞與知識文件視為不受信任的輸入。
 - 前端只以純文字呈現內容，不直接插入 HTML。
 - 本機擷取模式不會將問題或文件傳送到模型服務。
-- 本框架預設不持久化聊天內容，也不啟用分析統計。
+- 本參考實作預設不持久化聊天內容，也不啟用分析統計。
 - 不要在知識目錄放入密鑰、私人通訊、受監管資料或個人敏感資訊。
 
 安全問題請依照 [SECURITY.md](../../SECURITY.md) 私下回報。
