@@ -61,8 +61,16 @@ def evaluate(
     knowledge_dir: Path,
     *,
     verify: bool = False,
+    case_ids: list[str] | None = None,
 ) -> list[EvaluationResult]:
     cases = load_cases(cases_path)
+    if case_ids:
+        wanted = set(case_ids)
+        known = {case["id"] for case in cases}
+        unknown = [case_id for case_id in dict.fromkeys(case_ids) if case_id not in known]
+        if unknown:
+            raise ValueError(f"unknown case id {unknown[0]!r}")
+        cases = [case for case in cases if case["id"] in wanted]
     knowledge = KnowledgeBase(str(knowledge_dir))
     orchestrator = CollaborationOrchestrator(retriever=knowledge)
     results: list[EvaluationResult] = []
@@ -102,13 +110,26 @@ def main() -> int:
         default="baseline",
         help="choose the four-stage baseline or five-stage verified policy",
     )
+    parser.add_argument(
+        "--list", action="store_true", dest="list_cases",
+        help="list validated fixture case IDs without running evaluation",
+    )
+    parser.add_argument(
+        "--case-id", action="append", default=[],
+        help="evaluate one or more case IDs (repeatable)",
+    )
     args = parser.parse_args()
 
     try:
+        cases = load_cases(args.cases)
+        if args.list_cases:
+            print("\n".join(case["id"] for case in cases))
+            return 0
         results = evaluate(
             args.cases,
             args.knowledge_dir,
             verify=args.workflow == "verified",
+            case_ids=args.case_id,
         )
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         print(f"evaluation setup failed: {error}", file=sys.stderr)

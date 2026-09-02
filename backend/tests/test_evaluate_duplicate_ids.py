@@ -96,3 +96,35 @@ def test_cli_returns_setup_error_for_duplicate_ids(
         "evaluation setup failed: duplicate case id 'duplicate' at zero-based positions 0 and 1"
         in capsys.readouterr().err
     )
+
+
+def test_cli_lists_validated_ids_without_loading_knowledge(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = _write_cases(tmp_path, [_case("alpha"), _case("beta")])
+    monkeypatch.setattr(sys, "argv", ["evaluate_collaboration.py", "--cases", str(path), "--list"])
+    assert evaluator.main() == 0
+    assert capsys.readouterr().out.splitlines() == ["alpha", "beta"]
+
+
+def test_evaluate_selection_preserves_order_and_deduplicates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _write_cases(tmp_path, [_case("alpha"), _case("beta"), _case("gamma")])
+
+    class FakeKnowledge:
+        def __init__(self, *_: object) -> None:
+            pass
+
+    class FakeOrchestrator:
+        def __init__(self, **_: object) -> None:
+            pass
+        def run(self, *, question: str, verify: bool) -> object:
+            class Stage: agent = "critic"; outcome = "grounded"
+            class Run: grounded = True; matches: list[object] = []; trace = [Stage()]
+            return Run()
+
+    monkeypatch.setattr(evaluator, "KnowledgeBase", FakeKnowledge)
+    monkeypatch.setattr(evaluator, "CollaborationOrchestrator", FakeOrchestrator)
+    result = evaluator.evaluate(path, tmp_path, case_ids=["gamma", "alpha", "gamma"])
+    assert [item.case_id for item in result] == ["alpha", "gamma"]

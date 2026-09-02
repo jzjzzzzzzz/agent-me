@@ -78,6 +78,24 @@ case    expected    actual    sources    critic    result
 COLLABORATION_EVAL 4/4 passed
 ```
 
+### Discover or target individual cases
+
+List the validated fixture IDs without running the orchestrator:
+
+```bash
+.venv/bin/python scripts/evaluate_collaboration.py --list
+```
+
+Run one or more cases by repeating `--case-id`; selected cases retain fixture order and duplicate
+flags are ignored:
+
+```bash
+.venv/bin/python scripts/evaluate_collaboration.py --case-id project-planning
+.venv/bin/python scripts/evaluate_collaboration.py --case-id project-planning --case-id unknown-question --json
+```
+
+An unknown ID is a setup error (exit status `2`).
+
 ### Step 2 — run machine-readable output
 
 ```bash
