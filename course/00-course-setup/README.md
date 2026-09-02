@@ -105,7 +105,8 @@ npm --version
 git --version
 ```
 
-Python must be 3.11 or newer, uv must be 0.11 or 0.12, and Node.js must be 22 or newer.
+Python 3.11 is the minimum supported and tested runtime; Python 3.12 is recommended and used by
+the primary CI job and Dev Container. uv must be 0.11 or 0.12, and Node.js must be 22 or newer.
 [Install uv](https://docs.astral.sh/uv/getting-started/installation/), then install and validate:
 
 ```bash

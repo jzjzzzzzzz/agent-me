@@ -34,6 +34,27 @@ jobs:
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
+  python-minimum:
+    name: Python 3.11 compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          python-version: "3.11"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv lock --project backend --check
+      - run: uv sync --project backend --locked --extra dev --python 3.11
+        env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
+      - run: .venv/bin/pytest backend/tests
+      - run: .venv/bin/python scripts/evaluate_collaboration.py --json
+      - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
+
   frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 10
