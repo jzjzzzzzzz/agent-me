@@ -70,6 +70,8 @@ sequenceDiagram
 | 06 | [评估、测试与故障注入](06-evaluation/README.md) | 评估设计、准确率/召回率、CI | 新用例与被捕获的故障 | 60–90 分钟 |
 | 07 | [生产设计与结课项目](07-production-capstone/README.md) | 分布式可靠性、安全与权衡 | ADR、扩展、度量和演示 | 90 分钟–3 天 |
 
+完整的[基于证据的示例 Capstone](../../examples/verified-policy-capstone/README.zh-CN.md)展示如何把架构决策、公开 fixture、可复现命令、实测结果、限制与可辩护的作品集表述连接起来。
+
 ## 推荐学习闭环
 
 ```text

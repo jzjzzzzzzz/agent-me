@@ -47,6 +47,47 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  windows-powershell:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.7"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        shell: pwsh
+        run: |
+          $env:UV_PROJECT_ENVIRONMENT = Join-Path (Get-Location) ".venv"
+          uv lock --project backend --check
+          uv sync --project backend --locked --extra dev
+          Set-Location frontend
+          npm ci
+      - name: Run documented PowerShell quality workflow
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\ruff.exe check backend scripts
+          .\.venv\Scripts\ruff.exe format --check backend scripts
+          .\.venv\Scripts\pytest.exe backend\tests
+          .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
+          .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
+          .\.venv\Scripts\python.exe scripts\check_docs.py
+          Set-Location frontend
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run build
+
   documentation:
     runs-on: ubuntu-latest
     timeout-minutes: 5

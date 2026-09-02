@@ -81,6 +81,8 @@ designing a more production-shaped execution model.
 | 06 | [Evaluation, tests, and failure injection](06-evaluation/README.md) | Evaluation design, precision/recall, CI layers | New cases and a detected deliberate failure | 60–90 min |
 | 07 | [Production design and capstone](07-production-capstone/README.md) | Distributed reliability, security, tradeoffs | An ADR, extension, measurements, and demo | 90 min–3 days |
 
+A complete [evidence-based sample capstone](examples/verified-policy-capstone/README.md) demonstrates how to connect an architecture decision, public fixtures, reproducible commands, measured results, limitations, and a defensible portfolio statement.
+
 ## Recommended learning loop
 
 For each lesson:

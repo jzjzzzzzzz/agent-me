@@ -150,11 +150,33 @@ Invoke-RestMethod http://127.0.0.1:8000/ready
 
 随后可通过 <http://localhost:5173/> 打开 Web 应用。
 
+独立的 `windows-latest` CI 任务会运行同一套 PowerShell 质量命令。可选的平台专属符号链接
+练习在 Windows 上明确跳过；知识目录路径与符号链接拒绝规则仍由主要后端测试覆盖。
+
 预期最后一行：
 
 ```text
 COLLABORATION_EVAL 4/4 passed
 ```
+
+#### Dev Container / Codespaces
+
+在 VS Code 中选择 **Dev Containers: Reopen in Container**，或从仓库创建 GitHub Codespace。
+固定配置提供 Python 3.12、Node.js 22、非 root 的 `vscode` 用户，并按 lock 文件安装依赖。
+仅当 `.env` 不存在时复制 `.env.example`，无需密钥或付费模型服务。
+
+容器创建后运行：
+
+```bash
+make lint
+make test
+make docs
+make evaluate
+```
+
+端口 `8000` 与 `5173` 只做私有转发；创建容器不会自动启动长期运行的服务。可用
+**Dev Containers: Reopen Folder Locally** 停止本地容器环境，或在 GitHub 中停止/删除 Codespace。
+原生工具链与 Compose 路径继续完整保留。
 
 ### 3. 理解命令边界
 

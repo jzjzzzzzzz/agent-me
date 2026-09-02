@@ -13,6 +13,8 @@ tests.
 
 The capstone asks you to improve the system without claiming properties you have not implemented.
 
+See the complete [evidence-based verified-policy sample capstone](../examples/verified-policy-capstone/README.md) for a reproducible submission with rejected alternatives, measured output, privacy review, limitations, and an honest portfolio statement.
+
 ## Learning objectives
 
 By the end, you can:
@@ -222,6 +224,14 @@ make build
 - Are unsupported and adversarial cases included?
 - Are metrics reported with case counts and confidence limitations?
 - Does CI protect known regressions?
+
+## Exporting a sanitized run artifact
+
+After a completed collaboration run, the frontend can download a UTF-8 JSON record containing only
+`run_id`, `workflow`, `mode`, `answer`, `grounded`, `sources`, and `trace`. The artifact deliberately
+excludes the submitted question, profile metadata, provider configuration, and hidden browser state.
+Use it as supporting evidence alongside the commit, commands, tests, and limitations—not as a
+replacement for those materials or as proof of production quality.
 
 ## Exercises: Portfolio package
 

@@ -15,6 +15,7 @@ import {
   persistLocale,
   supportedLocales,
 } from "./i18n";
+import { downloadCollaborationRun } from "./exportRun";
 import "./styles.css";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
@@ -231,6 +232,12 @@ export function App() {
               <p className="run-id">
                 {text.runId}: <code>{result.run_id}</code>
               </p>
+              <div className="run-export">
+                <button type="button" onClick={() => downloadCollaborationRun(result)}>
+                  {text.exportRun}
+                </button>
+                <p>{text.exportPrivacy}</p>
+              </div>
               <ol>
                 {result.trace.map((stage) => (
                   <li key={stage.sequence}>

@@ -45,6 +45,8 @@ type Messages = {
   completed: string;
   blocked: string;
   runId: string;
+  exportRun: string;
+  exportPrivacy: string;
   footer: string;
 };
 
@@ -88,6 +90,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "Completed",
     blocked: "Blocked",
     runId: "Run ID",
+    exportRun: "Download sanitized run JSON",
+    exportPrivacy: "Exports only the completed collaboration response. It excludes your question, profile, provider settings, and hidden browser state.",
     footer:
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
@@ -125,6 +129,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "已完成",
     blocked: "已阻止",
     runId: "运行 ID",
+    exportRun: "下载脱敏运行记录 JSON",
+    exportPrivacy: "仅导出已完成的协作响应，不包含你的问题、个人资料、模型服务设置或浏览器隐藏状态。",
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
@@ -161,6 +167,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "已完成",
     blocked: "已阻擋",
     runId: "執行 ID",
+    exportRun: "下載已清理的執行記錄 JSON",
+    exportPrivacy: "只匯出已完成的協作回應，不包含你的問題、個人資料、模型服務設定或瀏覽器隱藏狀態。",
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
@@ -202,6 +210,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "完了",
     blocked: "ブロック済み",
     runId: "実行 ID",
+    exportRun: "サニタイズ済み実行 JSON をダウンロード",
+    exportPrivacy: "完了した協働レスポンスのみを出力し、質問、プロフィール、プロバイダー設定、非表示のブラウザー状態は含みません。",
     footer:
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
@@ -243,6 +253,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "완료",
     blocked: "차단됨",
     runId: "실행 ID",
+    exportRun: "정리된 실행 JSON 다운로드",
+    exportPrivacy: "완료된 협업 응답만 내보내며 질문, 프로필, 공급자 설정 및 숨겨진 브라우저 상태는 제외합니다.",
     footer:
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
@@ -285,6 +297,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "Completado",
     blocked: "Bloqueado",
     runId: "ID de ejecución",
+    exportRun: "Descargar JSON de ejecución depurado",
+    exportPrivacy: "Exporta solo la respuesta de colaboración terminada; excluye la pregunta, el perfil, la configuración del proveedor y el estado oculto del navegador.",
     footer:
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
@@ -327,6 +341,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "Terminé",
     blocked: "Bloqué",
     runId: "ID d’exécution",
+    exportRun: "Télécharger le JSON d’exécution épuré",
+    exportPrivacy: "Exporte uniquement la réponse de collaboration terminée, sans la question, le profil, les réglages du fournisseur ni l’état caché du navigateur.",
     footer:
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
@@ -369,6 +385,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "Abgeschlossen",
     blocked: "Blockiert",
     runId: "Lauf-ID",
+    exportRun: "Bereinigten Lauf als JSON herunterladen",
+    exportPrivacy: "Exportiert nur die abgeschlossene Kollaborationsantwort; Frage, Profil, Anbieter-Einstellungen und verborgener Browserstatus werden ausgeschlossen.",
     footer:
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
@@ -411,6 +429,8 @@ export const messages: Record<Locale, Messages> = {
     completed: "Concluído",
     blocked: "Bloqueado",
     runId: "ID da execução",
+    exportRun: "Baixar JSON sanitizado da execução",
+    exportPrivacy: "Exporta somente a resposta de colaboração concluída; exclui a pergunta, o perfil, as configurações do provedor e o estado oculto do navegador.",
     footer:
       "Prompts são entradas não confiáveis. Revise os documentos antes de publicar e nunca faça commit de segredos.",
   },

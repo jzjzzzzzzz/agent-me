@@ -119,9 +119,17 @@ def test_evaluate_selection_preserves_order_and_deduplicates(
     class FakeOrchestrator:
         def __init__(self, **_: object) -> None:
             pass
+
         def run(self, *, question: str, verify: bool) -> object:
-            class Stage: agent = "critic"; outcome = "grounded"
-            class Run: grounded = True; matches: list[object] = []; trace = [Stage()]
+            class Stage:
+                agent = "critic"
+                outcome = "grounded"
+
+            class Run:
+                grounded = True
+                matches: list[object] = []
+                trace = [Stage()]
+
             return Run()
 
     monkeypatch.setattr(evaluator, "KnowledgeBase", FakeKnowledge)

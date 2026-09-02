@@ -184,11 +184,36 @@ Invoke-RestMethod http://127.0.0.1:8000/ready
 
 The web application is then available at http://localhost:5173/.
 
+The dedicated `windows-latest` CI job runs these same PowerShell quality commands. The optional
+platform-specific symlink exercise is intentionally omitted on Windows; corpus path and symlink
+rejection remain covered by the primary backend tests.
+
 Expected final line:
 
 ```text
 COLLABORATION_EVAL 4/4 passed
 ```
+
+#### Dev Container / Codespaces path
+
+Open the repository in VS Code and choose **Dev Containers: Reopen in Container**, or create a
+GitHub Codespace from the repository. The pinned configuration provides Python 3.12, Node.js 22,
+a non-root `vscode` user, and a locked dependency install. It copies only `.env.example` when no
+local `.env` exists; no credential or paid provider is required.
+
+After creation, run:
+
+```bash
+make lint
+make test
+make docs
+make evaluate
+```
+
+Ports `8000` and `5173` are privately forwarded and reported when you start the servers yourself;
+container creation does not start long-running processes. Stop the environment with
+**Dev Containers: Reopen Folder Locally**, or stop/delete the Codespace from GitHub. Native and
+Compose setup paths remain fully supported.
 
 ### Step 3 — Understand each command
 

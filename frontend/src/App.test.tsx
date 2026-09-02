@@ -2,8 +2,13 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
+import { downloadCollaborationRun } from "./exportRun";
+import type { CollaborationResponse } from "./api";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const profileResponse = {
   ok: true,
@@ -321,4 +326,43 @@ it("runs verified collaboration and renders the verifier handoff", async () => {
       body: JSON.stringify({ question: "Verify this answer", workflow: "verified" }),
     }),
   );
+});
+
+it("exports only the validated collaboration response and revokes its object URL", () => {
+  let blobParts: BlobPart[] = [];
+  const createObjectURL = vi.fn(() => "blob:run");
+  const revokeObjectURL = vi.fn();
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+  vi.stubGlobal(
+    "Blob",
+    vi.fn((parts: BlobPart[]) => {
+      blobParts = parts;
+      return {};
+    }),
+  );
+  vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+
+  const result = {
+    run_id: `run_${"d".repeat(32)}`,
+    workflow: "planner-researcher-critic-writer",
+    mode: "multi-agent-local",
+    answer: "Public answer",
+    grounded: true,
+    sources: [],
+    trace: [],
+    question: "private submitted question",
+    profile: { name: "private profile" },
+  } as unknown as CollaborationResponse;
+
+  downloadCollaborationRun(result);
+
+  const exported = JSON.parse(String(blobParts[0])) as Record<string, unknown>;
+  expect(Object.keys(exported)).toEqual([
+    "run_id", "workflow", "mode", "answer", "grounded", "sources", "trace",
+  ]);
+  expect(exported).not.toHaveProperty("question");
+  expect(exported).not.toHaveProperty("profile");
+  expect(createObjectURL).toHaveBeenCalledTimes(1);
+  expect(click).toHaveBeenCalledTimes(1);
+  expect(revokeObjectURL).toHaveBeenCalledWith("blob:run");
 });
