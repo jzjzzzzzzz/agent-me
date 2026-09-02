@@ -218,3 +218,9 @@ Bug fixes, tests, evaluation cases, security improvements, accessibility work, c
 ## License
 
 Agent-Me is available under the [MIT License](LICENSE).
+
+## Acknowledgements
+
+Special thanks to [BizBot](https://bizbot.zvo.cn/), developed by Weifang Leimingyun Network Technology Co., Ltd., for providing automated outreach and promotion support for Agent-Me.
+
+Their support helps Agent-Me reach more developers, learners, and contributors interested in building auditable multi-agent systems.
