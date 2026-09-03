@@ -113,7 +113,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Open <http://localhost:5173> and select **Multi-agent lab**.
+Open <http://localhost:5173/?workflow=collaboration> (this deep-links straight to **Role-based multi-agent**).
 
 ### Step 2 — approved path
 
@@ -157,7 +157,8 @@ metrics contain only finite numbers or booleans.
 
 ### Step 5 — verified output path
 
-Select **Verified multi-agent** and repeat the grounded question. Confirm:
+Open <http://localhost:5173/?workflow=verified> (or select **Verified multi-agent**) and repeat the
+grounded question. Confirm:
 
 - the workflow identifier ends in `-verifier`;
 - the trace contains five ordered stages;
