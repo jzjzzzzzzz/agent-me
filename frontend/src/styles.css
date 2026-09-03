@@ -5,4 +5,5 @@
 .answer li > code,.run-id code,.stage-heading code,.workflow-trace dt,.workflow-trace dd{overflow-wrap:anywhere;word-break:break-word}
 
 .run-export{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:14px 0 4px}.run-export button{width:auto;min-width:0;height:auto;padding:10px 14px}.run-export p{max-width:520px;margin:0;color:#5b6475;font-size:12px;line-height:1.5}@media(max-width:680px){.run-export{flex-direction:column}.run-export button{width:100%}}
+.copy-actions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}.copy-actions button{width:auto;min-width:0;height:auto;padding:8px 12px;background:#fff;color:#172035;border:1px solid #d9deea;font-weight:700}.copy-actions button:hover{border-color:#5a63d8}.copy-status{margin:8px 0 0;color:#5b6475;font-size:12px}
 /* WCAG AA audit: muted #5b6475 is 5.96:1 on #fff and 5.56:1 on #f5f7fb. */
