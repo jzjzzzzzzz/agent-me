@@ -16,10 +16,15 @@ import {
   supportedLocales,
 } from "./i18n";
 import { downloadCollaborationRun } from "./exportRun";
+import {
+  initialWorkflowMode,
+  readWorkflowMode,
+  workflowUrl,
+  WorkflowMode,
+} from "./workflowLink";
 import "./styles.css";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
-type WorkflowMode = "standard" | "collaboration" | "verified";
 
 function formatSourcesForCopy(sources: readonly { title: string; path: string }[]): string {
   return sources.map((source) => `${source.title} — ${source.path}`).join("\n");
@@ -32,7 +37,7 @@ export function App() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("standard");
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>(initialWorkflowMode);
   const [copyStatus, setCopyStatus] = useState("");
   const text = messages[locale];
   const maxQuestionChars = profile?.max_question_chars ?? DEFAULT_MAX_QUESTION_CHARS;
@@ -45,6 +50,20 @@ export function App() {
   useEffect(() => {
     persistLocale(locale);
   }, [locale]);
+
+  useEffect(() => {
+    function onPopState() {
+      setWorkflowMode(readWorkflowMode(window.location.search));
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  function selectWorkflow(mode: WorkflowMode) {
+    setWorkflowMode(mode);
+    const url = workflowUrl(window.location, mode);
+    window.history.pushState({ workflow: mode }, "", url);
+  }
 
   useEffect(() => {
     const profileName = profile?.name.trim();
@@ -153,7 +172,7 @@ export function App() {
                 name="workflow"
                 value="standard"
                 checked={workflowMode === "standard"}
-                onChange={() => setWorkflowMode("standard")}
+                onChange={() => selectWorkflow("standard")}
                 disabled={loading}
               />
               {text.standardWorkflow}
@@ -164,7 +183,7 @@ export function App() {
                 name="workflow"
                 value="collaboration"
                 checked={workflowMode === "collaboration"}
-                onChange={() => setWorkflowMode("collaboration")}
+                onChange={() => selectWorkflow("collaboration")}
                 disabled={loading}
               />
               {text.collaborationWorkflow}
@@ -175,7 +194,7 @@ export function App() {
                 name="workflow"
                 value="verified"
                 checked={workflowMode === "verified"}
-                onChange={() => setWorkflowMode("verified")}
+                onChange={() => selectWorkflow("verified")}
                 disabled={loading}
               />
               {text.verifiedWorkflow}
