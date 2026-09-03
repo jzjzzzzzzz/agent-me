@@ -1,5 +1,15 @@
 # API reference
 
+## Request correlation
+
+Every HTTP response includes a server-generated `X-Request-ID` header, for example
+`req_0123456789abcdef0123456789abcdef`. It is created fresh per request from a
+collision-resistant source and is present on successful responses and on responses handled by an
+application exception handler (validation, size-limit, provider, and knowledge-base errors). Any
+`X-Request-ID` header sent by the client is ignored — it is never read, trusted, or reflected back.
+The header contains no user input, prompt content, or knowledge-base data; it exists only to let a
+learner correlate one browser request with the corresponding server-side response or log line.
+
 ## `GET /health`
 
 Liveness check. Returns `{ "status": "healthy" }`.

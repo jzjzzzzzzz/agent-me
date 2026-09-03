@@ -10,6 +10,7 @@ from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .provider import ProviderError, generate_answer
+from .request_id import RequestIDMiddleware
 from .request_limits import RequestBodyLimitMiddleware
 from .schemas import (
     ChatRequest,
@@ -37,7 +38,9 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
+    expose_headers=["X-Request-ID"],
 )
+app.add_middleware(RequestIDMiddleware)
 
 
 _PROVIDER_ERROR_MESSAGES = {
