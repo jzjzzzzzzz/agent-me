@@ -13,6 +13,13 @@ abstractions. See [Trust, Data Flow, and Deployment Boundaries](TRUST.md) for th
    recent history, and retrieved context will be forwarded to the configured provider.
 4. Secrets are loaded from environment variables and excluded from source control.
 
+## Observability
+
+An outer ASGI middleware (`RequestIDMiddleware`) attaches a fresh, server-generated `X-Request-ID`
+header to every HTTP response, including those produced by application exception handlers. It never
+reads or reflects a client-supplied `X-Request-ID`, and the value carries no user input, prompt
+content, or knowledge-base data — see [`docs/API.md`](API.md#request-correlation).
+
 ## Request path
 
 `POST /api/v1/chat` validates the body, enforces the configured question limit, removes a small

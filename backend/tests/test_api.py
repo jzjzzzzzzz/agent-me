@@ -1,3 +1,4 @@
+import re
 import threading
 from pathlib import Path
 
@@ -359,3 +360,70 @@ async def test_incomplete_provider_configuration_fails_explicitly(
         "detail": "Provider configuration is incomplete.",
         "code": "provider_configuration_incomplete",
     }
+
+
+REQUEST_ID_PATTERN = re.compile(r"^req_[0-9a-f]{32}$")
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("method", "path", "kwargs"),
+    [
+        ("get", "/health", {}),
+        ("get", "/api/v1/profile", {}),
+        ("post", "/api/v1/chat", {"json": {"question": "prefers Python tools?"}}),
+    ],
+)
+async def test_request_id_header_present_on_success(
+    client: httpx.AsyncClient, method: str, path: str, kwargs: dict
+) -> None:
+    response = await client.request(method, path, **kwargs)
+
+    assert response.status_code == 200
+    assert REQUEST_ID_PATTERN.match(response.headers["x-request-id"])
+
+
+@pytest.mark.anyio
+async def test_request_id_header_present_on_handled_errors(client: httpx.AsyncClient) -> None:
+    validation_error = await client.post(
+        "/api/v1/collaborate",
+        json={"question": "prefers Python tools?", "workflow": "attacker-controlled"},
+    )
+
+    settings = get_settings()
+    original = settings.max_question_chars
+    settings.max_question_chars = 5
+    try:
+        semantic_limit_error = await client.post("/api/v1/chat", json={"question": "123456"})
+    finally:
+        settings.max_question_chars = original
+
+    assert validation_error.status_code == 422
+    assert REQUEST_ID_PATTERN.match(validation_error.headers["x-request-id"])
+    assert semantic_limit_error.status_code == 413
+    assert REQUEST_ID_PATTERN.match(semantic_limit_error.headers["x-request-id"])
+
+
+@pytest.mark.anyio
+async def test_request_id_is_fresh_and_ignores_client_supplied_value(
+    client: httpx.AsyncClient,
+) -> None:
+    spoofed = "req_" + "a" * 32
+    first = await client.get("/health", headers={"X-Request-ID": spoofed})
+    second = await client.get("/health", headers={"X-Request-ID": spoofed})
+
+    assert first.headers["x-request-id"] != spoofed
+    assert second.headers["x-request-id"] != spoofed
+    assert first.headers["x-request-id"] != second.headers["x-request-id"]
+
+
+@pytest.mark.anyio
+async def test_request_id_header_is_exposed_to_allowed_browser_origins(
+    client: httpx.AsyncClient,
+) -> None:
+    origin = get_settings().allowed_origins[0]
+    response = await client.get("/health", headers={"Origin": origin})
+
+    exposed = response.headers.get("access-control-expose-headers", "")
+    assert "X-Request-ID" in exposed
+    assert response.headers["access-control-allow-origin"] == origin
