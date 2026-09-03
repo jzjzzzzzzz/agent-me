@@ -21,6 +21,10 @@ import "./styles.css";
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
 type WorkflowMode = "standard" | "collaboration" | "verified";
 
+function formatSourcesForCopy(sources: readonly { title: string; path: string }[]): string {
+  return sources.map((source) => `${source.title} — ${source.path}`).join("\n");
+}
+
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [question, setQuestion] = useState("");
@@ -29,6 +33,7 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("standard");
+  const [copyStatus, setCopyStatus] = useState("");
   const text = messages[locale];
   const maxQuestionChars = profile?.max_question_chars ?? DEFAULT_MAX_QUESTION_CHARS;
   const privacyMessage = profile
@@ -71,6 +76,7 @@ export function App() {
     setLoading(true);
     setError("");
     setResult(null);
+    setCopyStatus("");
     try {
       setResult(
         workflowMode === "standard"
@@ -85,6 +91,16 @@ export function App() {
       setError(detail ? `${text.requestFailed}: ${detail}` : text.requestFailed);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function copyToClipboard(value: string, successMessage: string) {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+      await navigator.clipboard.writeText(value);
+      setCopyStatus(successMessage);
+    } catch {
+      setCopyStatus(text.copyFailure);
     }
   }
 
@@ -208,6 +224,31 @@ export function App() {
             <span>{modeLabel}</span>
           </div>
           <p>{result.answer}</p>
+          <div className="copy-actions">
+            {result.answer.trim() && (
+              <button
+                type="button"
+                onClick={() => copyToClipboard(result.answer, text.copyAnswerSuccess)}
+              >
+                {text.copyAnswer}
+              </button>
+            )}
+            {result.sources.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(formatSourcesForCopy(result.sources), text.copySourcesSuccess)
+                }
+              >
+                {text.copySources}
+              </button>
+            )}
+          </div>
+          {copyStatus && (
+            <p role="status" className="copy-status">
+              {copyStatus}
+            </p>
+          )}
           <h3>{text.groundingSources}</h3>
           {result.sources.length > 0 ? (
             <ul>

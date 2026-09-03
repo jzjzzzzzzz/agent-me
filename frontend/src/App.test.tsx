@@ -328,6 +328,86 @@ it("runs verified collaboration and renders the verifier handoff", async () => {
   );
 });
 
+it("copies the answer and sources as deterministic plain text", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+
+  vi.stubGlobal(
+    "fetch",
+    routeFetch({
+      answer: "Start with user goals.",
+      mode: "extractive",
+      sources: [
+        { title: "First", path: "first.md", excerpt: "…", score: 1 },
+        { title: "Second", path: "second.md", excerpt: "…", score: 0.5 },
+      ],
+    }),
+  );
+
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "How do I plan?");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await screen.findByText("Start with user goals.", { selector: ".answer > p" });
+
+  await userEvent.click(screen.getByRole("button", { name: "Copy answer" }));
+  expect(writeText).toHaveBeenCalledWith("Start with user goals.");
+  expect(await screen.findByRole("status")).toHaveTextContent("Answer copied to clipboard.");
+
+  await userEvent.click(screen.getByRole("button", { name: "Copy sources" }));
+  expect(writeText).toHaveBeenLastCalledWith("First — first.md\nSecond — second.md");
+  expect(await screen.findByRole("status")).toHaveTextContent("Sources copied to clipboard.");
+});
+
+it("hides the copy sources control when there are no sources", async () => {
+  vi.stubGlobal(
+    "fetch",
+    routeFetch({
+      answer: "The supplied context is insufficient.",
+      mode: "openai-compatible",
+      sources: [],
+    }),
+  );
+
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "Unknown question");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await screen.findByText("The supplied context is insufficient.", { selector: ".answer > p" });
+
+  expect(screen.getByRole("button", { name: "Copy answer" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Copy sources" })).not.toBeInTheDocument();
+});
+
+it("shows a safe localized message when the clipboard write fails", async () => {
+  const writeText = vi.fn().mockRejectedValue(new DOMException("denied", "NotAllowedError"));
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+
+  vi.stubGlobal(
+    "fetch",
+    routeFetch({
+      answer: "Start with user goals.",
+      mode: "extractive",
+      sources: [],
+    }),
+  );
+
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "How do I plan?");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await screen.findByText("Start with user goals.", { selector: ".answer > p" });
+
+  await userEvent.click(screen.getByRole("button", { name: "Copy answer" }));
+
+  const status = await screen.findByRole("status");
+  expect(status).toHaveTextContent("Copy failed. Select and copy the text manually.");
+  expect(status.textContent).not.toMatch(/NotAllowedError|denied/);
+});
+
 it("exports only the validated collaboration response and revokes its object URL", () => {
   let blobParts: BlobPart[] = [];
   const createObjectURL = vi.fn(() => "blob:run");
