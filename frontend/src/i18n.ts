@@ -47,6 +47,11 @@ type Messages = {
   runId: string;
   exportRun: string;
   exportPrivacy: string;
+  copyAnswer: string;
+  copySources: string;
+  copyAnswerSuccess: string;
+  copySourcesSuccess: string;
+  copyFailure: string;
   footer: string;
 };
 
@@ -92,6 +97,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "Run ID",
     exportRun: "Download sanitized run JSON",
     exportPrivacy: "Exports only the completed collaboration response. It excludes your question, profile, provider settings, and hidden browser state.",
+    copyAnswer: "Copy answer",
+    copySources: "Copy sources",
+    copyAnswerSuccess: "Answer copied to clipboard.",
+    copySourcesSuccess: "Sources copied to clipboard.",
+    copyFailure: "Copy failed. Select and copy the text manually.",
     footer:
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
@@ -131,6 +141,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "运行 ID",
     exportRun: "下载脱敏运行记录 JSON",
     exportPrivacy: "仅导出已完成的协作响应，不包含你的问题、个人资料、模型服务设置或浏览器隐藏状态。",
+    copyAnswer: "复制回答",
+    copySources: "复制来源",
+    copyAnswerSuccess: "回答已复制到剪贴板。",
+    copySourcesSuccess: "来源已复制到剪贴板。",
+    copyFailure: "复制失败，请手动选择并复制文本。",
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
@@ -169,6 +184,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "執行 ID",
     exportRun: "下載已清理的執行記錄 JSON",
     exportPrivacy: "只匯出已完成的協作回應，不包含你的問題、個人資料、模型服務設定或瀏覽器隱藏狀態。",
+    copyAnswer: "複製回答",
+    copySources: "複製來源",
+    copyAnswerSuccess: "回答已複製到剪貼簿。",
+    copySourcesSuccess: "來源已複製到剪貼簿。",
+    copyFailure: "複製失敗，請手動選取並複製文字。",
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
@@ -212,6 +232,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "実行 ID",
     exportRun: "サニタイズ済み実行 JSON をダウンロード",
     exportPrivacy: "完了した協働レスポンスのみを出力し、質問、プロフィール、プロバイダー設定、非表示のブラウザー状態は含みません。",
+    copyAnswer: "回答をコピー",
+    copySources: "ソースをコピー",
+    copyAnswerSuccess: "回答をクリップボードにコピーしました。",
+    copySourcesSuccess: "ソースをクリップボードにコピーしました。",
+    copyFailure: "コピーに失敗しました。テキストを選択して手動でコピーしてください。",
     footer:
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
@@ -255,6 +280,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "실행 ID",
     exportRun: "정리된 실행 JSON 다운로드",
     exportPrivacy: "완료된 협업 응답만 내보내며 질문, 프로필, 공급자 설정 및 숨겨진 브라우저 상태는 제외합니다.",
+    copyAnswer: "답변 복사",
+    copySources: "출처 복사",
+    copyAnswerSuccess: "답변이 클립보드에 복사되었습니다.",
+    copySourcesSuccess: "출처가 클립보드에 복사되었습니다.",
+    copyFailure: "복사에 실패했습니다. 텍스트를 직접 선택해 복사하세요.",
     footer:
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
@@ -299,6 +329,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "ID de ejecución",
     exportRun: "Descargar JSON de ejecución depurado",
     exportPrivacy: "Exporta solo la respuesta de colaboración terminada; excluye la pregunta, el perfil, la configuración del proveedor y el estado oculto del navegador.",
+    copyAnswer: "Copiar respuesta",
+    copySources: "Copiar fuentes",
+    copyAnswerSuccess: "Respuesta copiada al portapapeles.",
+    copySourcesSuccess: "Fuentes copiadas al portapapeles.",
+    copyFailure: "No se pudo copiar. Selecciona y copia el texto manualmente.",
     footer:
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
@@ -343,6 +378,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "ID d’exécution",
     exportRun: "Télécharger le JSON d’exécution épuré",
     exportPrivacy: "Exporte uniquement la réponse de collaboration terminée, sans la question, le profil, les réglages du fournisseur ni l’état caché du navigateur.",
+    copyAnswer: "Copier la réponse",
+    copySources: "Copier les sources",
+    copyAnswerSuccess: "Réponse copiée dans le presse-papiers.",
+    copySourcesSuccess: "Sources copiées dans le presse-papiers.",
+    copyFailure: "Échec de la copie. Sélectionnez et copiez le texte manuellement.",
     footer:
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
@@ -387,6 +427,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "Lauf-ID",
     exportRun: "Bereinigten Lauf als JSON herunterladen",
     exportPrivacy: "Exportiert nur die abgeschlossene Kollaborationsantwort; Frage, Profil, Anbieter-Einstellungen und verborgener Browserstatus werden ausgeschlossen.",
+    copyAnswer: "Antwort kopieren",
+    copySources: "Quellen kopieren",
+    copyAnswerSuccess: "Antwort in die Zwischenablage kopiert.",
+    copySourcesSuccess: "Quellen in die Zwischenablage kopiert.",
+    copyFailure: "Kopieren fehlgeschlagen. Text bitte manuell markieren und kopieren.",
     footer:
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
@@ -431,6 +476,11 @@ export const messages: Record<Locale, Messages> = {
     runId: "ID da execução",
     exportRun: "Baixar JSON sanitizado da execução",
     exportPrivacy: "Exporta somente a resposta de colaboração concluída; exclui a pergunta, o perfil, as configurações do provedor e o estado oculto do navegador.",
+    copyAnswer: "Copiar resposta",
+    copySources: "Copiar fontes",
+    copyAnswerSuccess: "Resposta copiada para a área de transferência.",
+    copySourcesSuccess: "Fontes copiadas para a área de transferência.",
+    copyFailure: "Falha ao copiar. Selecione e copie o texto manualmente.",
     footer:
       "Prompts são entradas não confiáveis. Revise os documentos antes de publicar e nunca faça commit de segredos.",
   },
