@@ -1,8 +1,8 @@
 # Contributing to Agent-Me
 
-Thank you for improving the reference implementation or engineering curriculum. Contributions from first-time
-learners, educators, translators, frontend/backend engineers, security reviewers, and operators are
-welcome.
+Thank you for helping build Agent-Me: an inspectable AI Twin that can learn from a person's context over time. Contributions from first-time contributors, researchers, designers, educators, translators, frontend/backend engineers, security reviewers, and operators are welcome.
+
+Read the [AI Twin roadmap](ROADMAP.md) before proposing substantial new behavior. Contributions should move the project toward continuous learning while preserving provenance, uncertainty, privacy, inspectability, evaluation, and owner control.
 
 By participating, follow the [Code of Conduct](CODE_OF_CONDUCT.md). By submitting a contribution,
 you agree that it is licensed under the repository's [MIT License](LICENSE).
@@ -14,6 +14,7 @@ you agree that it is licensed under the repository's [MIT License](LICENSE).
 | Reproducible software bug | [Bug report](https://github.com/jzjzzzzzzz/agent-me/issues/new?template=bug.yml) |
 | Confusing lesson or exercise | [Course feedback](https://github.com/jzjzzzzzzz/agent-me/issues/new?template=course.yml) |
 | New feature or role design | [Feature proposal](https://github.com/jzjzzzzzzz/agent-me/issues/new?template=feature.yml) |
+| Roadmap or AI Twin design proposal | Read [ROADMAP.md](ROADMAP.md), then open a feature proposal |
 | New or corrected translation | [Translation issue](https://github.com/jzjzzzzzzz/agent-me/issues/new?template=translation.yml) |
 | Security vulnerability | Private process in [SECURITY.md](SECURITY.md), never a public issue |
 | Setup question | Search Issues first; open course feedback with sanitized diagnostics |
@@ -25,6 +26,9 @@ security exploit details, or database dumps in an issue or pull request.
 
 A useful contribution does not need to be large:
 
+- propose a focused memory schema or provenance field with clear semantics;
+- add a temporal, contradiction, correction, deletion, or privacy evaluation case;
+- document a continuous-learning failure mode or trust boundary;
 - correct one unclear paragraph and explain why it confused learners;
 - add a missing expected-output example;
 - reproduce and fix a broken command on a supported platform;
@@ -34,8 +38,7 @@ A useful contribution does not need to be large:
 - review and correct one translated lesson;
 - add a troubleshooting entry backed by a reproduction.
 
-Search existing issues and comment before duplicating work. For significant behavior, curriculum,
-public schema, dependency, or architecture changes, open an issue before implementing.
+Search existing issues and comment before duplicating work. For significant AI Twin behavior, memory models, ingestion, tools, curriculum, public schemas, dependencies, or architecture changes, open an issue before implementing.
 
 ## Development workflow
 

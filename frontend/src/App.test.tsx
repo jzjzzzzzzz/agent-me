@@ -31,14 +31,14 @@ function routeFetch(chatResponse: object) {
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.lang = "en";
-  document.title = "Agent-Me | Auditable multi-agent RAG";
+  document.title = "Agent-Me | An inspectable AI Twin";
   let description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
   if (!description) {
     description = document.createElement("meta");
     description.name = "description";
     document.head.append(description);
   }
-  description.content = "Agent-Me auditable multi-agent RAG reference implementation.";
+  description.content = "Agent-Me — an open-source, auditable AI Twin built with memory, retrieval, multi-agent reasoning, and verification.";
   vi.restoreAllMocks();
 });
 
@@ -49,11 +49,11 @@ it("sets useful localized metadata before the profile is available", () => {
 
   expect(document.documentElement.lang).toBe("en");
   expect(document.title).toBe(
-    "REFERENCE IMPLEMENTATION | Inspect an auditable RAG workflow.",
+    "OPEN-SOURCE AI AGENT TWIN | Distill yourself into an AI Agent Twin.",
   );
   expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
     "content",
-    expect.stringContaining("typed handoffs"),
+    expect.stringContaining("AI Twin"),
   );
 });
 

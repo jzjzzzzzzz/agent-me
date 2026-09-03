@@ -2,9 +2,15 @@
 
 # Agent-Me
 
-**构建、检查和评估可审计的多 Agent RAG 系统。**
+### 把自己蒸馏成一个 AI Agent Twin。
 
-Agent-Me 是一个面向可审计、基于角色的多 Agent RAG 工作流的开源参考实现，并配有中英双语动手工程课程。
+把你的知识、记忆、项目、偏好、经历和决策交给它。Agent-Me 会把这些信息组织成一个持续学习你如何思考和工作的 AI Agent Twin。
+
+它不只是一个“知道你的资料”的 chatbot，而是一个用来构建第二个数字版本的开源、可检查架构。
+
+**一个正在学习成为我的 AI Agent。**
+
+[真实示例：John Zhou's AI Twin](https://jz-ai-chat.com) · [快速开始](#快速开始) · [Roadmap](../../ROADMAP.md) · [架构说明](../ARCHITECTURE.md) · [参与贡献](../../CONTRIBUTING.md)
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Português](README.pt-BR.md)
 
@@ -12,19 +18,40 @@ Agent-Me 是一个面向可审计、基于角色的多 Agent RAG 工作流的开
 
 > 本文是项目概览的简体中文翻译。完整技术规范以[英文 README](../../README.md)和 <code>docs/</code> 文档为准。
 
-## Agent-Me 是什么
+## Agent-Me 是什么？
 
-Agent-Me 是一套可运行的 FastAPI + React 参考实现。它在单进程中依次运行 Planner、Researcher、Critic、Writer，并可选增加 Verifier；类型化交接、检索证据、阻断决定、安全轨迹和验证结果都可以检查。默认本地路径无需付费模型 API。
+普通 chatbot 往往只有 `prompt → answer`。Agent-Me 把个人 AI 看作一个系统：
 
-它同时提供[完整的简体中文工程课程](../../course/translations/zh-CN/README.md)，让学习者逐步重建、修改和评估同一套架构。
+```text
+个人知识 → 可审查的记忆 → 检索 → 规划 → 证据 → 批判 → 验证 → 回答
+```
 
-## Agent-Me 不是什么
+当前仓库是一套可运行的 FastAPI + React 实现。它基于可版本管理的 Markdown 知识，在单进程中依次运行 Planner、Researcher、Critic、Writer，并可选增加 Verifier。类型化交接、检索证据、阻断决定、安全的公开轨迹和验证结果都可以检查；默认本地路径无需付费模型 API。
 
-它目前不是分布式多 Agent Runtime、通用 Agent SDK、企业托管平台，也不保证事实正确。这里的 “Agent” 是具有显式协议的角色阶段，由 orchestrator 在单进程中顺序执行；Verifier 只检查机械不变量，不证明语义或事实真实性。
+长期目标不只是“回答关于我的问题”，而是逐步表示：我知道什么、做过什么、偏好什么、如何做决定、这些认识由什么证据支撑，以及系统应当对它们有多大把握。
 
-## 工程课程
+> 大多数 AI 助手只展示 `prompt → answer`。<br>
+> Agent-Me 展示两者之间的系统。
 
-**参考实现：**直接运行、检查和扩展。
+**如果一个 AI 将要代表你，你就应该能够检查它为什么替你这样说。**
+
+## 为什么选择 AI Twin？
+
+许多 personal chatbot 本质上只是 prompt、向量数据库和聊天界面的组合。记住一个人的事实并不难；可靠地表示一个人则困难得多。后者还需要身份与记忆模型、来源追踪、时间更新、不确定性、推理、验证和用户控制。
+
+Agent-Me 不声称今天已经解决所有问题。它提供的是一个具体、可运行、可测试的起点，也是 [John Zhou's AI Twin](https://jz-ai-chat.com) 背后的基础架构。
+
+## Agent-Me 不是什么？
+
+Agent-Me 不是冒充你的 prompt、角色聊天机器人、声音克隆、静态向量数据库、黑箱 autonomous agent，也不是通用 multi-agent framework。它是一个用于构建持久、可检查的个人 AI 表示的实验性架构。
+
+当前实现仍是一个有意保持边界清晰的早期阶段：它没有持久化对话记忆或知识图谱，也不保证事实正确。这里的 “Agent” 是具有显式协议的角色阶段，由 orchestrator 在单进程中顺序执行；Verifier 检查引用路径和输出不变量，不证明语义或事实真实性。
+
+## 通过重建 Agent-Me 学习
+
+仓库还包含中英双语工程课程，从检索和证据一直讲到多 Agent 编排与验证。课程是围绕工作系统提供的教育层，不是 Agent-Me 的产品定义。
+
+**实际系统：**直接运行、检查和扩展。
 
 **课程：**逐步重建架构，理解每个组件为何存在。
 
@@ -88,6 +115,16 @@ LLM_MODEL=replace-with-a-model-id
 
 贡献新语言前请阅读[本地化指南](../LOCALIZATION.md)。
 
+## 愿景
+
+今天，Agent-Me 可以检索可审查的个人知识并在其上进行推理。长期目标是让 AI Twin 持续从一个人的知识、项目、对话、决定、偏好与经历中学习，同时保留来源、不确定性、隐私、可检查性和用户控制。
+
+**目标不是创建一个说话像你的 chatbot。**
+
+**目标是探索如何构建一个能越来越充分地结合你的上下文进行思考的数字化表示。**
+
+项目将沿着明确、可检查的层次推进：结构化身份与记忆、经过同意的持续学习、时间与冲突处理、带权限边界的工具调用，以及长期一致性评估。完整方向和可参与的工作流见 [AI Twin Roadmap](../../ROADMAP.md)。
+
 ## 安全与隐私
 
 - 提示词和知识文件都必须被视为不可信输入。
@@ -110,7 +147,7 @@ LLM_MODEL=replace-with-a-model-id
 - [本地化指南](../LOCALIZATION.md)
 - [贡献指南](../../CONTRIBUTING.md)
 
-欢迎提交 Issue 和 Pull Request。提交前请运行 <code>make lint</code>、<code>make test</code>、<code>make evaluate</code> 和 <code>make build</code>。
+欢迎参与构建可信、持续学习的 AI Twin。除代码外，memory schema、provenance、时间模型、隐私边界、evaluation case、威胁模型和文档同样是有价值的贡献。开始前请阅读 [Roadmap](../../ROADMAP.md) 和[贡献指南](../../CONTRIBUTING.md)。提交前请运行 <code>make lint</code>、<code>make test</code>、<code>make evaluate</code> 和 <code>make build</code>。
 
 ## 相关项目与许可
 

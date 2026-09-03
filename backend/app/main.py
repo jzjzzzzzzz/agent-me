@@ -24,8 +24,8 @@ from .schemas import (
 app = FastAPI(
     title="Agent-Me API",
     description=(
-        "Agent-Me — an open-source reference implementation for building and evaluating "
-        "auditable multi-agent RAG systems."
+        "Agent-Me — an open-source, auditable AI Twin built with personal knowledge, "
+        "retrieval, multi-agent reasoning, verification, and inspectable execution traces."
     ),
     version=__version__,
 )

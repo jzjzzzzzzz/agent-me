@@ -46,7 +46,7 @@ async def test_openapi_metadata_uses_project_brand_and_version(
     info = response.json()["info"]
     assert info["title"] == "Agent-Me API"
     assert info["version"] == __version__
-    assert "reference implementation" in info["description"]
+    assert "AI Twin" in info["description"]
 
 
 @pytest.mark.anyio

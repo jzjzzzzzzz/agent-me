@@ -53,10 +53,10 @@ type Messages = {
 export const messages: Record<Locale, Messages> = {
   en: {
     language: "Language",
-    projectLabel: "REFERENCE IMPLEMENTATION",
-    title: "Inspect an auditable RAG workflow.",
+    projectLabel: "OPEN-SOURCE AI AGENT TWIN",
+    title: "Distill yourself into an AI Agent Twin.",
     intro:
-      "Run local retrieval or inspect a role-based workflow with typed handoffs, evidence sources, critique, and verification.",
+      "Ask an AI Twin grounded in reviewable personal knowledge, then inspect its evidence, agent decisions, critique, and verification.",
     formLabel: "Ask the example knowledge base",
     placeholder: "How does the example agent plan a project?",
     searching: "Searching…",

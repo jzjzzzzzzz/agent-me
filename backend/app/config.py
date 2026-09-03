@@ -9,8 +9,8 @@ class Settings(BaseSettings):
 
     app_name: str = "Agent-Me"
     app_description: str = (
-        "Build, inspect, and evaluate role-based multi-agent RAG workflows with typed handoffs, "
-        "evidence tracing, deterministic evaluation, and a bilingual engineering curriculum."
+        "An open-source, auditable AI Twin built with personal knowledge, retrieval, "
+        "multi-agent reasoning, verification, and inspectable execution traces."
     )
     knowledge_dir: str = "knowledge"
     max_question_chars: int = Field(default=8_000, ge=1, le=100_000)
