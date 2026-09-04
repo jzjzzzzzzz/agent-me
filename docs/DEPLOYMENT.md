@@ -11,6 +11,12 @@ a reproducible local reference environment, not a production-ready hosted platfo
 6. Keep provider credentials in a secret manager and rotate them regularly.
 7. Monitor `/health` and `/ready` without logging request bodies.
 
+`MAX_DOCUMENT_BYTES` limits each Markdown file. `MAX_KNOWLEDGE_DOCUMENTS` and
+`MAX_KNOWLEDGE_BYTES` independently limit the document count and aggregate bytes in one corpus
+snapshot. The defaults are 1 MB per file, 256 documents, and 16 MB total. Tune them to the reviewed
+corpus and available memory rather than disabling the bounds; a limit violation fails readiness,
+chat, and collaboration closed with a path-free `503`.
+
 The included Compose file is intended for local evaluation. It binds both services to loopback, runs the API with all Linux capabilities dropped, runs both services with read-only root filesystems and `no-new-privileges`, and gives Nginx only the capabilities and temporary filesystems it needs. Set `API_BIND` or `WEB_BIND` only when you intentionally need a non-loopback development listener.
 
 The web image sends browser requests to same-origin `/api` by default. Its Nginx configuration

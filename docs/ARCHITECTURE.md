@@ -7,7 +7,9 @@ abstractions. See [Trust, Data Flow, and Deployment Boundaries](TRUST.md) for th
 ## Trust boundaries
 
 1. Browser questions are untrusted and validated by Pydantic.
-2. Knowledge files are operator-controlled but bounded by the configured root and file-size limit; symbolic links are rejected and content is rendered as plain text.
+2. Knowledge files are operator-controlled but bounded by the configured root, per-file size,
+   document count, and aggregate corpus size; symbolic links are rejected and content is rendered as
+   plain text.
 3. Provider output is untrusted and rendered as text, never inserted as HTML. Before submission,
    the browser uses the public `external_provider_enabled` flag to disclose whether the question,
    recent history, and retrieved context will be forwarded to the configured provider.
@@ -33,9 +35,10 @@ numbers remain word tokens, while Han characters remain individual tokens to pre
 reference implementation's deterministic CJK behavior. Retrieval scoring and collaboration coverage metrics share
 this implementation so canonically equivalent text is treated consistently.
 
-The API reuses `KnowledgeBase` instances for identical roots and size limits. Every access still
-rescans bounded file metadata and re-enforces the root, symlink, file-type, and size rules; unchanged
-signatures reuse immutable parsed documents, while add/edit/remove operations invalidate the cache.
+The API reuses `KnowledgeBase` instances only for identical roots and identical per-file,
+document-count, and aggregate-byte limits. Every access still rescans bounded file metadata and
+re-enforces the root, symlink, file-type, and size rules; unchanged signatures reuse immutable parsed
+documents, while add/edit/remove operations invalidate the cache.
 Readiness, search, and the local collaboration run execute through Starlette's worker thread pool so
 synchronous filesystem work does not block the async event loop. The cache is process-local only;
 the filesystem remains authoritative after edits and process restarts.

@@ -110,50 +110,71 @@ def _content_chunks(text: str) -> list[str]:
 
 
 class KnowledgeBase:
-    def __init__(self, directory: str, *, max_document_bytes: int = 1_000_000) -> None:
+    def __init__(
+        self,
+        directory: str,
+        *,
+        max_document_bytes: int = 1_000_000,
+        max_documents: int = 256,
+        max_corpus_bytes: int = 16_000_000,
+    ) -> None:
+        if max_document_bytes < 1:
+            raise ValueError("max_document_bytes must be positive")
+        if max_documents < 1:
+            raise ValueError("max_documents must be positive")
+        if max_corpus_bytes < 1:
+            raise ValueError("max_corpus_bytes must be positive")
         self.directory = Path(directory)
         self.max_document_bytes = max_document_bytes
+        self.max_documents = max_documents
+        self.max_corpus_bytes = max_corpus_bytes
         self._cache_lock = RLock()
         self._cached_root: Path | None = None
         self._cached_signature: tuple[tuple[str, int, int, int], ...] | None = None
         self._cached_documents: tuple[Document, ...] = ()
 
     def _files(self, root: Path) -> list[_KnowledgeFile]:
+        result: list[_KnowledgeFile] = []
+        total_bytes = 0
         try:
-            paths = sorted(self.directory.rglob("*.md"))
+            paths = self.directory.rglob("*.md")
+            for path in paths:
+                if path.is_symlink():
+                    raise KnowledgeLoadError("knowledge_symlink_rejected")
+                try:
+                    resolved = path.resolve(strict=True)
+                    relative_path = resolved.relative_to(root).as_posix()
+                except (OSError, ValueError) as error:
+                    raise KnowledgeLoadError("knowledge_path_rejected") from error
+                if not resolved.is_file():
+                    continue
+                try:
+                    stat = resolved.stat()
+                    if stat.st_size > self.max_document_bytes:
+                        raise KnowledgeLoadError("knowledge_document_too_large")
+                except KnowledgeLoadError:
+                    raise
+                except OSError as error:
+                    raise KnowledgeLoadError("knowledge_document_unreadable") from error
+
+                if len(result) >= self.max_documents:
+                    raise KnowledgeLoadError("knowledge_document_count_exceeded")
+                total_bytes += stat.st_size
+                if total_bytes > self.max_corpus_bytes:
+                    raise KnowledgeLoadError("knowledge_corpus_too_large")
+
+                result.append(
+                    _KnowledgeFile(
+                        resolved=resolved,
+                        relative_path=relative_path,
+                        size=stat.st_size,
+                        modified_ns=stat.st_mtime_ns,
+                        changed_ns=stat.st_ctime_ns,
+                    )
+                )
         except OSError as error:
             raise KnowledgeLoadError("knowledge_directory_unavailable") from error
-
-        result: list[_KnowledgeFile] = []
-        for path in paths:
-            if path.is_symlink():
-                raise KnowledgeLoadError("knowledge_symlink_rejected")
-            try:
-                resolved = path.resolve(strict=True)
-                resolved.relative_to(root)
-            except (OSError, ValueError) as error:
-                raise KnowledgeLoadError("knowledge_path_rejected") from error
-            if not resolved.is_file():
-                continue
-            try:
-                stat = resolved.stat()
-                if stat.st_size > self.max_document_bytes:
-                    raise KnowledgeLoadError("knowledge_document_too_large")
-            except KnowledgeLoadError:
-                raise
-            except OSError as error:
-                raise KnowledgeLoadError("knowledge_document_unreadable") from error
-
-            result.append(
-                _KnowledgeFile(
-                    resolved=resolved,
-                    relative_path=path.relative_to(self.directory).as_posix(),
-                    size=stat.st_size,
-                    modified_ns=stat.st_mtime_ns,
-                    changed_ns=stat.st_ctime_ns,
-                )
-            )
-        return result
+        return sorted(result, key=lambda item: item.relative_path)
 
     @staticmethod
     def _signature(
@@ -165,12 +186,18 @@ class KnowledgeBase:
 
     def _read(self, files: list[_KnowledgeFile]) -> list[Document]:
         result: list[Document] = []
+        total_bytes = 0
         for item in files:
             try:
+                remaining_corpus_bytes = self.max_corpus_bytes - total_bytes
+                read_limit = min(self.max_document_bytes, remaining_corpus_bytes)
                 with item.resolved.open("rb") as source:
-                    raw = source.read(self.max_document_bytes + 1)
+                    raw = source.read(read_limit + 1)
                 if len(raw) > self.max_document_bytes:
                     raise KnowledgeLoadError("knowledge_document_too_large")
+                total_bytes += len(raw)
+                if total_bytes > self.max_corpus_bytes:
+                    raise KnowledgeLoadError("knowledge_corpus_too_large")
                 text = raw.decode("utf-8")
             except KnowledgeLoadError:
                 raise

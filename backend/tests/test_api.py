@@ -140,6 +140,79 @@ async def test_unsafe_knowledge_returns_safe_service_error(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("method", "path", "payload"),
+    [
+        ("GET", "/ready", None),
+        ("POST", "/api/v1/chat", {"question": "Python?"}),
+        ("POST", "/api/v1/collaborate", {"question": "Python?"}),
+    ],
+)
+async def test_aggregate_knowledge_limit_fails_closed_without_path_disclosure(
+    client: httpx.AsyncClient,
+    tmp_path: Path,
+    method: str,
+    path: str,
+    payload: dict[str, str] | None,
+) -> None:
+    (tmp_path / "private-corpus-name.md").write_text("private", encoding="utf-8")
+    settings = get_settings()
+    original = settings.max_knowledge_documents
+    settings.max_knowledge_documents = 1
+    try:
+        response = await client.request(method, path, json=payload)
+    finally:
+        settings.max_knowledge_documents = original
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Knowledge base is temporarily unavailable.",
+        "code": "knowledge_document_count_exceeded",
+    }
+    assert "private-corpus-name" not in response.text
+    assert str(tmp_path) not in response.text
+
+
+@pytest.mark.anyio
+async def test_ready_enforces_aggregate_knowledge_bytes(
+    client: httpx.AsyncClient,
+    tmp_path: Path,
+) -> None:
+    settings = get_settings()
+    original = settings.max_knowledge_bytes
+    profile_size = (tmp_path / "profile.md").stat().st_size
+    settings.max_knowledge_bytes = profile_size - 1
+    try:
+        response = await client.get("/ready")
+    finally:
+        settings.max_knowledge_bytes = original
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Knowledge base is temporarily unavailable.",
+        "code": "knowledge_corpus_too_large",
+    }
+    assert str(tmp_path) not in response.text
+
+
+def test_knowledge_base_cache_separates_every_limit_configuration(tmp_path: Path) -> None:
+    main_module._knowledge_base.cache_clear()
+    try:
+        baseline = main_module._knowledge_base(str(tmp_path), 100, 1, 100)
+        same = main_module._knowledge_base(str(tmp_path), 100, 1, 100)
+        different_file_limit = main_module._knowledge_base(str(tmp_path), 101, 1, 100)
+        different_count_limit = main_module._knowledge_base(str(tmp_path), 100, 2, 100)
+        different_corpus_limit = main_module._knowledge_base(str(tmp_path), 100, 1, 101)
+    finally:
+        main_module._knowledge_base.cache_clear()
+
+    assert baseline is same
+    assert baseline is not different_file_limit
+    assert baseline is not different_count_limit
+    assert baseline is not different_corpus_limit
+
+
+@pytest.mark.anyio
 async def test_grounded_extractive_answer(client: httpx.AsyncClient) -> None:
     response = await client.post("/api/v1/chat", json={"question": "prefers Python tools?"})
     assert response.status_code == 200

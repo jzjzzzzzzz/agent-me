@@ -64,8 +64,27 @@ class SemanticLimitError(Exception):
 
 
 @lru_cache(maxsize=16)
-def _knowledge_base(directory: str, max_document_bytes: int) -> KnowledgeBase:
-    return KnowledgeBase(directory, max_document_bytes=max_document_bytes)
+def _knowledge_base(
+    directory: str,
+    max_document_bytes: int,
+    max_knowledge_documents: int,
+    max_knowledge_bytes: int,
+) -> KnowledgeBase:
+    return KnowledgeBase(
+        directory,
+        max_document_bytes=max_document_bytes,
+        max_documents=max_knowledge_documents,
+        max_corpus_bytes=max_knowledge_bytes,
+    )
+
+
+def _configured_knowledge_base(config: Settings) -> KnowledgeBase:
+    return _knowledge_base(
+        config.knowledge_dir,
+        config.max_document_bytes,
+        config.max_knowledge_documents,
+        config.max_knowledge_bytes,
+    )
 
 
 @app.exception_handler(SemanticLimitError)
@@ -109,7 +128,7 @@ async def health() -> dict[str, str]:
 async def ready(
     config: Settings = Depends(get_settings),
 ) -> JSONResponse:
-    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    knowledge = _configured_knowledge_base(config)
     documents = await run_in_threadpool(knowledge.documents)
     is_ready = bool(documents) and config.provider_state != "misconfigured"
     content: dict[str, object] = {
@@ -142,7 +161,7 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
             code="history_too_large",
             detail="history exceeds configured limit",
         )
-    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    knowledge = _configured_knowledge_base(config)
     matches = await run_in_threadpool(knowledge.search, payload.question)
     answer, mode = await generate_answer(
         question=payload.question,
@@ -175,7 +194,7 @@ async def collaborate(
             code="question_too_large",
             detail="question exceeds configured limit",
         )
-    knowledge = _knowledge_base(config.knowledge_dir, config.max_document_bytes)
+    knowledge = _configured_knowledge_base(config)
     result = await run_in_threadpool(
         CollaborationOrchestrator(retriever=knowledge).run,
         question=payload.question,

@@ -29,6 +29,92 @@ def test_oversized_document_is_rejected_without_exposing_its_path(tmp_path: Path
     assert "private-name" not in str(captured.value)
 
 
+def test_document_count_limit_is_inclusive_and_counts_nested_files(tmp_path: Path) -> None:
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (tmp_path / "a.md").write_text("a", encoding="utf-8")
+    (nested / "b.md").write_text("b", encoding="utf-8")
+
+    documents = KnowledgeBase(str(tmp_path), max_documents=2).documents()
+
+    assert [document.path for document in documents] == ["a.md", "nested/b.md"]
+    with pytest.raises(KnowledgeLoadError) as captured:
+        KnowledgeBase(str(tmp_path), max_documents=1).documents()
+    assert captured.value.code == "knowledge_document_count_exceeded"
+    assert str(tmp_path) not in str(captured.value)
+
+
+def test_aggregate_byte_limit_is_inclusive_and_rejects_one_byte_over(tmp_path: Path) -> None:
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (tmp_path / "a.md").write_text("1234", encoding="utf-8")
+    (nested / "b.md").write_text("56789", encoding="utf-8")
+
+    documents = KnowledgeBase(str(tmp_path), max_corpus_bytes=9).documents()
+
+    assert [document.path for document in documents] == ["a.md", "nested/b.md"]
+    with pytest.raises(KnowledgeLoadError) as captured:
+        KnowledgeBase(str(tmp_path), max_corpus_bytes=8).documents()
+    assert captured.value.code == "knowledge_corpus_too_large"
+    assert str(tmp_path) not in str(captured.value)
+
+
+@pytest.mark.parametrize(
+    ("limits", "expected_code"),
+    [
+        ({"max_documents": 1}, "knowledge_document_count_exceeded"),
+        ({"max_corpus_bytes": 3}, "knowledge_corpus_too_large"),
+    ],
+)
+def test_aggregate_metadata_rejection_happens_before_any_document_is_opened(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    limits: dict[str, int],
+    expected_code: str,
+) -> None:
+    (tmp_path / "a.md").write_text("12", encoding="utf-8")
+    (tmp_path / "b.md").write_text("34", encoding="utf-8")
+
+    def unexpected_open(*_: object, **__: object) -> None:
+        raise AssertionError("document content was opened after metadata rejection")
+
+    monkeypatch.setattr(Path, "open", unexpected_open)
+    with pytest.raises(KnowledgeLoadError) as captured:
+        KnowledgeBase(str(tmp_path), **limits).documents()
+    assert captured.value.code == expected_code
+
+
+def test_aggregate_read_limit_handles_a_file_growing_after_metadata_scan(tmp_path: Path) -> None:
+    profile = tmp_path / "profile.md"
+    profile.write_text("12", encoding="utf-8")
+    knowledge = KnowledgeBase(str(tmp_path), max_corpus_bytes=3)
+    root = tmp_path.resolve(strict=True)
+    files = knowledge._files(root)
+
+    profile.write_text("1234", encoding="utf-8")
+
+    with pytest.raises(KnowledgeLoadError) as captured:
+        knowledge._read(files)
+    assert captured.value.code == "knowledge_corpus_too_large"
+
+
+@pytest.mark.parametrize(
+    ("limits", "message"),
+    [
+        ({"max_document_bytes": 0}, "max_document_bytes"),
+        ({"max_documents": 0}, "max_documents"),
+        ({"max_corpus_bytes": 0}, "max_corpus_bytes"),
+    ],
+)
+def test_direct_loader_limits_must_be_positive(
+    tmp_path: Path,
+    limits: dict[str, int],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        KnowledgeBase(str(tmp_path), **limits)
+
+
 def test_symbolic_linked_document_is_rejected(tmp_path: Path) -> None:
     outside = tmp_path.parent / "outside-private.md"
     outside.write_text("private", encoding="utf-8")
@@ -170,6 +256,32 @@ def test_documents_cache_is_reused_and_invalidated_by_corpus_changes(
 
     profile.unlink()
     assert [document.path for document in knowledge.documents()] == ["extra.md"]
+
+
+def test_cache_refresh_fails_closed_and_recovers_when_aggregate_limits_change_corpus(
+    tmp_path: Path,
+) -> None:
+    profile = tmp_path / "profile.md"
+    profile.write_text("1234", encoding="utf-8")
+    knowledge = KnowledgeBase(str(tmp_path), max_documents=1, max_corpus_bytes=4)
+    assert [document.path for document in knowledge.documents()] == ["profile.md"]
+
+    extra = tmp_path / "extra.md"
+    extra.write_text("", encoding="utf-8")
+    with pytest.raises(KnowledgeLoadError) as count_error:
+        knowledge.documents()
+    assert count_error.value.code == "knowledge_document_count_exceeded"
+
+    extra.unlink()
+    assert [document.path for document in knowledge.documents()] == ["profile.md"]
+
+    profile.write_text("12345", encoding="utf-8")
+    with pytest.raises(KnowledgeLoadError) as byte_error:
+        knowledge.documents()
+    assert byte_error.value.code == "knowledge_corpus_too_large"
+
+    profile.write_text("12", encoding="utf-8")
+    assert knowledge.documents()[0].text == "12"
 
 
 def test_concurrent_document_reads_publish_one_consistent_cache(tmp_path: Path) -> None:
