@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     max_question_chars: int = Field(default=8_000, ge=1, le=100_000)
     max_context_chars: int = Field(default=12_000, ge=1, le=100_000)
     max_document_bytes: int = Field(default=1_000_000, ge=1, le=50_000_000)
+    max_knowledge_documents: int = Field(default=256, ge=1, le=10_000)
+    max_knowledge_bytes: int = Field(default=16_000_000, ge=1, le=1_000_000_000)
     max_history_chars: int = Field(default=24_000, ge=1, le=200_000)
     max_answer_chars: int = Field(default=50_000, ge=1, le=200_000)
     max_provider_response_bytes: int = Field(default=2_000_000, ge=1_024, le=50_000_000)

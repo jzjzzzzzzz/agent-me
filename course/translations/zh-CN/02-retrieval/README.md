@@ -24,7 +24,7 @@
 Agent-Me 使用一个刻意简单的词法基线：
 
 1. 在 `KNOWLEDGE_DIR` 递归寻找 Markdown；
-2. 拒绝 symlink、越界路径、非法 UTF-8 和过大文件；
+2. 拒绝 symlink、越界路径、非法 UTF-8、过大文件或过大的语料库；
 3. 把每个非空 Markdown block 变成候选 chunk；
 4. 保留 ATX 标题文字但移除 `#`；
 5. 先做 Unicode NFKC 规范化与大小写折叠，再将 Unicode 单词和每个汉字分词；
@@ -41,8 +41,9 @@ Agent-Me 使用一个刻意简单的词法基线：
 ## 运行时 I/O 与缓存边界
 
 只有文件系统签名不变时，API 才会复用不可变的 `Document` 解析结果。每次访问仍会扫描元数据，
-并重新执行根目录、symlink、文件类型和大小检查；新增、修改或删除 Markdown 都会让缓存失效。
-API route 会在线程池运行同步扫描与检索，避免阻塞 FastAPI 的 async event loop。
+并重新执行根目录、symlink、文件类型、单文件大小、文档数量和语料库总字节数检查；新增、修改或
+删除 Markdown 都会让缓存失效。API route 会在线程池运行同步扫描与检索，避免阻塞 FastAPI 的
+async event loop。
 
 这是进程内性能缓存，不是存储或事实来源。进程重启后缓存为空，配置的文件系统始终是权威来源。
 
@@ -118,7 +119,13 @@ PY
 
 ### 文件安全边界
 
-加载器拒绝 symlink、越出根目录的解析路径、超大文件、非法 UTF-8、非目录配置。这些保护文件系统边界，不保证 Markdown 事实可信。内容审核和授权是另一层责任。
+`MAX_DOCUMENT_BYTES` 限制每个文件；`MAX_KNOWLEDGE_DOCUMENTS` 限制一个快照中的 Markdown
+文档数；`MAX_KNOWLEDGE_BYTES` 限制这些文档的总字节数。加载器先从元数据检查数量和总大小，
+超过边界时不会继续读取文档正文，也不会静默跳过文件。readiness、chat、collaboration 与缓存
+刷新共用这些规则。
+
+加载器还拒绝 symlink、越出根目录的解析路径、非法 UTF-8 和非目录配置。这些控制保护文件系统
+与资源边界，但不保证 Markdown 事实可信。内容审核和授权是另一层责任。
 
 ## 练习
 

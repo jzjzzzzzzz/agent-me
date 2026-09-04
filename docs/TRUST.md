@@ -22,9 +22,10 @@ With `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` all unset:
 - questions, chat history, retrieved excerpts, and traces are not sent to a model provider; and
 - no paid model API is required.
 
-The service reads reviewed Markdown beneath `KNOWLEDGE_DIR`. It rejects symbolic links, bounds file
-sizes, and renders returned content as text. Local processing does not make the knowledge safe to
-publish; the operator still controls and must review that content.
+The service reads reviewed Markdown beneath `KNOWLEDGE_DIR`. It rejects symbolic links and bounds
+each file, the Markdown document count, and aggregate corpus bytes before parsing document bodies.
+Returned content is rendered as text. Local processing does not make the knowledge safe to publish;
+the operator still controls and must review that content.
 
 ## Provider mode
 

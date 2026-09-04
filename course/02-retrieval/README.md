@@ -29,7 +29,7 @@ By the end, you can:
 Agent-Me uses a deliberately small lexical baseline:
 
 1. recursively find Markdown files under `KNOWLEDGE_DIR`;
-2. reject symlinks, paths outside the root, invalid UTF-8, and oversized files;
+2. reject symlinks, paths outside the root, invalid UTF-8, oversized files, or an oversized corpus;
 3. turn each nonempty Markdown block into a candidate chunk;
 4. retain ATX heading text while stripping heading markers;
 5. apply Unicode NFKC normalization and case folding, then tokenize Unicode words and individual
@@ -65,9 +65,10 @@ Its simplicity is not a claim of state-of-the-art quality.
 ## Runtime I/O and cache boundary
 
 The API reuses immutable parsed `Document` values only while a filesystem signature is unchanged.
-It still scans metadata and repeats the root, symlink, file-type, and size checks on every access;
-adding, editing, or removing a Markdown file invalidates the cached corpus. API routes run the
-synchronous scan/search in a worker thread so it does not block FastAPI's async event loop.
+It still scans metadata and repeats the root, symlink, file-type, per-file size, document-count, and
+aggregate-byte checks on every access; adding, editing, or removing a Markdown file invalidates the
+cached corpus. API routes run the synchronous scan/search in a worker thread so it does not block
+FastAPI's async event loop.
 
 This is a process-local performance cache, not storage or a source of truth. A restart begins with
 an empty cache, and the configured filesystem remains authoritative.
@@ -192,8 +193,15 @@ The loader rejects several unsafe or unreliable cases:
 - symbolic links that could escape the intended knowledge root;
 - resolved paths outside that root;
 - files above `MAX_DOCUMENT_BYTES`;
+- more than `MAX_KNOWLEDGE_DOCUMENTS` Markdown files;
+- a combined Markdown size above `MAX_KNOWLEDGE_BYTES`;
 - unreadable or invalid UTF-8 content;
 - a configured path that is not a directory.
+
+The first size limit is per file; the latter two bound the whole discovered snapshot. Count and
+aggregate-byte failures are determined from metadata before any document body is parsed. The loader
+fails the entire snapshot instead of silently skipping files, and readiness, chat, collaboration,
+and cache refreshes all use the same limits.
 
 These controls address filesystem trust. They do not make the Markdown factually trustworthy.
 Corpus review and authorization are separate responsibilities.

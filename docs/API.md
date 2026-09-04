@@ -32,7 +32,11 @@ Request fields:
 - `question`: required nonblank string, capped by `MAX_QUESTION_CHARS`.
 - `history`: optional array of up to 20 `{role, content}` items. Roles are `user` or `assistant`; total content is capped by `MAX_HISTORY_CHARS`.
 
-Unknown fields, invalid roles, blank content, and oversized fields are rejected. Unsafe symbolic links, unreadable Markdown, or documents larger than `MAX_DOCUMENT_BYTES` make readiness and chat return a safe `503` without exposing a private path. The response includes `answer`, `mode`, and grounding `sources`.
+Unknown fields, invalid roles, blank content, and oversized fields are rejected. Unsafe symbolic
+links, unreadable Markdown, a file larger than `MAX_DOCUMENT_BYTES`, more than
+`MAX_KNOWLEDGE_DOCUMENTS` Markdown files, or a corpus larger than `MAX_KNOWLEDGE_BYTES` make
+readiness, chat, and collaboration return a safe `503` without exposing private paths or filenames.
+The response includes `answer`, `mode`, and grounding `sources`.
 
 The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES` with `413`, before JSON parsing. This applies both when `Content-Length` is present and when a body is streamed without it.
 

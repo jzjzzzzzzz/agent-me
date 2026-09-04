@@ -24,7 +24,9 @@
 
 ## 原理：当前保证与缺失保证
 
-当前已实现并测试：严格 request/body 限制、确定性本地检索与角色顺序、服务端 run ID、frozen 工件、批准/阻断路径、可选的 fail-closed 引用不变量验证、严格浏览器解析、安全纯文本、不持久化问题/trace、CI/评估/容器 smoke。
+当前已实现并测试：严格 request model、request body、单文件、文档数量与语料库总字节数限制，
+以及确定性本地检索与角色顺序、服务端 run ID、frozen 工件、批准/阻断路径、可选的 fail-closed
+引用不变量验证、严格浏览器解析、安全纯文本、不持久化问题/trace、CI/评估/容器 smoke。
 
 当前没有：重启后持久状态、多 Worker 协调、exactly-once、provider 冗余/预算、认证授权/tenant 隔离、加密 trace/retention job、生产规模语义检索、形式化忠实度、SLO 与事故响应。
 
@@ -119,7 +121,8 @@ make build
 
 ### 安全/隐私
 
-谁能读 knowledge/trace/output？昂贵处理前是否限制 body/file？密钥是否不进入 Git/响应/日志？保留与删除是否实现并测试？
+谁能读 knowledge/trace/output？昂贵处理前是否限制 request body、单文件、文档数量和语料库总字节数？
+密钥是否不进入 Git/响应/日志？保留与删除是否实现并测试？
 
 ### 可观测性与评估
 

@@ -31,7 +31,7 @@ By the end, you can:
 
 The baseline implements and tests:
 
-- strict request models and body-size limits;
+- strict request models plus request-body, per-file, document-count, and aggregate-corpus limits;
 - deterministic local retrieval and role order;
 - server-controlled run IDs;
 - frozen internal handoff artifacts;
@@ -207,7 +207,8 @@ make build
 ### Security and privacy
 
 - Who can read knowledge, traces, and outputs?
-- Are request bodies and files size-limited before expensive processing?
+- Are request bodies, individual files, document counts, and aggregate corpus bytes bounded before
+  expensive processing?
 - Are secrets excluded from Git, responses, and logs?
 - Are retention and deletion implemented and tested?
 
