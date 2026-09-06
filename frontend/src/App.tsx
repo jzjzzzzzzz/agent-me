@@ -23,6 +23,7 @@ import {
   WorkflowMode,
 } from "./workflowLink";
 import "./styles.css";
+import { PersonalWorkspace } from "./PersonalWorkspace";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
 
@@ -161,6 +162,8 @@ export function App() {
           <p className="intro">{profile?.description || text.intro}</p>
         </div>
       </header>
+
+      {profile?.personal_enabled && <PersonalWorkspace external={profile.external_provider_enabled} />}
 
       <form onSubmit={submit} aria-busy={loading}>
         <fieldset className="workflow-picker">

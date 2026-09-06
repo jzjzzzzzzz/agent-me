@@ -4,3 +4,11 @@
 **/__pycache__
 frontend/node_modules
 frontend/dist
+
+# Private twin data must never enter Git or container build contexts.
+private/
+.env.*
+!.env.example
+*.sqlite*
+*.db-*
+private-twin-export.json

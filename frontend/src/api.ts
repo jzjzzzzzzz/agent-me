@@ -24,6 +24,7 @@ export type CollaborationResponse = {
   trace: CollaborationStage[];
 };
 export type ProfileResponse = {
+  personal_enabled?: boolean;
   name: string;
   description: string;
   max_question_chars: number;

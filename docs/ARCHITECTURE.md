@@ -87,5 +87,7 @@ distributed workers would require durable state, idempotency, delivery semantics
 retries, cancellation, authorization, and trace-retention controls. The
 [engineering curriculum](../course/README.md) rebuilds these contracts and examines those tradeoffs.
 
-The reference implementation does not persist requests. Add a database only when the product needs
+The public reference endpoints do not persist requests. The opt-in, token-protected
+[private workspace](PERSONAL.md) persists its own chats and confirmed memories in SQLite;
+public endpoints never read that database. Add a database only when the product needs
 persistence, and document the purpose, retention, and access controls before collecting data.

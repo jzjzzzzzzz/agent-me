@@ -10,7 +10,7 @@ It is not just a chatbot that knows facts about you. It is an open-source, inspe
 
 **An AI agent that is learning to become me.**
 
-[Live example: John Zhou's AI Twin](https://jz-ai-chat.com) · [Quick start](#quick-start) · [Roadmap](ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) · [Learn](LEARN.md) · [Contribute](CONTRIBUTING.md)
+[Quick start](#quick-start) · [Roadmap](ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) · [Learn](LEARN.md) · [Contribute](CONTRIBUTING.md)
 
 <p>
   <a href="https://github.com/jzjzzzzzzz/agent-me/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/jzjzzzzzzz/agent-me/actions/workflows/ci.yml/badge.svg"></a>
@@ -51,7 +51,7 @@ The aim is not merely to answer questions *about* a person. It is to build an in
 - what evidence supports those beliefs; and
 - how certain the system should be about them.
 
-Today, the repository provides a runnable FastAPI + React implementation over reviewable Markdown knowledge, with deterministic retrieval and sequential agent roles. That working system is the foundation behind [John Zhou's AI Twin](https://jz-ai-chat.com), not just a conceptual framework.
+Today, the repository provides a runnable FastAPI + React implementation over reviewable Markdown knowledge, with deterministic retrieval and sequential agent roles. The public repository uses fictional examples; each owner keeps their real identity and memory in a separate private workspace.
 
 ## Why an AI Twin?
 
@@ -68,7 +68,7 @@ Agent-Me does not claim to solve all of those problems today. It provides a conc
 
 ### Reviewable identity and memory
 
-The current memory substrate is version-controlled Markdown: small, explicit, and inspectable. It gives the twin a stable body of personal knowledge instead of treating every conversation as isolated. Persistent conversational memory, temporal updates, and richer structured identity models remain future work.
+The current memory substrate is version-controlled Markdown: small, explicit, and inspectable. It gives the twin a stable body of personal knowledge instead of treating every conversation as isolated. An optional private workspace adds SQLite-backed profile entries, persisted chat transcripts, and user-confirmed memories. Automatic temporal reasoning and richer identity models remain future work.
 
 ### Evidence-grounded responses
 
@@ -287,7 +287,7 @@ See the full [AI Twin roadmap](ROADMAP.md), including current boundaries, design
 
 ## Security and trust
 
-Local extractive and collaboration modes do not call an external model provider. Optional provider mode sends the question, recent history, and retrieved context to the configured OpenAI-compatible endpoint. The current implementation does not persist chats or include application telemetry.
+Local extractive and collaboration modes do not call an external model provider. Optional provider mode sends the question, recent history, and retrieved context to the configured OpenAI-compatible endpoint. Public endpoints do not persist chats. Opt-in private chat persists exchanges locally and sends retrieved private context to the provider when configured; see [Private workspace](docs/PERSONAL.md). The application includes no telemetry.
 
 Read [Trust, Data Flow, and Deployment Boundaries](docs/TRUST.md) before adding private knowledge or an external provider. Report vulnerabilities through the private process in [SECURITY.md](SECURITY.md), not a public issue.
 
@@ -316,3 +316,7 @@ Agent-Me is available under the [MIT License](LICENSE).
 ## Acknowledgements
 
 Special thanks to [BizBot](https://bizbot.zvo.cn/), developed by Weifang Leimingyun Network Technology Co., Ltd., for providing automated outreach and promotion support for Agent-Me.
+
+## Private AI Twin workspace
+
+Build a local profile, persist conversations, and confirm editable long-term memories. Personal mode is opt-in and token-protected; public chat never reads the private workspace. See the [English and Chinese setup guide](docs/PERSONAL.md).

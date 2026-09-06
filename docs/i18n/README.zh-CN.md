@@ -10,7 +10,7 @@
 
 **一个正在学习成为我的 AI Agent。**
 
-[真实示例：John Zhou's AI Twin](https://jz-ai-chat.com) · [快速开始](#快速开始) · [Roadmap](../../ROADMAP.md) · [架构说明](../ARCHITECTURE.md) · [参与贡献](../../CONTRIBUTING.md)
+[快速开始](#快速开始) · [Roadmap](../../ROADMAP.md) · [架构说明](../ARCHITECTURE.md) · [参与贡献](../../CONTRIBUTING.md)
 
 [English](../../README.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [Español](README.es.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [Português](README.pt-BR.md)
 
@@ -39,7 +39,7 @@
 
 许多 personal chatbot 本质上只是 prompt、向量数据库和聊天界面的组合。记住一个人的事实并不难；可靠地表示一个人则困难得多。后者还需要身份与记忆模型、来源追踪、时间更新、不确定性、推理、验证和用户控制。
 
-Agent-Me 不声称今天已经解决所有问题。它提供的是一个具体、可运行、可测试的起点，也是 [John Zhou's AI Twin](https://jz-ai-chat.com) 背后的基础架构。
+Agent-Me 不声称今天已经解决所有问题。它提供的是一个具体、可运行、可测试的起点。公开仓库只提供虚构示例，真实档案与记忆放在独立私有工作区。
 
 ## Agent-Me 不是什么？
 
@@ -154,3 +154,7 @@ LLM_MODEL=replace-with-a-model-id
 需要由授权人员通过共享队列回答、同时兼容 OpenAI 协议的接口？请查看 [Human API](https://github.com/jzjzzzzzzz/human-api)。
 
 本项目采用 [MIT License](../../LICENSE)。
+
+## 私有 AI 分身
+
+支持本地档案、持久化聊天、候选记忆确认与管理。参见[中英文使用指南](../PERSONAL.md)。

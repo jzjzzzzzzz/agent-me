@@ -40,8 +40,11 @@ data-processing terms. Provider behavior is outside this repository's control.
 
 ## Persistence and telemetry
 
-The reference implementation has no database and does not persist questions, answers, sources, or
-traces. The React client keeps the active interaction in page memory and stores only the selected
+The public reference endpoints do not persist questions, answers, sources, or traces.
+The opt-in [private workspace](PERSONAL.md) stores profile entries, memories, and chats in a
+local SQLite database protected by a workspace bearer token. Its provider-backed chat sends
+questions and retrieved private context to the configured provider. Public endpoints do not
+read the private database. Private export includes personal data and is not sanitized. The React client keeps the active interaction in page memory and stores only the selected
 locale in browser local storage. A user can explicitly download a sanitized collaboration response;
 that export excludes the original question, profile, provider settings, and hidden browser state.
 It still contains the answer, evidence excerpts, paths, and trace, so users must review it before

@@ -9,6 +9,7 @@ from . import __version__
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
+from .personal import router as personal_router
 from .provider import ProviderError, generate_answer
 from .request_id import RequestIDMiddleware
 from .request_limits import RequestBodyLimitMiddleware
@@ -30,6 +31,17 @@ app = FastAPI(
     ),
     version=__version__,
 )
+
+
+@app.middleware("http")
+async def private_no_cache(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/v1/personal"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+app.include_router(personal_router)
 settings = get_settings()
 app.add_middleware(RequestBodyLimitMiddleware, settings=settings)
 app.add_middleware(
@@ -37,7 +49,7 @@ app.add_middleware(
     allow_origins=settings.allowed_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
     expose_headers=["X-Request-ID"],
 )
 app.add_middleware(RequestIDMiddleware)
@@ -142,6 +154,7 @@ async def ready(
 @app.get("/api/v1/profile", response_model=ProfileResponse)
 async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
     return ProfileResponse(
+        personal_enabled=config.personal_enabled,
         name=config.app_name,
         description=config.app_description,
         max_question_chars=config.max_question_chars,

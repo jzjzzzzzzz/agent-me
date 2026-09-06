@@ -57,6 +57,7 @@ async def test_profile_exposes_public_runtime_configuration(client: httpx.AsyncC
     settings = get_settings()
     assert response.status_code == 200
     assert response.json() == {
+        "personal_enabled": settings.personal_enabled,
         "name": settings.app_name,
         "description": settings.app_description,
         "max_question_chars": settings.max_question_chars,

@@ -31,7 +31,7 @@ The repository currently provides:
 - evidence-sufficiency and citation-path checks;
 - sources, grounding status, safe public execution traces, and run IDs;
 - deterministic evaluation fixtures; and
-- a runnable FastAPI + React application powering John Zhou's AI Twin.
+- a runnable FastAPI + React reference application using fictional public examples.
 
 Current boundaries are equally important: conversations are not persisted, the knowledge source is not yet a structured identity store, continuous ingestion is not implemented, and the Verifier does not prove factual truth or semantic entailment.
 

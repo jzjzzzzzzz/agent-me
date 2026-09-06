@@ -75,6 +75,7 @@ class CollaborationResponse(BaseModel):
 
 
 class ProfileResponse(BaseModel):
+    personal_enabled: bool = False
     name: str
     description: str
     max_question_chars: int

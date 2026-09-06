@@ -11,3 +11,11 @@ coverage/
 .DS_Store
 
 *.tsbuildinfo
+
+# Private twin data must never enter Git or container build contexts.
+private/
+.env.*
+!.env.example
+*.sqlite*
+*.db-*
+private-twin-export.json
