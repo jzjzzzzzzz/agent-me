@@ -197,6 +197,23 @@ docker compose up --build
 
 The default configuration uses local extractive and collaboration modes, so no API key is required. The web container reaches the API through a same-origin `/api` gateway.
 
+### Optional OrcaRouter provider
+
+Agent-Me's provider path uses the OpenAI-compatible Chat Completions API, so it can connect to
+[OrcaRouter](https://www.orcarouter.ai/ref/ref_a8d28bcd0c266af4ae1c) without a provider-specific
+SDK. Create an OrcaRouter API key, then set the following values in your private `.env`:
+
+```dotenv
+LLM_BASE_URL=https://api.orcarouter.ai/v1
+LLM_API_KEY=sk-orca-YOUR_KEY
+LLM_MODEL=orcarouter/auto
+```
+
+Restart the API and check `/ready`; `answer_mode` should report `openai-compatible`. Only
+`POST /api/v1/chat` uses the provider today. It sends the question, recent chat history, and
+retrieved context across that provider boundary. `POST /api/v1/collaborate` remains local and
+deterministic. See the [trust documentation](docs/TRUST.md) before using private knowledge.
+
 <details>
 <summary><strong>Run with the local toolchain</strong></summary>
 
@@ -316,6 +333,13 @@ Agent-Me is available under the [MIT License](LICENSE).
 ## Acknowledgements
 
 Special thanks to [BizBot](https://bizbot.zvo.cn/), developed by Weifang Leimingyun Network Technology Co., Ltd., for providing automated outreach and promotion support for Agent-Me.
+
+[![Powered by OrcaRouter](https://img.shields.io/badge/Powered_by-OrcaRouter-2563eb)](https://www.orcarouter.ai/ref/ref_a8d28bcd0c266af4ae1c)
+
+Agent-Me is an approved [OrcaRouter](https://www.orcarouter.ai/ref/ref_a8d28bcd0c266af4ae1c)
+partner and supports its OpenAI-compatible gateway as an optional inference provider. The links
+above are referral links; Agent-Me may receive 5% of referred workspace usage at no additional cost
+to the user.
 
 ## Private AI Twin workspace
 
