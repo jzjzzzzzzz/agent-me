@@ -33,14 +33,6 @@ app = FastAPI(
 )
 
 
-@app.middleware("http")
-async def private_no_cache(request: Request, call_next):
-    response = await call_next(request)
-    if request.url.path.startswith("/api/v1/personal"):
-        response.headers["Cache-Control"] = "no-store"
-    return response
-
-
 app.include_router(personal_router)
 settings = get_settings()
 app.add_middleware(RequestBodyLimitMiddleware, settings=settings)
@@ -53,6 +45,19 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 app.add_middleware(RequestIDMiddleware)
+
+
+@app.middleware("http")
+async def private_no_cache(request: Request, call_next):
+    """Prevent storage of responses that can contain personal knowledge."""
+    response = await call_next(request)
+    is_qa_response = request.method == "POST" and request.url.path in {
+        "/api/v1/chat",
+        "/api/v1/collaborate",
+    }
+    if is_qa_response or request.url.path.startswith("/api/v1/personal"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 _PROVIDER_ERROR_MESSAGES = {

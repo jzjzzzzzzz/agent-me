@@ -249,6 +249,37 @@ async def test_multi_agent_collaboration_returns_typed_trace(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("endpoint", ["/api/v1/chat", "/api/v1/collaborate"])
+async def test_qa_responses_are_not_cacheable(client: httpx.AsyncClient, endpoint: str) -> None:
+    response = await client.post(endpoint, json={"question": "prefers Python tools?"})
+
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("endpoint", ["/api/v1/chat", "/api/v1/collaborate"])
+async def test_qa_validation_errors_are_not_cacheable(
+    client: httpx.AsyncClient, endpoint: str
+) -> None:
+    response = await client.post(endpoint, json={"question": "  "})
+
+    assert response.status_code == 422
+    assert response.headers["cache-control"] == "no-store"
+
+
+@pytest.mark.anyio
+async def test_unrelated_responses_keep_their_cache_behavior(
+    client: httpx.AsyncClient,
+) -> None:
+    health = await client.get("/health")
+    ready = await client.get("/ready")
+
+    assert "cache-control" not in health.headers
+    assert "cache-control" not in ready.headers
+
+
+@pytest.mark.anyio
 async def test_verified_collaboration_returns_a_five_stage_trace(
     client: httpx.AsyncClient,
 ) -> None:
@@ -385,6 +416,7 @@ async def test_declared_oversized_request_body_is_rejected_before_parsing(
         "detail": "request body exceeds configured limit",
         "code": "request_body_too_large",
     }
+    assert response.headers["cache-control"] == "no-store"
 
 
 @pytest.mark.anyio
@@ -434,6 +466,7 @@ async def test_incomplete_provider_configuration_fails_explicitly(
         "detail": "Provider configuration is incomplete.",
         "code": "provider_configuration_incomplete",
     }
+    assert response.headers["cache-control"] == "no-store"
 
 
 REQUEST_ID_PATTERN = re.compile(r"^req_[0-9a-f]{32}$")

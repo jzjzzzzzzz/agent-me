@@ -55,6 +55,12 @@ platforms, reverse proxies, model providers, browsers, and operator-added monito
 produce logs or retain data. Operators are responsible for documenting and controlling those
 systems.
 
+Responses from `POST /api/v1/chat` and `POST /api/v1/collaborate`, including handled error
+responses, set `Cache-Control: no-store` so browsers and HTTP intermediaries are instructed not to
+store Q&A content. This route-scoped policy does not disable caching for the static application,
+health, or readiness endpoints. It is an HTTP caching control, not a server, proxy, provider, or log
+retention and deletion guarantee; operators must configure those systems separately.
+
 ## What the verifier verifies
 
 The optional Verifier checks mechanical invariants after writing:
