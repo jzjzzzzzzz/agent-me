@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs evaluate build lock lock-check version-check
+.PHONY: setup dev test lint format docs evaluate knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -36,6 +36,9 @@ version-check:
 
 evaluate:
 	.venv/bin/python scripts/evaluate_collaboration.py
+
+knowledge-check:
+	.venv/bin/python scripts/check_knowledge.py
 
 build:
 	docker compose build

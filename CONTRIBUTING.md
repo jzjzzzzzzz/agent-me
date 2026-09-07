@@ -108,6 +108,7 @@ npm run build
 Course and evaluation:
 
 ```bash
+make knowledge-check
 make docs
 make evaluate
 make version-check
@@ -122,6 +123,7 @@ update all checked metadata, regenerate locks, and let `scripts/check_versions.p
 ```bash
 make lint
 make test
+make knowledge-check
 make docs
 make evaluate
 make build

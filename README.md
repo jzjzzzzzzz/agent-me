@@ -223,6 +223,7 @@ deterministic. See the [trust documentation](docs/TRUST.md) before using private
 git clone https://github.com/jzjzzzzzzz/agent-me.git
 cd agent-me
 make setup
+make knowledge-check
 make lint test docs evaluate
 ```
 
@@ -237,6 +238,11 @@ cd frontend && npm run dev
 ```
 
 See [Lesson 00](course/00-course-setup/README.md) for platform-specific setup and troubleshooting.
+
+`make knowledge-check` safely preflights the configured Markdown corpus before startup. It reports
+only the document count and relative paths, never document contents or absolute host paths. Use
+`.venv/bin/python scripts/check_knowledge.py --knowledge-dir knowledge --json` for a stable
+machine-readable result.
 
 </details>
 
