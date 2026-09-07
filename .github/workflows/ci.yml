@@ -31,8 +31,16 @@ jobs:
       - run: .venv/bin/ruff check backend scripts
       - run: .venv/bin/ruff format --check backend scripts
       - run: .venv/bin/pytest backend/tests
-      - run: .venv/bin/python scripts/evaluate_collaboration.py --json
-      - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
+      - name: Publish baseline evaluation summary
+        run: |
+          set -o pipefail
+          .venv/bin/python scripts/evaluate_collaboration.py --markdown \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish verified evaluation summary
+        run: |
+          set -o pipefail
+          .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --markdown \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
   python-minimum:
     name: Python 3.11 compatibility

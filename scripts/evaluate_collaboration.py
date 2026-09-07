@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
 from dataclasses import asdict, dataclass
@@ -22,6 +23,42 @@ class EvaluationResult:
     source_count: int
     critic_outcome: str
     passed: bool
+
+
+def _markdown_cell(value: str) -> str:
+    lines = value.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    return "<br>".join(
+        html.escape(line, quote=True).replace("\\", "\\\\").replace("|", "\\|")
+        for line in lines
+    )
+
+
+def markdown_summary(results: list[EvaluationResult], workflow: str) -> str:
+    passed = sum(result.passed for result in results)
+    failed = [result.case_id for result in results if not result.passed]
+    lines = [
+        f"## Collaboration evaluation — {_markdown_cell(workflow)}",
+        "",
+        f"**{passed}/{len(results)} cases passed.**",
+        "",
+        "| Case ID | Expected | Actual | Status |",
+        "| --- | --- | --- | --- |",
+    ]
+    for result in results:
+        lines.append(
+            "| "
+            f"{_markdown_cell(result.case_id)} | "
+            f"{'grounded' if result.expected_grounded else 'blocked'} | "
+            f"{'grounded' if result.actual_grounded else 'blocked'} | "
+            f"{'PASS' if result.passed else 'FAIL'} |"
+        )
+    failed_text = (
+        ", ".join(f"`{_markdown_cell(case_id)}`" for case_id in failed)
+        if failed
+        else "none"
+    )
+    lines.extend(("", f"Failed cases: {failed_text}", ""))
+    return "\n".join(lines)
 
 
 def load_cases(path: Path) -> list[dict[str, Any]]:
@@ -103,8 +140,12 @@ def main() -> int:
         default=ROOT / "course" / "fixtures" / "collaboration_cases.json",
     )
     parser.add_argument("--knowledge-dir", type=Path, default=ROOT / "knowledge")
-    parser.add_argument(
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument(
         "--json", action="store_true", help="emit machine-readable output"
+    )
+    output.add_argument(
+        "--markdown", action="store_true", help="emit a Markdown summary"
     )
     parser.add_argument(
         "--workflow",
@@ -156,6 +197,8 @@ def main() -> int:
                 indent=2,
             )
         )
+    elif args.markdown:
+        print(markdown_summary(results, args.workflow), end="")
     else:
         print("case\texpected\tactual\tsources\tcritic\tresult")
         for result in results:

@@ -115,6 +115,23 @@ The expected grounded labels stay unchanged; the second command proves the verif
 the known decisions while exercising its additional contract gate. It still does not measure
 semantic entailment or generalize beyond the committed fixture and knowledge files.
 
+### Read or reproduce the CI summary
+
+Pull-request CI appends a Markdown table for both baseline and verified workflows to the GitHub
+Actions job summary. Each table identifies the workflow and shows every case ID, its expected and
+actual grounded/blocked decision, pass/fail status, total passed, and failed IDs. Generate the same
+safe summary locally with:
+
+```bash
+.venv/bin/python scripts/evaluate_collaboration.py --markdown
+.venv/bin/python scripts/evaluate_collaboration.py --workflow verified --markdown
+```
+
+The summary deliberately excludes questions, answers, excerpts, environment values, and internal
+reasoning. Its pass rate measures agreement with the small, committed set of behavioral labels; it
+is not an answer-quality or factuality benchmark. CI preserves the evaluator's nonzero exit status,
+so publishing a failed summary cannot turn a regression green.
+
 ### Step 3 — add a small evaluation matrix
 
 Add at least three cases:

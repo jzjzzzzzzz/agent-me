@@ -136,3 +136,54 @@ def test_evaluate_selection_preserves_order_and_deduplicates(
     monkeypatch.setattr(evaluator, "CollaborationOrchestrator", FakeOrchestrator)
     result = evaluator.evaluate(path, tmp_path, case_ids=["gamma", "alpha", "gamma"])
     assert [item.case_id for item in result] == ["alpha", "gamma"]
+
+
+def _result(case_id: str, *, expected: bool, actual: bool) -> evaluator.EvaluationResult:
+    return evaluator.EvaluationResult(
+        case_id=case_id,
+        expected_grounded=expected,
+        actual_grounded=actual,
+        source_count=1 if actual else 0,
+        critic_outcome="completed" if actual else "blocked",
+        passed=expected is actual,
+    )
+
+
+def test_markdown_summary_reports_an_all_pass_run() -> None:
+    summary = evaluator.markdown_summary(
+        [
+            _result("supported", expected=True, actual=True),
+            _result("unsupported", expected=False, actual=False),
+        ],
+        "verified",
+    )
+
+    assert "## Collaboration evaluation — verified" in summary
+    assert "**2/2 cases passed.**" in summary
+    assert "| supported | grounded | grounded | PASS |" in summary
+    assert "| unsupported | blocked | blocked | PASS |" in summary
+    assert "Failed cases: none" in summary
+
+
+def test_markdown_summary_reports_mixed_results_and_failed_ids() -> None:
+    summary = evaluator.markdown_summary(
+        [
+            _result("false-positive", expected=False, actual=True),
+            _result("true-positive", expected=True, actual=True),
+        ],
+        "baseline",
+    )
+
+    assert "**1/2 cases passed.**" in summary
+    assert "| false-positive | blocked | grounded | FAIL |" in summary
+    assert "Failed cases: `false-positive`" in summary
+
+
+def test_markdown_summary_escapes_sensitive_case_ids() -> None:
+    summary = evaluator.markdown_summary(
+        [_result("pipe|slash\\\n<script>", expected=True, actual=False)],
+        "baseline",
+    )
+
+    assert "pipe\\|slash\\\\<br>&lt;script&gt;" in summary
+    assert "<script>" not in summary
