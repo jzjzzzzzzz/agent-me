@@ -29,6 +29,55 @@ def test_fenced_examples_are_not_links(tmp_path: Path, monkeypatch, opening, clo
     ]
 
 
+@pytest.mark.parametrize(
+    "span",
+    [
+        "`[example](missing.md)`",
+        "``[example](missing.md)``",
+        "```Use `[example](missing.md)` syntax```",
+    ],
+)
+def test_inline_code_examples_are_not_links(tmp_path: Path, monkeypatch, span) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(f"Use {span}.\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == []
+
+
+def test_inline_code_does_not_hide_adjacent_links(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(
+        "Use `[example](missing.md)`, then follow [broken](real-missing.md).\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == ["source.md: missing local link: real-missing.md"]
+
+
+def test_inline_code_does_not_join_link_fragments(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "source.md"
+    source.write_text("[not a link]`example`(missing.md)\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == []
+
+
+def test_unmatched_backticks_do_not_hide_later_links(tmp_path: Path, monkeypatch) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(
+        "Use `[first](first-missing.md) as syntax.\n[second](second-missing.md)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == [
+        "source.md: missing local link: first-missing.md",
+        "source.md: missing local link: second-missing.md",
+    ]
+
+
 @pytest.mark.parametrize("false_close", ["```", "~~~~", "```` extra", "    ````"])
 def test_only_matching_fences_close_examples(tmp_path: Path, monkeypatch, false_close) -> None:
     source = tmp_path / "source.md"

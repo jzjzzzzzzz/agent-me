@@ -190,7 +190,9 @@ def validate_file(path: Path) -> list[str]:
     for marker in MERGE_MARKERS:
         if any(line.startswith(marker) for line in text.splitlines()):
             errors.append(f"{path.relative_to(ROOT)}: unresolved merge marker {marker}")
-    for raw_destination in LINK.findall("\n".join(unfenced_lines(text))):
+    link_text = "\n".join(unfenced_lines(text))
+    link_text = CODE_SPAN.sub(" ", link_text)
+    for raw_destination in LINK.findall(link_text):
         destination, fragment = destination_parts(raw_destination)
         if not destination and not fragment:
             continue
