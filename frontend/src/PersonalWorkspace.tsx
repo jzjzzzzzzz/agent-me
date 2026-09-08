@@ -4,7 +4,8 @@ type Entry = { id: string; kind: string; key: string; content: string; status: s
 type Turn = { id: string; role: string; content: string };
 const base = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
 
-export function PersonalWorkspace({ external }: { external: boolean }) {
+export function PersonalWorkspace({ external, maxQuestionChars = 8000 }: { external: boolean; maxQuestionChars?: number }) {
+  const questionLimit = Math.min(maxQuestionChars, 8000);
   const [token, setToken] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -91,9 +92,9 @@ export function PersonalWorkspace({ external }: { external: boolean }) {
       <h3>私有聊天 / Private chat</h3>
       <p>使用“记住：…”或“Remember: …”生成候选偏好，再到上方确认。其他信息可手动添加。</p>
       <div className="private-history">{history.map(turn => <article key={turn.id}><strong>{turn.role}</strong><p>{turn.content}</p></article>)}</div>
-      <form onSubmit={e => { e.preventDefault(); void run(async () => { await request("/chat", { question }); setQuestion(""); await refresh(); }); }}>
-        <label>私有问题 / Private question<textarea required maxLength={8000} value={question} onChange={e => setQuestion(e.target.value)} /></label>
-        <button disabled={busy}>发送 / Send</button>
+      <form onSubmit={e => { e.preventDefault(); if (busy || question.length > questionLimit) return; void run(async () => { await request("/chat", { question }); setQuestion(""); await refresh(); }); }}>
+        <label>私有问题 / Private question<textarea required maxLength={questionLimit} value={question} onChange={e => setQuestion(e.target.value)} /></label>
+        <button disabled={busy || question.length > questionLimit}>发送 / Send</button>
       </form>
       <button disabled={busy} onClick={() => void run(async () => { await request("/history/clear", {}); await refresh(); })}>清空全部聊天（保留记忆） / Clear history</button>
       <button disabled={busy} onClick={() => void run(async () => {
