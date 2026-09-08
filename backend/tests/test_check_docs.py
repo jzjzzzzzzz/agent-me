@@ -1,11 +1,64 @@
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 CHECK_DOCS_PATH = Path(__file__).resolve().parents[2] / "scripts" / "check_docs.py"
 CHECK_DOCS_SPEC = importlib.util.spec_from_file_location("check_docs", CHECK_DOCS_PATH)
 assert CHECK_DOCS_SPEC is not None and CHECK_DOCS_SPEC.loader is not None
 check_docs = importlib.util.module_from_spec(CHECK_DOCS_SPEC)
 CHECK_DOCS_SPEC.loader.exec_module(check_docs)
+
+
+@pytest.mark.parametrize(
+    "opening,closing",
+    [("```", "```"), ("```markdown", "````"), ("~~~", "~~~"), ("   ~~~~markdown", "  ~~~~~\t")],
+)
+def test_fenced_examples_are_not_links(tmp_path: Path, monkeypatch, opening, closing) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(
+        f"# Present\n{opening}\n[example](missing.md)\n[anchor](#absent)\n"
+        "[outside](../outside.md)\n[owner](https://github.com/wrong/agent-me)\n"
+        f"{closing}\n[valid](#present)\n[broken](real-missing.md)\n[anchor](#real-absent)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    assert check_docs.validate_file(source) == [
+        "source.md: missing local link: real-missing.md",
+        "source.md: missing Markdown anchor in source.md: #real-absent",
+    ]
+
+
+@pytest.mark.parametrize("false_close", ["```", "~~~~", "```` extra", "    ````"])
+def test_only_matching_fences_close_examples(tmp_path: Path, monkeypatch, false_close) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(
+        f"````markdown\n{false_close}\n[example](missing.md)\n# Hidden\n"
+        "````\n[broken](after.md)\n# Visible\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    assert check_docs.validate_file(source) == ["source.md: missing local link: after.md"]
+    assert check_docs.heading_anchors(source.read_text()) == {"visible"}
+
+
+@pytest.mark.parametrize("opening", ["```python", "~~~markdown"])
+def test_unclosed_fence_keeps_merge_marker_check(tmp_path: Path, monkeypatch, opening) -> None:
+    source = tmp_path / "source.md"
+    source.write_text(
+        f"[broken](before.md)\n{opening}\n[example](missing.md)\n<<<<<<< ours\n# Hidden\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    assert check_docs.validate_file(source) == [
+        "source.md: unresolved merge marker <<<<<<<",
+        "source.md: missing local link: before.md",
+    ]
+    assert check_docs.heading_anchors(source.read_text()) == set()
+
+
+def test_fence_removal_does_not_create_setext_heading() -> None:
+    assert check_docs.markdown_headings("Not a heading\n```\nexample\n```\n---\n") == []
 
 
 def test_heading_anchors_follow_github_slug_rules() -> None:
