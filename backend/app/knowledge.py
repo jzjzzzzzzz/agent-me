@@ -84,10 +84,14 @@ def _query_tokens(value: str) -> set[str]:
     return normalized_tokens(value) - _STOP_WORDS
 
 
+_H1_HEADING = re.compile(r"^\s{0,3}#\s+(.*?)(?:\s+#+)?\s*$")
+
+
 def _title(path: Path, text: str) -> str:
     for line in text.splitlines():
-        if line.startswith("# "):
-            return line[2:].strip()
+        match = _H1_HEADING.match(line)
+        if match:
+            return match.group(1).strip()
     return path.stem.replace("-", " ").replace("_", " ").title()
 
 

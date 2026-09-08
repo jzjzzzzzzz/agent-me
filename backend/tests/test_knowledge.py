@@ -293,3 +293,18 @@ def test_concurrent_document_reads_publish_one_consistent_cache(tmp_path: Path) 
 
     assert all([document.path for document in result] == ["profile.md"] for result in results)
     assert len({id(result[0]) for result in results}) == 1
+
+
+def test_title_extraction_from_atx_h1() -> None:
+    from pathlib import Path
+
+    from app.knowledge import _title
+
+    assert _title(Path("fallback.md"), "   # Valid Indented H1  ") == "Valid Indented H1"
+    assert (
+        _title(Path("fallback.md"), "# Heading with trailing hashes ###")
+        == "Heading with trailing hashes"
+    )
+    assert _title(Path("fallback.md"), "## H2 is ignored\n# Valid H1") == "Valid H1"
+    assert _title(Path("fallback.md"), "    # Four spaces is not H1\n# Valid H1") == "Valid H1"
+    assert _title(Path("fallback.md"), "No heading") == "Fallback"
