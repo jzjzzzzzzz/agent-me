@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
 from app.collaboration import CollaborationOrchestrator
-from app.knowledge import KnowledgeBase
+from app.knowledge import KnowledgeBase, KnowledgeLoadError
 
 
 @dataclass(frozen=True)
@@ -111,6 +111,8 @@ def evaluate(
             raise ValueError(f"unknown case id {unknown[0]!r}")
         cases = [case for case in cases if case["id"] in wanted]
     knowledge = KnowledgeBase(str(knowledge_dir))
+    if not knowledge.documents():
+        raise KnowledgeLoadError("knowledge_corpus_empty")
     orchestrator = CollaborationOrchestrator(retriever=knowledge)
     results: list[EvaluationResult] = []
     for case in cases:
@@ -178,6 +180,9 @@ def main() -> int:
             verify=args.workflow == "verified",
             case_ids=args.case_id,
         )
+    except KnowledgeLoadError as error:
+        print(f"evaluation setup failed: {error.code}", file=sys.stderr)
+        return 2
     except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
         print(f"evaluation setup failed: {error}", file=sys.stderr)
         return 2
