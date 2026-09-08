@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { downloadCollaborationRun } from "./exportRun";
@@ -19,6 +19,19 @@ const profileResponse = {
     external_provider_enabled: false,
   }),
 };
+
+it("passes the configured question limit to the private workspace", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+    ok: true,
+    json: async () => url.endsWith("/api/v1/profile")
+      ? { name: "Synthetic twin", description: "Example", max_question_chars: 42, external_provider_enabled: false, personal_enabled: true }
+      : [],
+  })));
+  render(<App />);
+  fireEvent.change(await screen.findByLabelText(/Workspace token/), { target: { value: "synthetic-token" } });
+  fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
+  expect(await screen.findByLabelText(/Private question/)).toHaveAttribute("maxlength", "42");
+});
 
 function routeFetch(chatResponse: object) {
   return vi.fn().mockImplementation((url: string) =>
