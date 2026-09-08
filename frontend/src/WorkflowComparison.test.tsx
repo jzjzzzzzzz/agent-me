@@ -215,3 +215,29 @@ it("disables comparison for empty questions and aborts its requests when unmount
   unmount();
   await waitFor(() => expect(requests.every(([, init]) => init?.signal?.aborted)).toBe(true));
 });
+
+it("maintains independent clipboard statuses between comparison sides", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+
+  mockRequests(async (policy) => response(fixtures[policy]));
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(text.formLabel), question);
+  await userEvent.click(screen.getByRole("button", { name: text.compareWorkflows }));
+  await screen.findByText(verified.run_id);
+
+  const baselineCard = screen.getByRole("article", { name: text.baselineComparison });
+  const verifiedCard = screen.getByRole("article", { name: text.verifiedComparison });
+
+  await userEvent.click(within(baselineCard).getByRole("button", { name: text.copyAnswer }));
+  expect(await within(baselineCard).findByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
+  expect(within(verifiedCard).queryByRole("status")).not.toBeInTheDocument();
+
+  await userEvent.click(within(verifiedCard).getByRole("button", { name: text.copyAnswer }));
+  expect(await within(verifiedCard).findByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
+  expect(within(baselineCard).getByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
+});
+

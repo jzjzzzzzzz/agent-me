@@ -481,6 +481,50 @@ it("shows a safe localized message when the clipboard write fails", async () => 
   expect(status.textContent).not.toMatch(/NotAllowedError|denied/);
 });
 
+it("clears stale clipboard feedback when a subsequent question returns a new answer", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+
+  let requestCount = 0;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+      requestCount += 1;
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          answer: requestCount === 1 ? "First answer." : "Second answer.",
+          mode: "extractive",
+          sources: [],
+        }),
+      });
+    }),
+  );
+
+  render(<App />);
+  const input = screen.getByLabelText(/ask the example/i);
+  await userEvent.type(input, "First question");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await screen.findByText("First answer.", { selector: ".answer > p" });
+
+  await userEvent.click(screen.getByRole("button", { name: "Copy answer" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("Answer copied to clipboard.");
+
+  // Unrelated re-render caused by typing next question preserves feedback
+  await userEvent.clear(input);
+  await userEvent.type(input, "Second question");
+  expect(screen.getByRole("status")).toHaveTextContent("Answer copied to clipboard.");
+
+  // Submitting second question and rendering new answer clears stale clipboard feedback
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await screen.findByText("Second answer.", { selector: ".answer > p" });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+});
+
 it("exports only the validated collaboration response and revokes its object URL", () => {
   let blobParts: BlobPart[] = [];
   const createObjectURL = vi.fn(() => "blob:run");

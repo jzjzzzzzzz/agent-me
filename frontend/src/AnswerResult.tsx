@@ -7,12 +7,47 @@ function formatSourcesForCopy(sources: readonly { title: string; path: string }[
   return sources.map((source) => `${source.title} — ${source.path}`).join("\n");
 }
 
+function isSameResult(
+  a: ChatResponse | CollaborationResponse,
+  b: ChatResponse | CollaborationResponse,
+): boolean {
+  if (a === b) return true;
+  if (a.answer !== b.answer || a.mode !== b.mode) return false;
+  if ("run_id" in a || "run_id" in b) {
+    if (!("run_id" in a && "run_id" in b && a.run_id === b.run_id)) {
+      return false;
+    }
+  }
+  if (a.sources.length !== b.sources.length) return false;
+  return a.sources.every(
+    (source, index) =>
+      source.path === b.sources[index].path &&
+      source.excerpt === b.sources[index].excerpt &&
+      source.title === b.sources[index].title,
+  );
+}
+
 export function AnswerResult({ result, text, headingLevel = 2 }: {
   result: ChatResponse | CollaborationResponse;
   text: Messages;
   headingLevel?: 2 | 3 | 4;
 }) {
-  const [copyStatus, setCopyStatus] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState<{
+    result: ChatResponse | CollaborationResponse;
+    status: string;
+  } | null>(null);
+  const [prevResult, setPrevResult] = useState(result);
+
+  if (prevResult !== result) {
+    setPrevResult(result);
+    if (!isSameResult(prevResult, result)) {
+      setCopyFeedback(null);
+    }
+  }
+
+  const copyStatus =
+    copyFeedback && isSameResult(copyFeedback.result, result) ? copyFeedback.status : "";
+
   const Heading = headingLevel === 4 ? "h4" : headingLevel === 3 ? "h3" : "h2";
   const DetailHeading = headingLevel === 4 ? "h5" : headingLevel === 3 ? "h4" : "h3";
 
@@ -20,9 +55,9 @@ export function AnswerResult({ result, text, headingLevel = 2 }: {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
       await navigator.clipboard.writeText(value);
-      setCopyStatus(successMessage);
+      setCopyFeedback({ result, status: successMessage });
     } catch {
-      setCopyStatus(text.copyFailure);
+      setCopyFeedback({ result, status: text.copyFailure });
     }
   }
 
