@@ -293,3 +293,40 @@ def test_concurrent_document_reads_publish_one_consistent_cache(tmp_path: Path) 
 
     assert all([document.path for document in result] == ["profile.md"] for result in results)
     assert len({id(result[0]) for result in results}) == 1
+
+
+@pytest.mark.parametrize(
+    ("markdown", "expected_title"),
+    [
+        ("# Simple\n\nBody", "Simple"),
+        ("  # Indented Two Spaces\n\nBody", "Indented Two Spaces"),
+        ("   # Indented Three Spaces\n\nBody", "Indented Three Spaces"),
+        ("# Trailing Hashes ##\n\nBody", "Trailing Hashes"),
+        ("  # Indented With Closing ###\n\nBody", "Indented With Closing"),
+        ("#  Extra   Whitespace  \n\nBody", "Extra   Whitespace"),
+    ],
+)
+def test_title_recognizes_indented_atx_headings(
+    tmp_path: Path, markdown: str, expected_title: str
+) -> None:
+    (tmp_path / "doc.md").write_text(markdown, encoding="utf-8")
+    documents = KnowledgeBase(str(tmp_path)).documents()
+    assert documents[0].title == expected_title
+
+
+def test_title_rejects_more_than_three_leading_spaces(tmp_path: Path) -> None:
+    (tmp_path / "doc.md").write_text("    # Not A Heading\n\nBody", encoding="utf-8")
+    documents = KnowledgeBase(str(tmp_path)).documents()
+    assert documents[0].title == "Doc"
+
+
+def test_title_selects_h1_over_h2(tmp_path: Path) -> None:
+    (tmp_path / "doc.md").write_text("## Subtitle\n\n# Real Title\n\nBody", encoding="utf-8")
+    documents = KnowledgeBase(str(tmp_path)).documents()
+    assert documents[0].title == "Real Title"
+
+
+def test_title_falls_back_to_filename_when_no_h1(tmp_path: Path) -> None:
+    (tmp_path / "my-document_file.md").write_text("## Only H2\n\nBody", encoding="utf-8")
+    documents = KnowledgeBase(str(tmp_path)).documents()
+    assert documents[0].title == "My Document File"
