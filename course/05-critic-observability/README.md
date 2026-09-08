@@ -132,6 +132,19 @@ Capture or record:
 - source path and excerpt;
 - writer citation count.
 
+### Compare the two workflow policies
+
+Enter one question and choose **Compare workflows** without changing the existing radio mode.
+The browser sends the same trimmed question to `baseline` and `verified`. Inspect the two public
+results: baseline has four stages; verified has five and an explicit **Extra stage: Verifier**
+label. The desktop layout uses two columns, and narrow screens keep baseline above verified.
+
+Each side completes independently. If one fails, inspect the successful side; when both settle,
+**Retry both workflows** starts a clean pair with the original comparison question, not a newly
+edited input. Copy/export remain per-result actions. The comparison is not a factual-correctness
+score; explain what the mechanical verifier checks and what it cannot prove. No comparison
+question, answer, excerpt, or run ID is stored in the URL or browser storage.
+
 ### Replay a saved record without rerunning
 
 Download the sanitized JSON from a completed baseline or verified run. Use **Open run record** to

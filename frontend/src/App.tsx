@@ -1,9 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   ApiError,
   ask,
   ChatResponse,
   collaborate,
+  CollaborationPolicy,
   CollaborationResponse,
   loadProfile,
   ProfileResponse,
@@ -17,6 +18,7 @@ import {
 } from "./i18n";
 import { AnswerResult } from "./AnswerResult";
 import { LocalRunReplay } from "./LocalRunReplay";
+import { WorkflowComparison, type ComparisonState } from "./WorkflowComparison";
 import {
   initialWorkflowMode,
   readWorkflowMode,
@@ -34,6 +36,10 @@ export function App() {
   const [result, setResult] = useState<ChatResponse | CollaborationResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [comparison, setComparison] = useState<ComparisonState | null>(null);
+  const [comparing, setComparing] = useState(false);
+  const comparisonController = useRef<AbortController | null>(null);
+  const busy = loading || comparing;
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>(initialWorkflowMode);
   const text = messages[locale];
@@ -55,6 +61,8 @@ export function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+
+  useEffect(() => () => comparisonController.current?.abort(), []);
 
   function selectWorkflow(mode: WorkflowMode) {
     setWorkflowMode(mode);
@@ -87,11 +95,12 @@ export function App() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!question.trim() || loading) return;
+    if (!question.trim() || busy) return;
 
     setLoading(true);
     setError("");
     setResult(null);
+    setComparison(null);
     try {
       setResult(
         workflowMode === "standard"
@@ -107,6 +116,45 @@ export function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function compare(questionToCompare: string) {
+    const submittedQuestion = questionToCompare.trim();
+    if (!submittedQuestion || loading || comparisonController.current) return;
+    const controller = new AbortController();
+    comparisonController.current = controller;
+    setComparing(true);
+    setResult(null);
+    setError("");
+    setComparison({
+      question: submittedQuestion,
+      baseline: { status: "loading" },
+      verified: { status: "loading" },
+    });
+
+    async function runSide(policy: CollaborationPolicy) {
+      try {
+        const response = await collaborate(submittedQuestion, policy, controller.signal);
+        const expected = policy === "verified"
+          ? "planner-researcher-critic-writer-verifier"
+          : "planner-researcher-critic-writer";
+        if (response.workflow !== expected) throw new Error("unexpected workflow");
+        if (!controller.signal.aborted) {
+          setComparison((current) => current && {
+            ...current, [policy]: { status: "success", result: response },
+          });
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          setComparison((current) => current && { ...current, [policy]: { status: "error" } });
+        }
+      }
+    }
+
+    // Settle each side independently: one failure must not discard the other result.
+    await Promise.all([runSide("baseline"), runSide("verified")]);
+    if (!controller.signal.aborted) setComparing(false);
+    if (comparisonController.current === controller) comparisonController.current = null;
   }
 
   return (
@@ -139,7 +187,7 @@ export function App() {
 
       {profile?.personal_enabled && <PersonalWorkspace external={profile.external_provider_enabled} />}
 
-      <form onSubmit={submit} aria-busy={loading}>
+      <form onSubmit={submit} aria-busy={busy}>
         <fieldset className="workflow-picker">
           <legend>{text.workflowMode}</legend>
           <div className="workflow-options">
@@ -150,7 +198,7 @@ export function App() {
                 value="standard"
                 checked={workflowMode === "standard"}
                 onChange={() => selectWorkflow("standard")}
-                disabled={loading}
+                disabled={busy}
               />
               {text.standardWorkflow}
             </label>
@@ -161,7 +209,7 @@ export function App() {
                 value="collaboration"
                 checked={workflowMode === "collaboration"}
                 onChange={() => selectWorkflow("collaboration")}
-                disabled={loading}
+                disabled={busy}
               />
               {text.collaborationWorkflow}
             </label>
@@ -172,7 +220,7 @@ export function App() {
                 value="verified"
                 checked={workflowMode === "verified"}
                 onChange={() => selectWorkflow("verified")}
-                disabled={loading}
+                disabled={busy}
               />
               {text.verifiedWorkflow}
             </label>
@@ -195,7 +243,7 @@ export function App() {
             aria-describedby="question-meta"
             rows={4}
           />
-          <button disabled={!question.trim() || loading} type="submit">
+          <button disabled={!question.trim() || busy} type="submit">
             {loading ? text.searching : text.ask}
           </button>
         </div>
@@ -204,6 +252,12 @@ export function App() {
           <span>
             {question.length} / {maxQuestionChars} {text.characters}
           </span>
+        </div>
+        <div className="comparison-action">
+          <button type="button" disabled={!question.trim() || busy} onClick={() => compare(question)} aria-describedby="compare-help">
+            {text.compareWorkflows}
+          </button>
+          <p id="compare-help" className="workflow-hint">{text.compareHelp}</p>
         </div>
       </form>
 
@@ -216,6 +270,9 @@ export function App() {
       <LocalRunReplay text={text} />
 
       {result && <AnswerResult result={result} text={text} />}
+      {comparison && (
+        <WorkflowComparison comparison={comparison} comparing={comparing} text={text} onRetry={() => compare(comparison.question)} />
+      )}
 
       <footer>{text.footer}</footer>
     </main>

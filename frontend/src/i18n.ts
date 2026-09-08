@@ -45,6 +45,15 @@ export type Messages = {
   completed: string;
   blocked: string;
   runId: string;
+  compareWorkflows: string;
+  compareHelp: string;
+  comparisonQuestion: string;
+  comparisonLimits: string;
+  baselineComparison: string;
+  verifiedComparison: string;
+  extraVerifier: string;
+  comparisonFailed: string;
+  retryComparison: string;
   openRun: string;
   replayHelp: string;
   replayReading: string;
@@ -66,6 +75,15 @@ export type Messages = {
 
 export const messages: Record<Locale, Messages> = {
   en: {
+    compareWorkflows: "Compare workflows",
+    compareHelp: "Runs both local collaboration policies with the same question, independently of the selected mode. Neither sends data to an external model provider.",
+    comparisonQuestion: "Compared question",
+    comparisonLimits: "This compares public artifacts, not factual correctness. The Verifier checks citation paths and answer metadata only.",
+    baselineComparison: "Baseline (4 stages)",
+    verifiedComparison: "Verified (5 stages)",
+    extraVerifier: "Extra stage: Verifier",
+    comparisonFailed: "This workflow failed. Retry the comparison to start both runs again.",
+    retryComparison: "Retry both workflows",
     openRun: "Open run record",
     replayHelp: "Choose a .json file up to 1 MiB. The file stays in this browser tab.",
     replayReading: "Reading local record…",
@@ -124,6 +142,15 @@ export const messages: Record<Locale, Messages> = {
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
   "zh-CN": {
+    compareWorkflows: "对比工作流",
+    compareHelp: "用相同问题运行两种本地协作策略，不受当前模式选择影响。两者均不向外部模型服务发送数据。",
+    comparisonQuestion: "对比的问题",
+    comparisonLimits: "这里对比公开结果，不评判事实正确性。Verifier 只检查引用路径和回答元数据。",
+    baselineComparison: "Baseline（4 个阶段）",
+    verifiedComparison: "Verified（5 个阶段）",
+    extraVerifier: "额外阶段：Verifier",
+    comparisonFailed: "此工作流失败。重试对比可重新运行两种策略。",
+    retryComparison: "重试两种工作流",
     openRun: "打开运行记录",
     replayHelp: "选择不超过 1 MiB 的 .json 文件。文件仅留在当前浏览器标签页。",
     replayReading: "正在读取本地记录…",
@@ -176,6 +203,15 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
+    compareWorkflows: "比較工作流程",
+    compareHelp: "用相同問題執行兩種本機協作策略，不受目前模式選擇影響。兩者均不向外部模型服務傳送資料。",
+    comparisonQuestion: "比較的問題",
+    comparisonLimits: "這裡比較公開結果，不評判事實正確性。Verifier 只檢查引用路徑和回答中繼資料。",
+    baselineComparison: "Baseline（4 個階段）",
+    verifiedComparison: "Verified（5 個階段）",
+    extraVerifier: "額外階段：Verifier",
+    comparisonFailed: "此工作流程失敗。重試比較可重新執行兩種策略。",
+    retryComparison: "重試兩種工作流程",
     openRun: "開啟執行記錄",
     replayHelp: "選擇不超過 1 MiB 的 .json 檔案。檔案僅留在目前瀏覽器分頁。",
     replayReading: "正在讀取本機記錄…",
@@ -228,6 +264,15 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
+    compareWorkflows: "ワークフローを比較",
+    compareHelp: "選択中のモードに関係なく、同じ質問で両方のローカル協調ポリシーを実行します。どちらも外部モデルにデータを送りません。",
+    comparisonQuestion: "比較する質問",
+    comparisonLimits: "公開された結果を比較するもので、事実の正しさを判定するものではありません。Verifier は引用パスと回答のメタデータのみを確認します。",
+    baselineComparison: "Baseline（4 段階）",
+    verifiedComparison: "Verified（5 段階）",
+    extraVerifier: "追加段階：Verifier",
+    comparisonFailed: "このワークフローは失敗しました。比較を再試行すると両方を再実行します。",
+    retryComparison: "両方のワークフローを再試行",
     openRun: "実行記録を開く",
     replayHelp: "1 MiB 以下の .json ファイルを選択してください。ファイルはこのブラウザータブ内に留まります。",
     replayReading: "ローカル記録を読み込み中…",
@@ -286,6 +331,15 @@ export const messages: Record<Locale, Messages> = {
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
   ko: {
+    compareWorkflows: "워크플로 비교",
+    compareHelp: "선택된 모드와 관계없이 같은 질문으로 두 로컬 협업 정책을 실행합니다. 둘 다 외부 모델 제공업체에 데이터를 보내지 않습니다.",
+    comparisonQuestion: "비교 질문",
+    comparisonLimits: "공개된 결과를 비교하며 사실 여부를 판단하지 않습니다. Verifier는 인용 경로와 답변 메타데이터만 확인합니다.",
+    baselineComparison: "Baseline (4단계)",
+    verifiedComparison: "Verified (5단계)",
+    extraVerifier: "추가 단계: Verifier",
+    comparisonFailed: "이 워크플로가 실패했습니다. 비교를 재시도하면 두 실행을 모두 다시 시작합니다.",
+    retryComparison: "두 워크플로 재시도",
     openRun: "실행 기록 열기",
     replayHelp: "1 MiB 이하의 .json 파일을 선택하세요. 파일은 이 브라우저 탭 안에만 남습니다.",
     replayReading: "로컬 기록을 읽는 중…",
@@ -343,6 +397,15 @@ export const messages: Record<Locale, Messages> = {
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
   es: {
+    compareWorkflows: "Comparar flujos",
+    compareHelp: "Ejecuta ambas políticas locales con la misma pregunta, sin depender del modo seleccionado. Ninguna envía datos a un proveedor de modelos externo.",
+    comparisonQuestion: "Pregunta comparada",
+    comparisonLimits: "Compara resultados públicos, no la veracidad. El Verifier solo comprueba las rutas de citas y los metadatos de la respuesta.",
+    baselineComparison: "Baseline (4 etapas)",
+    verifiedComparison: "Verified (5 etapas)",
+    extraVerifier: "Etapa adicional: Verifier",
+    comparisonFailed: "Este flujo falló. Reintenta la comparación para iniciar ambos de nuevo.",
+    retryComparison: "Reintentar ambos flujos",
     openRun: "Abrir registro de ejecución",
     replayHelp: "Elige un archivo .json de hasta 1 MiB. El archivo permanece en esta pestaña.",
     replayReading: "Leyendo registro local…",
@@ -401,6 +464,15 @@ export const messages: Record<Locale, Messages> = {
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
   fr: {
+    compareWorkflows: "Comparer les flux",
+    compareHelp: "Exécute les deux politiques locales avec la même question, quel que soit le mode sélectionné. Aucune n’envoie de données à un fournisseur de modèles externe.",
+    comparisonQuestion: "Question comparée",
+    comparisonLimits: "Compare les résultats publics, pas leur exactitude factuelle. Le Verifier vérifie uniquement les chemins de citation et les métadonnées de la réponse.",
+    baselineComparison: "Baseline (4 étapes)",
+    verifiedComparison: "Verified (5 étapes)",
+    extraVerifier: "Étape supplémentaire : Verifier",
+    comparisonFailed: "Ce flux a échoué. Relancez la comparaison pour réexécuter les deux flux.",
+    retryComparison: "Réessayer les deux flux",
     openRun: "Ouvrir un enregistrement",
     replayHelp: "Choisissez un fichier .json de 1 MiB maximum. Il reste dans cet onglet.",
     replayReading: "Lecture du fichier local…",
@@ -459,6 +531,15 @@ export const messages: Record<Locale, Messages> = {
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
   de: {
+    compareWorkflows: "Workflows vergleichen",
+    compareHelp: "Führt beide lokalen Abläufe mit derselben Frage aus, unabhängig vom gewählten Modus. Keiner sendet Daten an einen externen Modellanbieter.",
+    comparisonQuestion: "Verglichene Frage",
+    comparisonLimits: "Vergleicht öffentliche Ergebnisse, nicht deren sachliche Richtigkeit. Der Verifier prüft nur Zitatpfade und Antwortmetadaten.",
+    baselineComparison: "Baseline (4 Stufen)",
+    verifiedComparison: "Verified (5 Stufen)",
+    extraVerifier: "Zusätzliche Stufe: Verifier",
+    comparisonFailed: "Dieser Workflow ist fehlgeschlagen. Wiederhole den Vergleich, um beide Läufe neu zu starten.",
+    retryComparison: "Beide Workflows wiederholen",
     openRun: "Ausführungsprotokoll öffnen",
     replayHelp: "Wähle eine .json-Datei bis 1 MiB. Die Datei bleibt in diesem Browser-Tab.",
     replayReading: "Lokales Protokoll wird gelesen…",
@@ -517,6 +598,15 @@ export const messages: Record<Locale, Messages> = {
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
   "pt-BR": {
+    compareWorkflows: "Comparar fluxos",
+    compareHelp: "Executa as duas políticas locais com a mesma pergunta, independentemente do modo selecionado. Nenhuma envia dados a um provedor de modelos externo.",
+    comparisonQuestion: "Pergunta comparada",
+    comparisonLimits: "Compara resultados públicos, não a exatidão factual. O Verifier verifica apenas caminhos de citações e metadados da resposta.",
+    baselineComparison: "Baseline (4 etapas)",
+    verifiedComparison: "Verified (5 etapas)",
+    extraVerifier: "Etapa extra: Verifier",
+    comparisonFailed: "Este fluxo falhou. Repita a comparação para iniciar ambos novamente.",
+    retryComparison: "Tentar ambos os fluxos novamente",
     openRun: "Abrir registro de execução",
     replayHelp: "Escolha um arquivo .json de até 1 MiB. O arquivo permanece nesta aba.",
     replayReading: "Lendo registro local…",

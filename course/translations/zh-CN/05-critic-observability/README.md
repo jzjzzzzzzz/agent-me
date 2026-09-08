@@ -78,6 +78,17 @@ How does the example agent plan a project?
 
 记录 run ID、grounded badge、四角色顺序、critic 的 `approved`/`query_coverage`、来源路径、writer 引用数。
 
+### 对比两种工作流策略
+
+输入一个问题，选择 **对比工作流**，无需改变已有单选模式。浏览器用相同的去空白问题分别请求
+`baseline` 和 `verified`：前者有四个阶段，后者有五个阶段，并明确标注 **额外阶段：Verifier**。
+桌面采用两列，小屏保持 baseline 在前、verified 在后的顺序。
+
+两边独立完成。一边失败不会隐藏另一边的结果；两边结束后，**重试两种工作流** 会清除旧结果与
+错误，并使用最初对比的问题重新发起两次请求，而不是使用后来编辑的输入。复制与导出仍是每个结果
+上的显式操作。这里不是事实正确性评分：请解释机械 verifier 能检查什么、不能证明什么。对比中的
+问题、回答、来源片段与 run ID 均不会写入 URL 或浏览器存储。
+
 ### 不重新执行的本地回放
 
 下载一次 baseline 或 verified 运行的 JSON，再用 **打开运行记录** 选择文件（上限 1 MiB）。确认

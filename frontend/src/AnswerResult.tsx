@@ -7,11 +7,14 @@ function formatSourcesForCopy(sources: readonly { title: string; path: string }[
   return sources.map((source) => `${source.title} — ${source.path}`).join("\n");
 }
 
-export function AnswerResult({ result, text }: {
+export function AnswerResult({ result, text, headingLevel = 2 }: {
   result: ChatResponse | CollaborationResponse;
   text: Messages;
+  headingLevel?: 2 | 3 | 4;
 }) {
   const [copyStatus, setCopyStatus] = useState("");
+  const Heading = headingLevel === 4 ? "h4" : headingLevel === 3 ? "h3" : "h2";
+  const DetailHeading = headingLevel === 4 ? "h5" : headingLevel === 3 ? "h4" : "h3";
 
   async function copyToClipboard(value: string, successMessage: string) {
     try {
@@ -37,7 +40,7 @@ export function AnswerResult({ result, text }: {
   return (
     <section className="answer" aria-live="polite">
       <div className="answer-heading">
-        <h2>{text.answer}</h2>
+        <Heading>{text.answer}</Heading>
         <span>{modeLabel}</span>
       </div>
       <p>{result.answer}</p>
@@ -66,7 +69,7 @@ export function AnswerResult({ result, text }: {
           {copyStatus}
         </p>
       )}
-      <h3>{text.groundingSources}</h3>
+      <DetailHeading>{text.groundingSources}</DetailHeading>
       {result.sources.length > 0 ? (
         <ul>
           {result.sources.map((source) => (
@@ -82,7 +85,7 @@ export function AnswerResult({ result, text }: {
       {result.mode === "multi-agent-local" && (
         <div className="workflow-trace">
           <div className="trace-heading">
-            <h3>{text.workflowTrace}</h3>
+            <DetailHeading>{text.workflowTrace}</DetailHeading>
             <span className={result.grounded ? "grounded" : "not-grounded"}>
               {result.grounded ? text.grounded : text.notGrounded}
             </span>

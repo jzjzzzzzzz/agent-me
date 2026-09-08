@@ -103,6 +103,25 @@ When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `
 writer returns the fixed insufficient-evidence message with zero citations. In verified mode, the
 verifier records that this safe fallback satisfies the zero-citation invariant.
 
+## Compare workflows in the browser
+
+**Compare workflows** is a separate action, not a fourth mode. It submits two requests to
+`/api/v1/collaborate`, one with `baseline` and one with `verified`, using the same trimmed question
+regardless of the selected radio mode. Both policies remain local; this action never uses the
+standard Q&A provider path.
+
+Baseline is first in the semantic DOM order and left on desktop; verified is second/right, with an
+explicit **Extra stage: Verifier** label. At narrow widths the same articles stack baseline first.
+Each side displays its own loading/error state or answer, grounding, sources, run ID, stage
+outcomes, and metrics. One failure does not hide the other result. Once both settle, **Retry both
+workflows** clears the old results/errors and runs a fresh pair using the captured comparison
+question, even if the input has since been edited. **Ask** returns to the selected single workflow.
+
+This is a comparison of public artifacts, not a correctness ranking. A verified response only
+adds mechanical citation/metadata checks, not a guarantee of factual truth. Questions and results
+remain in memory: comparison does not put them into URLs, analytics, or browser storage. Copy and
+JSON export are still explicit user actions on each validated result.
+
 ## Local run-record replay
 
 After a collaboration response, **Download sanitized run JSON** exports the response object above,

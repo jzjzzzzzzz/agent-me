@@ -59,7 +59,7 @@ export function LocalRunReplay({ text }: { text: Messages }) {
         <>
           <h2 ref={heading} tabIndex={-1} className="replay-label">{text.replayLabel}</h2>
           <p className="workflow-hint">{text.replayBoundary}</p>
-          <AnswerResult result={record} text={text} />
+          <AnswerResult result={record} text={text} headingLevel={3} />
         </>
       )}
     </section>
