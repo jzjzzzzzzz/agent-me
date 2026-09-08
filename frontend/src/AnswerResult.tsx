@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ChatResponse, CollaborationResponse } from "./api";
 import type { Messages } from "./i18n";
 import { downloadCollaborationRun } from "./exportRun";
@@ -15,6 +15,10 @@ export function AnswerResult({ result, text, headingLevel = 2 }: {
   const [copyStatus, setCopyStatus] = useState("");
   const Heading = headingLevel === 4 ? "h4" : headingLevel === 3 ? "h3" : "h2";
   const DetailHeading = headingLevel === 4 ? "h5" : headingLevel === 3 ? "h4" : "h3";
+
+  useEffect(() => {
+    setCopyStatus("");
+  }, [result]);
 
   async function copyToClipboard(value: string, successMessage: string) {
     try {
