@@ -37,6 +37,29 @@ def app_version(path: Path) -> str | None:
     return None
 
 
+def uses_app_version(tree: ast.Module) -> bool:
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or not any(
+            isinstance(target, ast.Name) and target.id == "app"
+            for target in node.targets
+        ):
+            continue
+        call = node.value
+        if not (
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "FastAPI"
+        ):
+            return False
+        return any(
+            keyword.arg == "version"
+            and isinstance(keyword.value, ast.Name)
+            and keyword.value.id == "__version__"
+            for keyword in call.keywords
+        )
+    return False
+
+
 def main() -> int:
     expected = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     errors: list[str] = []
@@ -88,8 +111,17 @@ def main() -> int:
             errors.append(f"{source}: expected {expected!r}, found {actual!r}")
 
     main_source = (ROOT / "backend" / "app" / "main.py").read_text(encoding="utf-8")
-    if "version=__version__" not in main_source:
-        errors.append("backend/app/main.py: FastAPI metadata must use app.__version__")
+    try:
+        main_tree = ast.parse(main_source, filename="backend/app/main.py")
+    except SyntaxError as error:
+        errors.append(
+            f"backend/app/main.py: invalid Python at line {error.lineno}: {error.msg}"
+        )
+    else:
+        if not uses_app_version(main_tree):
+            errors.append(
+                "backend/app/main.py: FastAPI metadata must use app.__version__"
+            )
 
     if errors:
         print("Version consistency check failed:", file=sys.stderr)
