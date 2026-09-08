@@ -101,7 +101,7 @@ chain-of-thought, but the same trace discipline keeps future provider integratio
 1. `CriticAgent`, `VerifierAgent`, and trace construction in [`collaboration.py`](../../backend/app/collaboration.py)
 2. public trace schema in [`schemas.py`](../../backend/app/schemas.py)
 3. browser runtime validation in [`api.ts`](../../frontend/src/api.ts)
-4. trace rendering in [`App.tsx`](../../frontend/src/App.tsx)
+4. shared answer/source/trace rendering in [`AnswerResult.tsx`](../../frontend/src/AnswerResult.tsx)
 5. malformed-response and safe-rendering tests in [`api.test.ts`](../../frontend/src/api.test.ts) and [`App.test.tsx`](../../frontend/src/App.test.tsx)
 
 ## Hands-on lab
@@ -131,6 +131,20 @@ Capture or record:
 - critic `approved` and `query_coverage` metrics;
 - source path and excerpt;
 - writer citation count.
+
+### Replay a saved record without rerunning
+
+Download the sanitized JSON from a completed baseline or verified run. Use **Open run record** to
+select the file (maximum 1 MiB). Confirm the **Local replay — not a new run** label, inspect the
+same answer, sources, stages, and metrics, and try tabbing through the file picker. Successful
+import moves focus to the replay heading; invalid files announce a localized error and can be retried.
+
+The file remains in tab memory. Import does not call the API, upload, persist, change the URL, or
+automatically export it. Disconnecting the API after the page loads does not prevent replay.
+Validation checks structure, not authenticity or factual accuracy; imported records are not
+re-verified. The export can still contain your own answer text and source excerpts: **review it
+before sharing**, even though private request/profile fields are excluded. See the
+[local replay boundary](../../docs/API.md#local-run-record-replay).
 
 ### Step 3 — blocked path
 

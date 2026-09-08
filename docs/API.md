@@ -103,6 +103,29 @@ When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `
 writer returns the fixed insufficient-evidence message with zero citations. In verified mode, the
 verifier records that this safe fallback satisfies the zero-citation invariant.
 
+## Local run-record replay
+
+After a collaboration response, **Download sanitized run JSON** exports the response object above,
+without a version envelope. **Open run record** accepts these baseline and verified `.json` files
+up to **1 MiB (1,048,576 bytes)**. The browser checks the byte limit before reading or parsing, then
+uses the same `parseCollaborationResponse` validator as network responses. Unknown workflows,
+version envelopes/discriminators, invalid stage order, non-finite numbers, and malformed records
+are rejected rather than migrated or partially rendered.
+
+The imported answer, sources, run ID, stages, and metrics use the same plain-text result view as a
+live response, with a visible **Local replay — not a new run** label. A valid shape does not
+establish authenticity or correctness: the record is not rerun or re-verified.
+
+Import is local to the current tab's memory: it makes no API request, upload, browser-storage write,
+telemetry event, URL change, or automatic export. The normal app startup can still request public
+profile metadata and remember the locale; those actions do not receive the imported record. Once
+the app has loaded, replay also works when the API is offline (this is not an offline-installable
+app). Files and imported text are never evaluated as HTML, Markdown, URLs, or code.
+
+**Review before sharing:** “sanitized” means a restricted response-field set, not anonymization.
+The answer and source excerpts can still contain personal information from your knowledge files.
+A run ID in an imported file is an untrusted label, not proof of server execution.
+
 ## Request-size errors
 
 Size-limit failures use HTTP `413` and the existing flat error shape:

@@ -54,7 +54,8 @@ function isSource(value: unknown): value is Source {
     typeof source.title === "string" &&
     typeof source.path === "string" &&
     typeof source.excerpt === "string" &&
-    typeof source.score === "number"
+    typeof source.score === "number" &&
+    Number.isFinite(source.score)
   );
 }
 
@@ -118,7 +119,7 @@ function parseChatResponse(value: unknown): ChatResponse {
   return response as ChatResponse;
 }
 
-function parseCollaborationResponse(value: unknown): CollaborationResponse {
+export function parseCollaborationResponse(value: unknown): CollaborationResponse {
   if (!value || typeof value !== "object") {
     throw new ApiError("Server returned an invalid collaboration trace.", 502, "invalid_trace");
   }
@@ -140,6 +141,9 @@ function parseCollaborationResponse(value: unknown): CollaborationResponse {
       ? workflows[workflow]
       : undefined;
   if (
+    // Current exports and network responses use an unversioned response object.
+    Object.hasOwn(response, "version") ||
+    Object.hasOwn(response, "schema_version") ||
     typeof response.run_id !== "string" ||
     !/^run_[0-9a-f]{32}$/.test(response.run_id) ||
     !expectedAgents ||

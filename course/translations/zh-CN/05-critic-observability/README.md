@@ -55,7 +55,7 @@ Telemetry 回答“发生了什么、在哪里”，不声称暴露模型私有�
 
 ## 阅读实现
 
-依次阅读：[`CriticAgent`、`VerifierAgent` 与 trace](../../../../backend/app/collaboration.py)、[公开 trace schema](../../../../backend/app/schemas.py)、[浏览器运行校验](../../../../frontend/src/api.ts)、[UI](../../../../frontend/src/App.tsx)、[parser/UI 测试](../../../../frontend/src/api.test.ts)。
+依次阅读：[`CriticAgent`、`VerifierAgent` 与 trace](../../../../backend/app/collaboration.py)、[公开 trace schema](../../../../backend/app/schemas.py)、[浏览器运行校验](../../../../frontend/src/api.ts)、[共享回答/来源/trace 视图](../../../../frontend/src/AnswerResult.tsx)、[parser/UI 测试](../../../../frontend/src/api.test.ts)。
 
 ## 动手实验
 
@@ -77,6 +77,17 @@ How does the example agent plan a project?
 ```
 
 记录 run ID、grounded badge、四角色顺序、critic 的 `approved`/`query_coverage`、来源路径、writer 引用数。
+
+### 不重新执行的本地回放
+
+下载一次 baseline 或 verified 运行的 JSON，再用 **打开运行记录** 选择文件（上限 1 MiB）。确认
+**本地回放 — 并非新运行** 标签，检查相同的回答、来源、阶段和 metrics，并用 Tab 操作文件选择器。
+成功导入后焦点移至回放标题；非法文件显示可被辅助技术读出的本地化错误，并允许重试。
+
+文件只留在当前标签页内存中。导入不会调用 API、上传、持久化、修改 URL 或自动导出；页面载入后，
+即使 API 离线仍可回放。结构合法不保证记录真实或答案事实正确，导入也不会重新验证。导出虽排除了
+私有请求与 profile 字段，但仍可能包含你自己的回答文本和来源片段，**分享前应检查内容**。详见
+[本地回放边界](../../../../docs/API.md#local-run-record-replay)。
 
 ### 阻断路径
 

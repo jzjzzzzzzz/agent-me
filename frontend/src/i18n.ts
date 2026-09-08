@@ -12,7 +12,7 @@ export const supportedLocales = [
 
 export type Locale = (typeof supportedLocales)[number]["code"];
 
-type Messages = {
+export type Messages = {
   language: string;
   projectLabel: string;
   title: string;
@@ -45,6 +45,15 @@ type Messages = {
   completed: string;
   blocked: string;
   runId: string;
+  openRun: string;
+  replayHelp: string;
+  replayReading: string;
+  replayLoaded: string;
+  replayLabel: string;
+  replayBoundary: string;
+  replayTooLarge: string;
+  replayInvalid: string;
+  replayReadFailed: string;
   exportRun: string;
   exportPrivacy: string;
   copyAnswer: string;
@@ -57,6 +66,15 @@ type Messages = {
 
 export const messages: Record<Locale, Messages> = {
   en: {
+    openRun: "Open run record",
+    replayHelp: "Choose a .json file up to 1 MiB. The file stays in this browser tab.",
+    replayReading: "Reading local record…",
+    replayLoaded: "Local record loaded. No workflow was executed.",
+    replayLabel: "Local replay — not a new run",
+    replayBoundary: "This record is untrusted, was not re-verified, and is not saved or uploaded. Answers and source excerpts may contain personal information.",
+    replayTooLarge: "The file exceeds the 1 MiB limit. Choose a smaller run record.",
+    replayInvalid: "Invalid run record. Choose a current baseline or verified JSON export without a version envelope.",
+    replayReadFailed: "The file could not be read. Choose it again to retry.",
     language: "Language",
     projectLabel: "OPEN-SOURCE AI AGENT TWIN",
     title: "Distill yourself into an AI Agent Twin.",
@@ -106,6 +124,15 @@ export const messages: Record<Locale, Messages> = {
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
   "zh-CN": {
+    openRun: "打开运行记录",
+    replayHelp: "选择不超过 1 MiB 的 .json 文件。文件仅留在当前浏览器标签页。",
+    replayReading: "正在读取本地记录…",
+    replayLoaded: "本地记录已载入，未执行工作流。",
+    replayLabel: "本地回放 — 并非新运行",
+    replayBoundary: "此记录不受信任，未重新验证，也不会保存或上传。回答和来源片段可能含有个人信息。",
+    replayTooLarge: "文件超过 1 MiB 限制，请选择较小的运行记录。",
+    replayInvalid: "运行记录无效。请选择当前 baseline 或 verified 导出的 JSON，不支持版本封装。",
+    replayReadFailed: "无法读取文件，请重新选择后重试。",
     language: "语言",
     projectLabel: "开源参考实现",
     title: "检查可审计的 RAG 工作流。",
@@ -149,6 +176,15 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
+    openRun: "開啟執行記錄",
+    replayHelp: "選擇不超過 1 MiB 的 .json 檔案。檔案僅留在目前瀏覽器分頁。",
+    replayReading: "正在讀取本機記錄…",
+    replayLoaded: "本機記錄已載入，未執行工作流程。",
+    replayLabel: "本機重播 — 並非新執行",
+    replayBoundary: "此記錄不受信任，未重新驗證，也不會儲存或上傳。回答和來源片段可能含有個人資訊。",
+    replayTooLarge: "檔案超過 1 MiB 限制，請選擇較小的執行記錄。",
+    replayInvalid: "執行記錄無效。請選擇目前 baseline 或 verified 匯出的 JSON，不支援版本封裝。",
+    replayReadFailed: "無法讀取檔案，請重新選擇後重試。",
     language: "語言",
     projectLabel: "開源參考實作",
     title: "用你掌控的知識建立問答 Agent。",
@@ -192,6 +228,15 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
+    openRun: "実行記録を開く",
+    replayHelp: "1 MiB 以下の .json ファイルを選択してください。ファイルはこのブラウザータブ内に留まります。",
+    replayReading: "ローカル記録を読み込み中…",
+    replayLoaded: "ローカル記録を読み込みました。ワークフローは実行していません。",
+    replayLabel: "ローカル再生 — 新しい実行ではありません",
+    replayBoundary: "この記録は信頼済みではなく、再検証・保存・アップロードされません。回答や出典の抜粋には個人情報が含まれる場合があります。",
+    replayTooLarge: "ファイルが 1 MiB の上限を超えています。より小さい実行記録を選択してください。",
+    replayInvalid: "無効な実行記録です。バージョン付きラッパーのない、現行の baseline または verified の JSON エクスポートを選択してください。",
+    replayReadFailed: "ファイルを読み込めませんでした。再選択してお試しください。",
     language: "言語",
     projectLabel: "オープンソース参照実装",
     title: "自分で管理する知識から回答エージェントを構築。",
@@ -241,6 +286,15 @@ export const messages: Record<Locale, Messages> = {
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
   ko: {
+    openRun: "실행 기록 열기",
+    replayHelp: "1 MiB 이하의 .json 파일을 선택하세요. 파일은 이 브라우저 탭 안에만 남습니다.",
+    replayReading: "로컬 기록을 읽는 중…",
+    replayLoaded: "로컬 기록을 불러왔습니다. 워크플로는 실행되지 않았습니다.",
+    replayLabel: "로컬 재생 — 새 실행이 아님",
+    replayBoundary: "이 기록은 신뢰된 데이터가 아니며 재검증, 저장 또는 업로드되지 않습니다. 답변과 출처 발췌문에 개인 정보가 포함될 수 있습니다.",
+    replayTooLarge: "파일이 1 MiB 제한을 초과합니다. 더 작은 실행 기록을 선택하세요.",
+    replayInvalid: "유효하지 않은 실행 기록입니다. 버전 래퍼가 없는 현재 baseline 또는 verified JSON 내보내기를 선택하세요.",
+    replayReadFailed: "파일을 읽지 못했습니다. 다시 선택하여 재시도하세요.",
     language: "언어",
     projectLabel: "오픈 소스 참조 구현",
     title: "직접 관리하는 지식으로 답변 에이전트를 구축하세요.",
@@ -289,6 +343,15 @@ export const messages: Record<Locale, Messages> = {
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
   es: {
+    openRun: "Abrir registro de ejecución",
+    replayHelp: "Elige un archivo .json de hasta 1 MiB. El archivo permanece en esta pestaña.",
+    replayReading: "Leyendo registro local…",
+    replayLoaded: "Registro local cargado. No se ejecutó ningún flujo.",
+    replayLabel: "Reproducción local — no es una ejecución nueva",
+    replayBoundary: "Este registro no es de confianza, no se ha vuelto a verificar y no se guarda ni se sube. Las respuestas y los extractos pueden contener información personal.",
+    replayTooLarge: "El archivo supera el límite de 1 MiB. Elige un registro más pequeño.",
+    replayInvalid: "Registro no válido. Elige una exportación JSON actual de baseline o verified sin envoltorio de versión.",
+    replayReadFailed: "No se pudo leer el archivo. Selecciónalo de nuevo para reintentar.",
     language: "Idioma",
     projectLabel: "IMPLEMENTACIÓN DE REFERENCIA",
     title: "Crea un agente de respuestas con el conocimiento que controlas.",
@@ -338,6 +401,15 @@ export const messages: Record<Locale, Messages> = {
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
   fr: {
+    openRun: "Ouvrir un enregistrement",
+    replayHelp: "Choisissez un fichier .json de 1 MiB maximum. Il reste dans cet onglet.",
+    replayReading: "Lecture du fichier local…",
+    replayLoaded: "Enregistrement local chargé. Aucun flux n’a été exécuté.",
+    replayLabel: "Relecture locale — pas une nouvelle exécution",
+    replayBoundary: "Cet enregistrement n’est pas fiable par défaut, n’a pas été revérifié et n’est ni enregistré ni téléversé. Les réponses et extraits peuvent contenir des informations personnelles.",
+    replayTooLarge: "Le fichier dépasse la limite de 1 MiB. Choisissez un enregistrement plus petit.",
+    replayInvalid: "Enregistrement invalide. Choisissez un export JSON actuel baseline ou verified sans enveloppe de version.",
+    replayReadFailed: "Lecture du fichier impossible. Sélectionnez-le à nouveau pour réessayer.",
     language: "Langue",
     projectLabel: "IMPLÉMENTATION DE RÉFÉRENCE",
     title: "Créez un agent de réponse à partir des connaissances que vous maîtrisez.",
@@ -387,6 +459,15 @@ export const messages: Record<Locale, Messages> = {
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
   de: {
+    openRun: "Ausführungsprotokoll öffnen",
+    replayHelp: "Wähle eine .json-Datei bis 1 MiB. Die Datei bleibt in diesem Browser-Tab.",
+    replayReading: "Lokales Protokoll wird gelesen…",
+    replayLoaded: "Lokales Protokoll geladen. Es wurde kein Workflow ausgeführt.",
+    replayLabel: "Lokale Wiedergabe — kein neuer Lauf",
+    replayBoundary: "Dieses Protokoll ist nicht vertrauenswürdig, wurde nicht erneut geprüft und wird weder gespeichert noch hochgeladen. Antworten und Quellenauszüge können persönliche Informationen enthalten.",
+    replayTooLarge: "Die Datei überschreitet das Limit von 1 MiB. Wähle ein kleineres Protokoll.",
+    replayInvalid: "Ungültiges Protokoll. Wähle einen aktuellen baseline- oder verified-JSON-Export ohne Versionshülle.",
+    replayReadFailed: "Die Datei konnte nicht gelesen werden. Wähle sie zum Wiederholen erneut aus.",
     language: "Sprache",
     projectLabel: "OPEN-SOURCE-REFERENZIMPLEMENTIERUNG",
     title: "Erstelle einen Antwort-Agenten mit Wissen, das du kontrollierst.",
@@ -436,6 +517,15 @@ export const messages: Record<Locale, Messages> = {
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
   "pt-BR": {
+    openRun: "Abrir registro de execução",
+    replayHelp: "Escolha um arquivo .json de até 1 MiB. O arquivo permanece nesta aba.",
+    replayReading: "Lendo registro local…",
+    replayLoaded: "Registro local carregado. Nenhum fluxo foi executado.",
+    replayLabel: "Reprodução local — não é uma nova execução",
+    replayBoundary: "Este registro não é confiável por padrão, não foi verificado novamente e não é salvo nem enviado. Respostas e trechos de fontes podem conter informações pessoais.",
+    replayTooLarge: "O arquivo excede o limite de 1 MiB. Escolha um registro menor.",
+    replayInvalid: "Registro inválido. Escolha uma exportação JSON atual de baseline ou verified sem envelope de versão.",
+    replayReadFailed: "Não foi possível ler o arquivo. Selecione-o novamente para tentar outra vez.",
     language: "Idioma",
     projectLabel: "IMPLEMENTAÇÃO DE REFERÊNCIA",
     title: "Crie um agente de respostas com o conhecimento que você controla.",
