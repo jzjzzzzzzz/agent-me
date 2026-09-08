@@ -118,21 +118,21 @@ def github_slug(value: str) -> str:
     return "".join(result)
 
 
-def markdown_headings(text: str) -> list[str]:
+def unfenced_lines(text: str) -> list[str]:
+    """Blank fenced examples while preserving boundaries between surrounding lines."""
     lines = text.splitlines()
-    headings: list[str] = []
-    outside_fence = [True] * len(lines)
     fence_character = ""
     fence_length = 0
 
     for index, line in enumerate(lines):
         fence = FENCE.match(line)
         if fence_character:
-            outside_fence[index] = False
-            stripped = line.lstrip()
+            lines[index] = ""
             if (
-                stripped.startswith(fence_character * fence_length)
-                and not stripped.strip(fence_character).strip()
+                fence
+                and fence.group(1)[0] == fence_character
+                and len(fence.group(1)) >= fence_length
+                and not line[fence.end() :].strip()
             ):
                 fence_character = ""
                 fence_length = 0
@@ -141,13 +141,20 @@ def markdown_headings(text: str) -> list[str]:
             marker = fence.group(1)
             fence_character = marker[0]
             fence_length = len(marker)
-            outside_fence[index] = False
+            lines[index] = ""
             continue
 
+    return lines
+
+
+def markdown_headings(text: str) -> list[str]:
+    lines = unfenced_lines(text)
+    headings: list[str] = []
+
+    for index, line in enumerate(lines):
         if (
             index
             and SETEXT_HEADING.match(line)
-            and outside_fence[index - 1]
             and lines[index - 1].strip()
             and not ATX_HEADING.match(lines[index - 1])
         ):
@@ -183,7 +190,7 @@ def validate_file(path: Path) -> list[str]:
     for marker in MERGE_MARKERS:
         if any(line.startswith(marker) for line in text.splitlines()):
             errors.append(f"{path.relative_to(ROOT)}: unresolved merge marker {marker}")
-    for raw_destination in LINK.findall(text):
+    for raw_destination in LINK.findall("\n".join(unfenced_lines(text))):
         destination, fragment = destination_parts(raw_destination)
         if not destination and not fragment:
             continue
