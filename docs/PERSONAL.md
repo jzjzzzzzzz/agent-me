@@ -25,7 +25,7 @@ npm run dev -- --host 127.0.0.1
 粘贴到“我的 AI 分身”的密钥输入框。密钥只保存在当前页面内存中，刷新后重新解锁。
 Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 
-初始化脚本不覆盖已有工作区，也不修改 `.env`。`private/personal.env` 由启动命令显式加载，
+初始化脚本具有幂等性：保留已有工作区数据和 `.env`，同时重新创建缺失的非敏感基础文件。
 不使用该命令时私有模式默认关闭。已有 `.env` 中的模型配置仍然有效。
 
 ### 2. 填写档案
@@ -98,7 +98,7 @@ git diff --cached
 This is an opt-in, single-owner local workspace. Install the dependencies using the
 [repository quick start](../README.md#quick-start), then run the initialization and launch commands above.
 Unlock the new panel using `PERSONAL_TOKEN` from `private/personal.env`.
-The initializer is idempotent and never overwrites an existing workspace or `.env`.
+The initializer is idempotent: it preserves existing workspace data and `.env`, while recreating any missing non-secret scaffolding.
 
 Add profile fields as typed entries (`fact`, `preference`, `event`, `decision`). All new or edited
 entries are pending until confirmed. Use `Remember: ...` in private chat to propose a preference,
