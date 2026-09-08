@@ -53,6 +53,14 @@ orchestration, records source count and critic outcome, and exits:
 - `1` when behavior disagrees with labels;
 - `2` when fixture or environment setup is invalid.
 
+Evaluation requires a nonempty, readable knowledge corpus. A missing or empty directory reports
+`knowledge_corpus_empty`; other loader failures retain their stable error code (for example,
+`knowledge_directory_invalid` for a file used as the directory). These setup failures exit `2`
+and write a diagnostic to stderr without a passing or failing evaluation summary on stdout,
+for both workflows and text, JSON, or Markdown output. `--list` validates and lists fixture IDs
+without loading knowledge files. With a valid corpus, passing expectations still exit `0` and
+behavioral failures exit `1`.
+
 Stable, unique case IDs let CI map a case across runs and compare regressions without confusing two
 different examples that share a label.
 
