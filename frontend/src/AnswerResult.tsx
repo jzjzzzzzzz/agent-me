@@ -12,7 +12,12 @@ export function AnswerResult({ result, text, headingLevel = 2 }: {
   text: Messages;
   headingLevel?: 2 | 3 | 4;
 }) {
-  const [copyStatus, setCopyStatus] = useState("");
+  const [copyFeedback, setCopyFeedback] = useState<{
+    result: ChatResponse | CollaborationResponse;
+    status: string;
+  } | null>(null);
+  const copyStatus = copyFeedback?.result === result ? copyFeedback.status : "";
+
   const Heading = headingLevel === 4 ? "h4" : headingLevel === 3 ? "h3" : "h2";
   const DetailHeading = headingLevel === 4 ? "h5" : headingLevel === 3 ? "h4" : "h3";
 
@@ -20,9 +25,9 @@ export function AnswerResult({ result, text, headingLevel = 2 }: {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
       await navigator.clipboard.writeText(value);
-      setCopyStatus(successMessage);
+      setCopyFeedback({ result, status: successMessage });
     } catch {
-      setCopyStatus(text.copyFailure);
+      setCopyFeedback({ result, status: text.copyFailure });
     }
   }
 
