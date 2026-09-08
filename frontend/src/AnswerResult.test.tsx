@@ -114,8 +114,20 @@ it("preserves clipboard feedback when an unrelated parent rerender keeps the sam
   rerender(<AnswerResult result={syntheticResultA} text={text} headingLevel={3} />);
   expect(screen.getByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
   expect(screen.getByRole("heading", { name: text.answer, level: 3 })).toBeInTheDocument();
+});
 
-  // Rerender with equivalent cloned data
+it("clears clipboard feedback when an equivalent new result replaces the current one", async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    value: { writeText },
+    configurable: true,
+  });
+
+  const { rerender } = render(<AnswerResult result={syntheticResultA} text={text} />);
+
+  await userEvent.click(screen.getByRole("button", { name: text.copyAnswer }));
+  expect(await screen.findByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
+
   rerender(
     <AnswerResult
       result={{
@@ -126,7 +138,7 @@ it("preserves clipboard feedback when an unrelated parent rerender keeps the sam
       headingLevel={3}
     />,
   );
-  expect(screen.getByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
 it("maintains independent copy statuses across multiple AnswerResult instances", async () => {

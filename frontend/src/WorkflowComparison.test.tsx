@@ -240,4 +240,3 @@ it("maintains independent clipboard statuses between comparison sides", async ()
   expect(await within(verifiedCard).findByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
   expect(within(baselineCard).getByRole("status")).toHaveTextContent(text.copyAnswerSuccess);
 });
-
