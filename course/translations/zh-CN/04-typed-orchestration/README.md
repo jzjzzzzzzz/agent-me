@@ -80,11 +80,20 @@ PY
 ### 运行协议测试
 
 ```bash
-.venv/bin/pytest -q backend/tests/test_collaboration.py backend/tests/test_api.py
+.venv/bin/pytest -q backend/tests/test_collaboration.py backend/tests/test_api.py backend/tests/test_collaboration_contract.py
 cd frontend
-npm test -- --run src/api.test.ts src/App.test.tsx
+npm test -- --run src/api.test.ts src/collaborationContract.test.ts src/App.test.tsx
 cd ..
 ```
+
+[共享协议 fixture](../../../../frontend/src/__fixtures__/collaboration/README.md) 包含四阶段 baseline
+和五阶段 verified 各一份合成响应。Python 用 `CollaborationResponse` 校验、检查 JSON 序列化的字段与
+标量类型，并用相同合成语料核对实际路由序列化。TypeScript 直接导入同一对 JSON，经 mocked `fetch`
+进入现有运行时 parser。派生的非法样本验证浏览器拒绝错误阶段顺序，并验证两端拒绝对象类型 metric。
+
+这证明的是**这两个样本**在生产者与消费者之间兼容，不是所有响应都合法，也不说明两端校验了相同
+不变量（单独的 Pydantic 模型不检查 workflow 阶段顺序），更不保证答案事实正确。仍须保留其他非法响应
+测试、角色测试与行为评估。Fixture 只含公开合成测试数据，不是生产答案、私密问题快照或运行时 fallback。
 
 ### 受控改动
 

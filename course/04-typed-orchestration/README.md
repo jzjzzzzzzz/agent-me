@@ -106,11 +106,24 @@ Write the same path for `run_id`, including where its format is enforced.
 ### Step 3 — run contract tests
 
 ```bash
-.venv/bin/pytest -q backend/tests/test_collaboration.py backend/tests/test_api.py
+.venv/bin/pytest -q backend/tests/test_collaboration.py backend/tests/test_api.py backend/tests/test_collaboration_contract.py
 cd frontend
-npm test -- --run src/api.test.ts src/App.test.tsx
+npm test -- --run src/api.test.ts src/collaborationContract.test.ts src/App.test.tsx
 cd ..
 ```
+
+The [shared contract fixtures](../../frontend/src/__fixtures__/collaboration/README.md) contain
+one four-stage baseline response and one five-stage verified response. Python validates both with
+`CollaborationResponse`, checks JSON serialization without scalar-type drift, and compares the real
+route serializer against the same synthetic corpus. TypeScript imports these exact JSON files and
+passes them through mocked `fetch` and the existing runtime parser. Derived invalid cases exercise
+stage-order rejection in the browser and unsupported metric objects in both suites.
+
+These tests show that **these two examples** agree across the producer and consumer. They do not
+prove every possible response is valid, that the validators enforce identical invariants (Pydantic
+alone does not check workflow stage order), or that an answer is factually correct. Keep the wider
+malformed-response tests, role tests, and behavioral evaluations. Fixtures are public test data,
+not production answers, private prompt snapshots, or a runtime fallback.
 
 ### Step 4 — make a controlled internal change
 

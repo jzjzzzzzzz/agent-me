@@ -1,0 +1,57 @@
+{
+  "run_id": "run_11111111111111111111111111111111",
+  "workflow": "planner-researcher-critic-writer",
+  "mode": "multi-agent-local",
+  "answer": "The example agent plans projects from user goals.\n\nSources: [example.md]",
+  "grounded": true,
+  "sources": [
+    {
+      "title": "Example agent",
+      "path": "example.md",
+      "excerpt": "The example agent plans projects from user goals.",
+      "score": 0.75
+    }
+  ],
+  "trace": [
+    {
+      "sequence": 1,
+      "agent": "planner",
+      "outcome": "completed",
+      "summary": "Created an evidence-first execution plan.",
+      "metrics": {
+        "task_count": 3,
+        "query_term_count": 7
+      }
+    },
+    {
+      "sequence": 2,
+      "agent": "researcher",
+      "outcome": "completed",
+      "summary": "Collected ranked excerpts from the local knowledge base.",
+      "metrics": {
+        "evidence_count": 1,
+        "document_count": 1
+      }
+    },
+    {
+      "sequence": 3,
+      "agent": "critic",
+      "outcome": "completed",
+      "summary": "Approved the evidence for grounded synthesis.",
+      "metrics": {
+        "approved": true,
+        "query_coverage": 0.5714
+      }
+    },
+    {
+      "sequence": 4,
+      "agent": "writer",
+      "outcome": "completed",
+      "summary": "Produced a cited answer from approved evidence.",
+      "metrics": {
+        "answer_chars": 72,
+        "citation_count": 1
+      }
+    }
+  ]
+}
