@@ -116,6 +116,9 @@ def test_evaluate_selection_preserves_order_and_deduplicates(
         def __init__(self, *_: object) -> None:
             pass
 
+        def documents(self) -> list[object]:
+            return [object()]
+
     class FakeOrchestrator:
         def __init__(self, **_: object) -> None:
             pass
