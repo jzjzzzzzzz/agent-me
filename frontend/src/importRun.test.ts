@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import baseline from "./__fixtures__/collaboration/baseline.json";
 import verified from "./__fixtures__/collaboration/verified.json";
 import { MAX_RUN_FILE_BYTES, readCollaborationRun } from "./importRun";
@@ -8,6 +8,34 @@ afterEach(() => vi.restoreAllMocks());
 it.each([baseline, verified])("reads the current $workflow export", async (payload) => {
   await expect(readCollaborationRun(new File([JSON.stringify(payload)], "run.json")))
     .resolves.toEqual(payload);
+});
+
+describe.each([baseline, verified])("source scores in $workflow replay", (fixture) => {
+  it.each([0, 0.5, 1])("accepts the normalized score %s", async (score) => {
+    const payload = {
+      ...fixture,
+      sources: fixture.sources.map((source) => ({ ...source, score })),
+    };
+
+    await expect(readCollaborationRun(new File([JSON.stringify(payload)], "run.json")))
+      .resolves.toEqual(payload);
+  });
+
+  it.each(["-0.25", "1.5", "NaN", "Infinity", "-Infinity", "1e400", "-1e400"])(
+    "rejects score %s with only the safe replay error",
+    async (score) => {
+      const payload = {
+        ...fixture,
+        answer: "Synthetic untrusted file content must not appear in the error",
+        sources: fixture.sources.map((source) => ({ ...source, score: "SCORE_PLACEHOLDER" })),
+      };
+      // Preserve overflow and non-JSON literals instead of JSON.stringify converting them to null.
+      const content = JSON.stringify(payload).replace('"SCORE_PLACEHOLDER"', score);
+
+      await expect(readCollaborationRun(new File([content], "untrusted-score.json")))
+        .rejects.toMatchObject({ code: "replayInvalid", message: "replayInvalid" });
+    },
+  );
 });
 
 const validJSON = JSON.stringify(baseline);

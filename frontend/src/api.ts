@@ -55,7 +55,9 @@ function isSource(value: unknown): value is Source {
     typeof source.path === "string" &&
     typeof source.excerpt === "string" &&
     typeof source.score === "number" &&
-    Number.isFinite(source.score)
+    Number.isFinite(source.score) &&
+    source.score >= 0 &&
+    source.score <= 1
   );
 }
 

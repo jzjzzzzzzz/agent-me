@@ -38,6 +38,12 @@ links, unreadable Markdown, a file larger than `MAX_DOCUMENT_BYTES`, more than
 readiness, chat, and collaboration return a safe `503` without exposing private paths or filenames.
 The response includes `answer`, `mode`, and grounding `sources`.
 
+Each source has `title`, `path`, `excerpt`, and a finite normalized relevance `score` in the
+inclusive range **0..1**. Both `0` and `1` are valid; negative values, values greater than `1`,
+NaN, and infinities are rejected. The backend response model and the browser's shared source
+validator enforce this range for both chat and collaboration responses. This score measures
+retrieval overlap, not answer confidence or factual correctness.
+
 The application rejects HTTP request bodies larger than `MAX_REQUEST_BODY_BYTES` with `413`, before JSON parsing. This applies both when `Content-Length` is present and when a body is streamed without it.
 
 ## `POST /api/v1/collaborate`
@@ -128,8 +134,10 @@ After a collaboration response, **Download sanitized run JSON** exports the resp
 without a version envelope. **Open run record** accepts these baseline and verified `.json` files
 up to **1 MiB (1,048,576 bytes)**. The browser checks the byte limit before reading or parsing, then
 uses the same `parseCollaborationResponse` validator as network responses. Unknown workflows,
-version envelopes/discriminators, invalid stage order, non-finite numbers, and malformed records
-are rejected rather than migrated or partially rendered.
+version envelopes/discriminators, invalid stage order, non-finite numbers, source scores outside
+the inclusive **0..1** range, and malformed records are rejected rather than migrated or partially
+rendered. Invalid source scores produce the existing safe `replayInvalid` error without exposing
+file contents or parser diagnostics.
 
 The imported answer, sources, run ID, stages, and metrics use the same plain-text result view as a
 live response, with a visible **Local replay — not a new run** label. A valid shape does not

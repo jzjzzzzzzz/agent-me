@@ -44,7 +44,7 @@ class Source(BaseModel):
     title: str
     path: str
     excerpt: str
-    score: float
+    score: float = Field(ge=0, le=1, allow_inf_nan=False)
 
 
 class ChatResponse(BaseModel):

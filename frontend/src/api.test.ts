@@ -1,7 +1,50 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, ask, collaborate, loadProfile } from "./api";
+import baseline from "./__fixtures__/collaboration/baseline.json";
+import verified from "./__fixtures__/collaboration/verified.json";
 
 afterEach(() => vi.unstubAllGlobals());
+
+describe.each([
+  {
+    name: "chat",
+    request: () => ask("Synthetic question"),
+    payload: { answer: "Synthetic answer", mode: "extractive", sources: baseline.sources },
+    code: "invalid_response",
+  },
+  {
+    name: "baseline collaboration",
+    request: () => collaborate("Synthetic question"),
+    payload: baseline,
+    code: "invalid_trace",
+  },
+  {
+    name: "verified collaboration",
+    request: () => collaborate("Synthetic question", "verified"),
+    payload: verified,
+    code: "invalid_trace",
+  },
+])("$name source scores", ({ request, payload, code }) => {
+  it.each([0, 0.5, 1])("accepts the normalized score %s", async (score) => {
+    const response = {
+      ...payload,
+      sources: payload.sources.map((source) => ({ ...source, score })),
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => response }));
+
+    await expect(request()).resolves.toEqual(response);
+  });
+
+  it.each([-0.25, 1.5, NaN, Infinity, -Infinity])("rejects the invalid score %s", async (score) => {
+    const response = {
+      ...payload,
+      sources: payload.sources.map((source) => ({ ...source, score })),
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => response }));
+
+    await expect(request()).rejects.toMatchObject({ status: 502, code });
+  });
+});
 
 it("returns a typed grounded response", async () => {
   const fetchMock = vi.fn().mockResolvedValue({
