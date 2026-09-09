@@ -274,9 +274,11 @@ async def test_unrelated_responses_keep_their_cache_behavior(
 ) -> None:
     health = await client.get("/health")
     ready = await client.get("/ready")
+    profile = await client.get("/api/v1/profile")
 
     assert "cache-control" not in health.headers
     assert "cache-control" not in ready.headers
+    assert "cache-control" not in profile.headers
 
 
 @pytest.mark.anyio
@@ -376,6 +378,7 @@ async def test_question_total_limit_has_a_stable_error_code(
     assert response.status_code == 413
     assert response.json()["code"] == "question_too_large"
     assert isinstance(response.json()["detail"], str)
+    assert response.headers["cache-control"] == "no-store"
 
 
 @pytest.mark.anyio
@@ -400,14 +403,16 @@ async def test_history_total_limit_is_enforced(client: httpx.AsyncClient) -> Non
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("endpoint", ["/api/v1/chat", "/api/v1/collaborate"])
 async def test_declared_oversized_request_body_is_rejected_before_parsing(
     client: httpx.AsyncClient,
+    endpoint: str,
 ) -> None:
     settings = get_settings()
     original = settings.max_request_body_bytes
     settings.max_request_body_bytes = 1_024
     try:
-        response = await client.post("/api/v1/chat", json={"question": "x" * 2_048})
+        response = await client.post(endpoint, json={"question": "x" * 2_048})
     finally:
         settings.max_request_body_bytes = original
 

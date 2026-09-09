@@ -50,6 +50,8 @@ Worker 原子 claim stage，幂等写输出，再 append event。
 - **背压：**限制排队、tenant 并发、provider 并发和输出大小，防止耗尽连接、内存、额度和费用。
 - **隐私：**默认保存结构化 code/metric；持久化 prompt 前定义保留、删除、tenant 权限与脱敏。
 
+HTTP 缓存策略与服务端保留策略相互独立。聊天和协作接口返回 `Cache-Control: no-store`，避免浏览器或中间代理缓存动态回答；这不会删除服务端日志、trace 或已存储知识，它们仍需要独立的保留控制。
+
 ## 阅读实现
 
 重新检查你可能扩展的边界：[`collaboration.py`](../../../../backend/app/collaboration.py) 的角色状态与顺序、[`main.py`](../../../../backend/app/main.py) 的进程内 HTTP 执行、[`request_limits.py`](../../../../backend/app/request_limits.py) 的接收限制、[`docker-compose.yml`](../../../../docker-compose.yml) 的进程拓扑，以及 [CI](../../../../.github/workflows/ci.yml) 的打包验证。
