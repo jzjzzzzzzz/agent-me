@@ -97,7 +97,9 @@ function parseProfileResponse(value: unknown): ProfileResponse {
     typeof profile.max_question_chars !== "number" ||
     !Number.isInteger(profile.max_question_chars) ||
     profile.max_question_chars < 1 ||
-    typeof profile.external_provider_enabled !== "boolean"
+    typeof profile.external_provider_enabled !== "boolean" ||
+    (Object.hasOwn(profile, "personal_enabled") &&
+      typeof profile.personal_enabled !== "boolean")
   ) {
     throw new ApiError("Server returned an invalid profile.", 502, "invalid_profile");
   }
