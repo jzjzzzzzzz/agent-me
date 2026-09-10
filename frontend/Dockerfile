@@ -6,7 +6,7 @@ COPY . .
 ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
-FROM nginx:1.31-alpine@sha256:a9ae6f6d078d477e21323310498e5196cb2b7c0aedd9e07b7306612077227d7c
+FROM nginx:1.31-alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY security-headers.conf /etc/nginx/agent-me-security-headers.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
