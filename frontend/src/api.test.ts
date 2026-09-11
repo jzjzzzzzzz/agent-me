@@ -221,6 +221,50 @@ it("validates public profile metadata", async () => {
   });
 });
 
+it.each([true, false])("accepts personal_enabled: %s", async (personalEnabled) => {
+  const profile = {
+    name: "My Agent",
+    description: "My description",
+    max_question_chars: 1200,
+    external_provider_enabled: false,
+    personal_enabled: personalEnabled,
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({ ok: true, json: async () => profile }),
+  );
+
+  await expect(loadProfile()).resolves.toEqual(profile);
+});
+
+it.each([
+  ["string", "false"],
+  ["number", 0],
+  ["object", {}],
+  ["array", []],
+  ["null", null],
+  ["undefined", undefined],
+])("rejects a %s personal_enabled value", async (_type, personalEnabled) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        name: "My Agent",
+        description: "My description",
+        max_question_chars: 1200,
+        external_provider_enabled: false,
+        personal_enabled: personalEnabled,
+      }),
+    }),
+  );
+
+  await expect(loadProfile()).rejects.toMatchObject({
+    status: 502,
+    code: "invalid_profile",
+  });
+});
+
 it("rejects a profile without an explicit provider disclosure flag", async () => {
   vi.stubGlobal(
     "fetch",
