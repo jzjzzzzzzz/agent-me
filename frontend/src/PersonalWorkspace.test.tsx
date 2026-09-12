@@ -68,3 +68,44 @@ it("does not expose the workspace after authentication failure", async () => {
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Private workspace token required"));
   expect(screen.queryByRole("button", { name: /Send/ })).not.toBeInTheDocument();
 });
+
+it("identifies duplicate-key memory actions by accessible name and preserves their behavior", async () => {
+  const entries = [
+    { id: "opaque-a", key: "profile.alias", kind: "fact", content: "River Example", status: "pending", source: "manual", updated_at: "2026-01-01" },
+    { id: "opaque-b", key: "profile.alias", kind: "preference", content: "Sky Example", status: "pending", source: "chat", updated_at: "2026-01-02" },
+  ];
+  let resolveConfirm!: (response: Response) => void;
+  const confirmResponse = new Promise<Response>(resolve => { resolveConfirm = resolve; });
+  const fetcher = vi.fn((url: string) => {
+    if (url.endsWith("/entries/opaque-a/confirm")) return confirmResponse;
+    return Promise.resolve(new Response(JSON.stringify(url.endsWith("/entries") ? entries : []), { status: 200 }));
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<PersonalWorkspace external={false} />);
+  fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "synthetic-token" } });
+  fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
+  expect(await screen.findByText("River Example")).toBeInTheDocument();
+
+  const firstConfirm = screen.getByRole("button", { name: "确认 / Confirm: profile.alias, 记忆 1 / memory 1" });
+  const secondConfirm = screen.getByRole("button", { name: "确认 / Confirm: profile.alias, 记忆 2 / memory 2" });
+  const firstEdit = screen.getByRole("button", { name: "编辑 / Edit: profile.alias, 记忆 1 / memory 1" });
+  const secondEdit = screen.getByRole("button", { name: "编辑 / Edit: profile.alias, 记忆 2 / memory 2" });
+  const firstDelete = screen.getByRole("button", { name: "删除 / Delete: profile.alias, 记忆 1 / memory 1" });
+  const secondDelete = screen.getByRole("button", { name: "删除 / Delete: profile.alias, 记忆 2 / memory 2" });
+
+  fireEvent.click(firstConfirm);
+  await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringContaining("/entries/opaque-a/confirm"), expect.any(Object)));
+  expect(firstConfirm).toBeDisabled();
+  expect(secondConfirm).toBeDisabled();
+  expect(firstEdit).toBeDisabled();
+  expect(secondEdit).toBeDisabled();
+  expect(firstDelete).toBeDisabled();
+  expect(secondDelete).toBeDisabled();
+  resolveConfirm(new Response(JSON.stringify({}), { status: 200 }));
+  await waitFor(() => expect(secondEdit).toBeEnabled());
+
+  fireEvent.click(secondEdit);
+  expect(screen.getByLabelText(/Content/)).toHaveValue("Sky Example");
+  fireEvent.click(secondDelete);
+  await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringContaining("/entries/opaque-b/delete"), expect.any(Object)));
+});

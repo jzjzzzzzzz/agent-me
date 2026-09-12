@@ -4,6 +4,10 @@ type Entry = { id: string; kind: string; key: string; content: string; status: s
 type Turn = { id: string; role: string; content: string };
 const base = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
 
+function memoryActionName(label: string, entryKey: string, position: number) {
+  return `${label}: ${entryKey}, 记忆 ${position} / memory ${position}`;
+}
+
 export function PersonalWorkspace({ external, maxQuestionChars = 8000 }: { external: boolean; maxQuestionChars?: number }) {
   const questionLimit = Math.min(maxQuestionChars, 8000);
   const [token, setToken] = useState("");
@@ -75,13 +79,13 @@ export function PersonalWorkspace({ external, maxQuestionChars = 8000 }: { exter
         <button disabled={busy}>{editing ? "保存修改为候选 / Save edit as pending" : "添加候选 / Add candidate"}</button>
         {editing && <button type="button" onClick={() => { setEditing(null); setContent(""); }}>取消 / Cancel</button>}
       </form>
-      <ul className="memory-list">{entries.map(entry => <li key={entry.id}>
+      <ul className="memory-list">{entries.map((entry, index) => <li key={entry.id}>
         <strong>{entry.key}</strong> · {entry.kind} · {entry.status === "confirmed" ? "已确认 / Confirmed" : "待确认 / Pending"}
         <p>{entry.content}</p><small>{entry.source} · {entry.updated_at}</small>
         <div className="memory-actions">
-          {entry.status === "pending" && <button disabled={busy} onClick={() => void run(async () => { setConflict(null); await request(`/entries/${entry.id}/confirm`, { replace_ids: [] }); await refresh(); })}>确认 / Confirm</button>}
-          <button disabled={busy} onClick={() => { setEditing(entry.id); setKind(entry.kind); setKey(entry.key); setContent(entry.content); }}>编辑 / Edit</button>
-          <button disabled={busy} onClick={() => void run(async () => { await request(`/entries/${entry.id}/delete`, {}); setConflict(null); await refresh(); })}>删除 / Delete</button>
+          {entry.status === "pending" && <button aria-label={memoryActionName("确认 / Confirm", entry.key, index + 1)} disabled={busy} onClick={() => void run(async () => { setConflict(null); await request(`/entries/${entry.id}/confirm`, { replace_ids: [] }); await refresh(); })}>确认 / Confirm</button>}
+          <button aria-label={memoryActionName("编辑 / Edit", entry.key, index + 1)} disabled={busy} onClick={() => { setEditing(entry.id); setKind(entry.kind); setKey(entry.key); setContent(entry.content); }}>编辑 / Edit</button>
+          <button aria-label={memoryActionName("删除 / Delete", entry.key, index + 1)} disabled={busy} onClick={() => void run(async () => { await request(`/entries/${entry.id}/delete`, {}); setConflict(null); await refresh(); })}>删除 / Delete</button>
         </div>
       </li>)}</ul>
       {conflict && <aside role="alert"><p>确认用新内容替换以下旧记忆？ / Replace these confirmed memories?</p>
