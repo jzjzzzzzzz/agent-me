@@ -29,12 +29,13 @@ import "./styles.css";
 import { PersonalWorkspace } from "./PersonalWorkspace";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
+type RequestError = { detail: string | null };
 
 export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<ChatResponse | CollaborationResponse | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<RequestError | null>(null);
   const [loading, setLoading] = useState(false);
   const [comparison, setComparison] = useState<ComparisonState | null>(null);
   const [comparing, setComparing] = useState(false);
@@ -98,7 +99,7 @@ export function App() {
     if (!question.trim() || busy) return;
 
     setLoading(true);
-    setError("");
+    setError(null);
     setResult(null);
     setComparison(null);
     try {
@@ -112,7 +113,7 @@ export function App() {
       );
     } catch (reason) {
       const detail = reason instanceof ApiError ? reason.message : "";
-      setError(detail ? `${text.requestFailed}: ${detail}` : text.requestFailed);
+      setError({ detail: detail || null });
     } finally {
       setLoading(false);
     }
@@ -125,7 +126,7 @@ export function App() {
     comparisonController.current = controller;
     setComparing(true);
     setResult(null);
-    setError("");
+    setError(null);
     setComparison({
       question: submittedQuestion,
       baseline: { status: "loading" },
@@ -263,7 +264,7 @@ export function App() {
 
       {error && (
         <p role="alert" className="error">
-          {error}
+          {error.detail ? `${text.requestFailed}: ${error.detail}` : text.requestFailed}
         </p>
       )}
 
