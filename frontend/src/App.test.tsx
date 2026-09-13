@@ -182,6 +182,63 @@ it("shows a structured API error and clears a stale answer while retrying", asyn
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed");
 });
 
+it("relocalizes a generic request error without retrying or exposing diagnostics", async () => {
+  let chatCalls = 0;
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    chatCalls += 1;
+    return Promise.reject(new Error("Synthetic parser diagnostic"));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "Trigger a generic error");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("Request failed");
+  expect(alert).not.toHaveTextContent("Synthetic parser diagnostic");
+  expect(chatCalls).toBe(1);
+
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "zh-CN");
+  expect(screen.getByRole("alert")).toHaveTextContent("请求失败");
+  expect(screen.getByRole("alert")).not.toHaveTextContent("Synthetic parser diagnostic");
+  expect(chatCalls).toBe(1);
+});
+
+it("relocalizes an API error while preserving its safe detail", async () => {
+  let chatCalls = 0;
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    chatCalls += 1;
+    return Promise.resolve({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        detail: "Synthetic request limit reached.",
+        diagnostics: "Synthetic response body diagnostic",
+      }),
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+
+  render(<App />);
+  await userEvent.type(screen.getByLabelText(/ask the example/i), "Trigger an API error");
+  await userEvent.click(screen.getByRole("button", { name: "Ask" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("Request failed: Synthetic request limit reached.");
+  expect(alert).not.toHaveTextContent("Synthetic response body diagnostic");
+  expect(chatCalls).toBe(1);
+
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "ja");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "リクエストに失敗しました: Synthetic request limit reached.",
+  );
+  expect(screen.getByRole("alert")).not.toHaveTextContent("Synthetic response body diagnostic");
+  expect(chatCalls).toBe(1);
+});
+
 
 it("applies the configured public profile and question limit", async () => {
   vi.stubGlobal(
