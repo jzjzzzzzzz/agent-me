@@ -1,13 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
+import { messages } from "./i18n";
 import { PersonalWorkspace } from "./PersonalWorkspace";
+
+const english = messages.en.personalWorkspace;
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it.each([[42, 42], [undefined, 8000], [12000, 8000]])("enforces configured limit %s with an effective boundary of %s", async (configured, limit) => {
   const fetcher = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
   vi.stubGlobal("fetch", fetcher);
-  render(<PersonalWorkspace external={false} maxQuestionChars={configured} />);
+  render(<PersonalWorkspace external={false} text={english} maxQuestionChars={configured} />);
   fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "synthetic-token" } });
   fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
   const question = await screen.findByLabelText(/Private question/);
@@ -26,12 +29,12 @@ it.each([[42, 42], [undefined, 8000], [12000, 8000]])("enforces configured limit
 it("preserves a draft when the limit shrinks and allows sending after shortening", async () => {
   const fetcher = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
   vi.stubGlobal("fetch", fetcher);
-  const { rerender } = render(<PersonalWorkspace external={false} maxQuestionChars={100} />);
+  const { rerender } = render(<PersonalWorkspace external={false} text={english} maxQuestionChars={100} />);
   fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "synthetic-token" } });
   fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
   const question = await screen.findByLabelText(/Private question/);
   fireEvent.change(question, { target: { value: "x".repeat(43) } });
-  rerender(<PersonalWorkspace external={false} maxQuestionChars={42} />);
+  rerender(<PersonalWorkspace external={false} text={english} maxQuestionChars={42} />);
   expect(question).toHaveValue("x".repeat(43));
   expect(screen.getByRole("button", { name: /Send/ })).toBeDisabled();
   fireEvent.submit(question.closest("form")!);
@@ -47,7 +50,7 @@ it("requires a token, loads persisted memory, and clears private state on lock",
     url.endsWith("/entries") ? [{ id: "one", key: "identity.name", kind: "fact", content: "Alex Example", status: "confirmed", source: "manual", updated_at: "2026-01-01" }] : [{ id: "turn", role: "user", content: "Saved question" }],
   ), { status: 200 }));
   vi.stubGlobal("fetch", fetcher);
-  render(<PersonalWorkspace external={false} />);
+  render(<PersonalWorkspace external={false} text={english} />);
   expect(fetcher).not.toHaveBeenCalled();
   fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "local-token" } });
   fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
@@ -62,11 +65,50 @@ it("requires a token, loads persisted memory, and clears private state on lock",
 
 it("does not expose the workspace after authentication failure", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ detail: "Private workspace token required" }), { status: 401 })));
-  render(<PersonalWorkspace external />);
+  render(<PersonalWorkspace external text={english} />);
   fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "bad" } });
   fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Private workspace token required"));
   expect(screen.queryByRole("button", { name: /Send/ })).not.toBeInTheDocument();
+});
+
+it("renders both private data destinations in the selected locale", () => {
+  const { rerender } = render(
+    <PersonalWorkspace external text={messages["zh-CN"].personalWorkspace} />,
+  );
+
+  expect(screen.getByRole("region", { name: "私有工作区" })).toHaveTextContent(
+    "私有和公开知识片段会发送给当前配置的模型服务",
+  );
+
+  rerender(<PersonalWorkspace external={false} text={messages.ja.personalWorkspace} />);
+
+  expect(screen.getByRole("region", { name: "プライベートワークスペース" })).toHaveTextContent(
+    "外部モデルプロバイダーへ送信されません",
+  );
+});
+
+it("relocalizes a safe server error without another request or HTML rendering", async () => {
+  const fetcher = vi.fn(async () => new Response(
+    JSON.stringify({ detail: "Synthetic <strong>token detail</strong>" }),
+    { status: 401 },
+  ));
+  vi.stubGlobal("fetch", fetcher);
+  const { rerender } = render(<PersonalWorkspace external={false} text={english} />);
+  fireEvent.change(screen.getByLabelText("Workspace token"), { target: { value: "bad" } });
+  fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent("Request failed: Synthetic <strong>token detail</strong>");
+  expect(alert.querySelector("strong")).toBeNull();
+  const requestCount = fetcher.mock.calls.length;
+
+  rerender(<PersonalWorkspace external={false} text={messages["zh-CN"].personalWorkspace} />);
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "请求失败: Synthetic <strong>token detail</strong>",
+  );
+  expect(fetcher).toHaveBeenCalledTimes(requestCount);
 });
 
 it("identifies duplicate-key memory actions by accessible name and preserves their behavior", async () => {
@@ -81,17 +123,17 @@ it("identifies duplicate-key memory actions by accessible name and preserves the
     return Promise.resolve(new Response(JSON.stringify(url.endsWith("/entries") ? entries : []), { status: 200 }));
   });
   vi.stubGlobal("fetch", fetcher);
-  render(<PersonalWorkspace external={false} />);
+  render(<PersonalWorkspace external={false} text={english} />);
   fireEvent.change(screen.getByLabelText(/Workspace token/), { target: { value: "synthetic-token" } });
   fireEvent.click(screen.getByRole("button", { name: /Unlock/ }));
   expect(await screen.findByText("River Example")).toBeInTheDocument();
 
-  const firstConfirm = screen.getByRole("button", { name: "确认 / Confirm: profile.alias, 记忆 1 / memory 1" });
-  const secondConfirm = screen.getByRole("button", { name: "确认 / Confirm: profile.alias, 记忆 2 / memory 2" });
-  const firstEdit = screen.getByRole("button", { name: "编辑 / Edit: profile.alias, 记忆 1 / memory 1" });
-  const secondEdit = screen.getByRole("button", { name: "编辑 / Edit: profile.alias, 记忆 2 / memory 2" });
-  const firstDelete = screen.getByRole("button", { name: "删除 / Delete: profile.alias, 记忆 1 / memory 1" });
-  const secondDelete = screen.getByRole("button", { name: "删除 / Delete: profile.alias, 记忆 2 / memory 2" });
+  const firstConfirm = screen.getByRole("button", { name: "Confirm: profile.alias, memory 1" });
+  const secondConfirm = screen.getByRole("button", { name: "Confirm: profile.alias, memory 2" });
+  const firstEdit = screen.getByRole("button", { name: "Edit: profile.alias, memory 1" });
+  const secondEdit = screen.getByRole("button", { name: "Edit: profile.alias, memory 2" });
+  const firstDelete = screen.getByRole("button", { name: "Delete: profile.alias, memory 1" });
+  const secondDelete = screen.getByRole("button", { name: "Delete: profile.alias, memory 2" });
 
   fireEvent.click(firstConfirm);
   await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringContaining("/entries/opaque-a/confirm"), expect.any(Object)));

@@ -24,6 +24,8 @@ npm run dev -- --host 127.0.0.1
 打开 `http://localhost:5173`。在 `private/personal.env` 中查看 `PERSONAL_TOKEN`，
 粘贴到“我的 AI 分身”的密钥输入框。密钥只保存在当前页面内存中，刷新后重新解锁。
 Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
+私有工作区的控件与数据去向说明会跟随页面语言切换；切换语言不会重新锁定工作区、清除草稿，
+也不会重新请求私有数据。记忆正文、聊天内容、字段键和 API 类型值始终保持原样。
 
 初始化脚本具有幂等性：保留已有工作区数据和 `.env`，同时重新创建缺失的非敏感基础文件。
 不使用该命令时私有模式默认关闭。已有 `.env` 中的模型配置仍然有效。
@@ -99,6 +101,9 @@ This is an opt-in, single-owner local workspace. Install the dependencies using 
 [repository quick start](../README.md#quick-start), then run the initialization and launch commands above.
 Unlock the new panel using `PERSONAL_TOKEN` from `private/personal.env`.
 The initializer is idempotent: it preserves existing workspace data and `.env`, while recreating any missing non-secret scaffolding.
+Private-workspace controls and data-destination disclosures follow the selected interface language.
+Changing locale does not relock or refetch the workspace, and it preserves the in-memory token and
+drafts. Memory/chat content, keys, and API type values remain verbatim.
 
 Add profile fields as typed entries (`fact`, `preference`, `event`, `decision`). All new or edited
 entries are pending until confirmed. Use `Remember: ...` in private chat to propose a preference,

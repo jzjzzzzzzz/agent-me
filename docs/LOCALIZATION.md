@@ -25,6 +25,13 @@ Agent-Me ships a dependency-free, typed localization layer for the web interface
 - Unknown locales fall back to English.
 - Manual selection is stored in local storage and updates the document language.
 - No question, answer, or user identity is stored by the locale preference.
+- Private-workspace controls, status labels, guidance, and provider-boundary disclosures follow the
+  selected locale. Changing it does not remount the workspace, clear its in-memory token or drafts,
+  or repeat private API requests.
+- Personal content and backend identifiers remain verbatim. Memory keys and request values such as
+  `fact`, `preference`, `event`, and `decision` are not translated; only their display labels are.
+- Localized chat guidance keeps the executable `Remember:` or `记住：` prefix supported by the
+  backend rather than inventing locale-specific commands.
 
 ## Adding a locale
 

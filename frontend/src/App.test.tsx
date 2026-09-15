@@ -33,6 +33,79 @@ it("passes the configured question limit to the private workspace", async () => 
   expect(await screen.findByLabelText(/Private question/)).toHaveAttribute("maxlength", "42");
 });
 
+it("relocalizes an unlocked private workspace without remounting or refetching it", async () => {
+  const privateCalls: Array<[string, RequestInit | undefined]> = [];
+  const entry = {
+    id: "synthetic-entry",
+    key: "profile.alias",
+    kind: "preference",
+    content: "River <b>Example</b>",
+    status: "pending",
+    source: "manual",
+    updated_at: "2026-01-01",
+  };
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.endsWith("/api/v1/profile")) {
+      return new Response(JSON.stringify({
+        name: "Synthetic twin",
+        description: "Example",
+        max_question_chars: 8000,
+        external_provider_enabled: true,
+        personal_enabled: true,
+      }), { status: 200 });
+    }
+    privateCalls.push([url, init]);
+    const payload = url.endsWith("/entries") ? [entry]
+      : url.endsWith("/history")
+        ? [{ id: "synthetic-turn", role: "assistant", content: "Untranslated <i>history</i>" }]
+        : {};
+    return new Response(JSON.stringify(payload), { status: 200 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<App />);
+
+  fireEvent.change(await screen.findByLabelText("Workspace token"), {
+    target: { value: "synthetic-token" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+  expect(await screen.findByText("River <b>Example</b>")).toBeInTheDocument();
+  expect(screen.getByText("Untranslated <i>history</i>")).toBeInTheDocument();
+  expect(screen.queryByText("Example", { selector: "b" })).not.toBeInTheDocument();
+  expect(screen.getByRole("list")).toHaveTextContent("Preference");
+  expect(screen.getByText("Assistant")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit: profile.alias, memory 1" }));
+  const contentDraft = screen.getByLabelText("Content");
+  const questionDraft = screen.getByLabelText("Private question");
+  fireEvent.change(contentDraft, { target: { value: "Edited synthetic draft" } });
+  fireEvent.change(questionDraft, { target: { value: "Unsent synthetic question" } });
+  const callsBeforeLocaleChange = privateCalls.length;
+
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Language" }), "ja");
+
+  expect(screen.getByRole("region", { name: "プライベートワークスペース" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "編集内容を候補として保存" })).toBeInTheDocument();
+  expect(screen.getByLabelText("内容")).toHaveValue("Edited synthetic draft");
+  expect(screen.getByLabelText("非公開の質問")).toHaveValue("Unsent synthetic question");
+  expect(screen.getByText("River <b>Example</b>")).toBeInTheDocument();
+  expect(screen.getByText("Untranslated <i>history</i>")).toBeInTheDocument();
+  expect(screen.getByRole("list")).toHaveTextContent("設定・好み");
+  expect(screen.getByText("アシスタント")).toBeInTheDocument();
+  expect(privateCalls).toHaveLength(callsBeforeLocaleChange);
+  expect(Object.keys(window.localStorage)).toEqual(["agent-me-locale"]);
+  expect(window.localStorage.getItem("agent-me-locale")).toBe("ja");
+
+  fireEvent.click(screen.getByRole("button", { name: "編集内容を候補として保存" }));
+  await waitFor(() => expect(privateCalls.some(([url]) => url.endsWith("/synthetic-entry/edit"))).toBe(true));
+  const [, editInit] = privateCalls.find(([url]) => url.endsWith("/synthetic-entry/edit"))!;
+  expect(editInit?.headers).toMatchObject({ Authorization: "Bearer synthetic-token" });
+  expect(editInit?.body).toBe(JSON.stringify({
+    kind: "preference",
+    key: "profile.alias",
+    content: "Edited synthetic draft",
+  }));
+});
+
 function routeFetch(chatResponse: object) {
   return vi.fn().mockImplementation((url: string) =>
     url.endsWith("/api/v1/profile")
