@@ -186,7 +186,7 @@ export function App() {
         </div>
       </header>
 
-      {profile?.personal_enabled && <PersonalWorkspace external={profile.external_provider_enabled} maxQuestionChars={maxQuestionChars} />}
+      {profile?.personal_enabled && <PersonalWorkspace external={profile.external_provider_enabled} text={text.personalWorkspace} maxQuestionChars={maxQuestionChars} />}
 
       <form onSubmit={submit} aria-busy={busy}>
         <fieldset className="workflow-picker">

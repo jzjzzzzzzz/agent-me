@@ -1,3 +1,5 @@
+import { personalMessages, type PersonalWorkspaceMessages } from "./personalMessages";
+
 export const supportedLocales = [
   { code: "en", label: "English" },
   { code: "zh-CN", label: "简体中文" },
@@ -13,6 +15,7 @@ export const supportedLocales = [
 export type Locale = (typeof supportedLocales)[number]["code"];
 
 export type Messages = {
+  personalWorkspace: PersonalWorkspaceMessages;
   language: string;
   projectLabel: string;
   title: string;
@@ -75,6 +78,7 @@ export type Messages = {
 
 export const messages: Record<Locale, Messages> = {
   en: {
+    personalWorkspace: personalMessages.en,
     compareWorkflows: "Compare workflows",
     compareHelp: "Runs both local collaboration policies with the same question, independently of the selected mode. Neither sends data to an external model provider.",
     comparisonQuestion: "Compared question",
@@ -142,6 +146,7 @@ export const messages: Record<Locale, Messages> = {
       "Prompts are untrusted input. Review your documents before publishing and never commit secrets.",
   },
   "zh-CN": {
+    personalWorkspace: personalMessages["zh-CN"],
     compareWorkflows: "对比工作流",
     compareHelp: "用相同问题运行两种本地协作策略，不受当前模式选择影响。两者均不向外部模型服务发送数据。",
     comparisonQuestion: "对比的问题",
@@ -203,6 +208,7 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示词是不可信输入。发布前请检查文档，切勿提交任何密钥。",
   },
   "zh-TW": {
+    personalWorkspace: personalMessages["zh-TW"],
     compareWorkflows: "比較工作流程",
     compareHelp: "用相同問題執行兩種本機協作策略，不受目前模式選擇影響。兩者均不向外部模型服務傳送資料。",
     comparisonQuestion: "比較的問題",
@@ -264,6 +270,7 @@ export const messages: Record<Locale, Messages> = {
     footer: "提示詞是不受信任的輸入。發布前請檢查文件，切勿提交任何密鑰。",
   },
   ja: {
+    personalWorkspace: personalMessages.ja,
     compareWorkflows: "ワークフローを比較",
     compareHelp: "選択中のモードに関係なく、同じ質問で両方のローカル協調ポリシーを実行します。どちらも外部モデルにデータを送りません。",
     comparisonQuestion: "比較する質問",
@@ -331,6 +338,7 @@ export const messages: Record<Locale, Messages> = {
       "プロンプトは信頼できない入力です。公開前に文書を確認し、秘密情報をコミットしないでください。",
   },
   ko: {
+    personalWorkspace: personalMessages.ko,
     compareWorkflows: "워크플로 비교",
     compareHelp: "선택된 모드와 관계없이 같은 질문으로 두 로컬 협업 정책을 실행합니다. 둘 다 외부 모델 제공업체에 데이터를 보내지 않습니다.",
     comparisonQuestion: "비교 질문",
@@ -397,6 +405,7 @@ export const messages: Record<Locale, Messages> = {
       "프롬프트는 신뢰할 수 없는 입력입니다. 게시 전에 문서를 검토하고 비밀 정보를 커밋하지 마세요.",
   },
   es: {
+    personalWorkspace: personalMessages.es,
     compareWorkflows: "Comparar flujos",
     compareHelp: "Ejecuta ambas políticas locales con la misma pregunta, sin depender del modo seleccionado. Ninguna envía datos a un proveedor de modelos externo.",
     comparisonQuestion: "Pregunta comparada",
@@ -464,6 +473,7 @@ export const messages: Record<Locale, Messages> = {
       "Los prompts son entradas no confiables. Revisa tus documentos antes de publicarlos y nunca confirmes secretos.",
   },
   fr: {
+    personalWorkspace: personalMessages.fr,
     compareWorkflows: "Comparer les flux",
     compareHelp: "Exécute les deux politiques locales avec la même question, quel que soit le mode sélectionné. Aucune n’envoie de données à un fournisseur de modèles externe.",
     comparisonQuestion: "Question comparée",
@@ -531,6 +541,7 @@ export const messages: Record<Locale, Messages> = {
       "Les prompts sont des entrées non fiables. Vérifiez vos documents avant publication et ne validez jamais de secrets.",
   },
   de: {
+    personalWorkspace: personalMessages.de,
     compareWorkflows: "Workflows vergleichen",
     compareHelp: "Führt beide lokalen Abläufe mit derselben Frage aus, unabhängig vom gewählten Modus. Keiner sendet Daten an einen externen Modellanbieter.",
     comparisonQuestion: "Verglichene Frage",
@@ -598,6 +609,7 @@ export const messages: Record<Locale, Messages> = {
       "Prompts sind nicht vertrauenswürdige Eingaben. Prüfe Dokumente vor der Veröffentlichung und committe niemals Geheimnisse.",
   },
   "pt-BR": {
+    personalWorkspace: personalMessages["pt-BR"],
     compareWorkflows: "Comparar fluxos",
     compareHelp: "Executa as duas políticas locais com a mesma pergunta, independentemente do modo selecionado. Nenhuma envia dados a um provedor de modelos externo.",
     comparisonQuestion: "Pergunta comparada",
