@@ -56,8 +56,10 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 本版采用明确指令提取，不会从普通聊天中自动推断事实；事实、事件和决策请在表单中选择类型。
 从聊天提取的默认字段为 `conversation.preference`，可先编辑成更具体的字段再确认。
 
-已确认的偏好无需词项命中也可进入私有回答上下文，其他记忆采用词项匹配检索。
-记忆最多选取 20 条，发送给模型的上下文仍受 `MAX_CONTEXT_CHARS` 限制。
+已确认的偏好无需词项命中也可进入私有回答上下文，为其保留 20 条名额中的 5 条底线配额，
+避免被大量匹配的事实挤出；预算有余时仍优先纳入偏好而非低相关事实。其他记忆采用词项匹配检索。
+记忆总计最多选取 20 条；若已确认偏好与相关事实合计超出该预算，底线配额之外得分最低的偏好会被舍弃。
+发送给模型的上下文仍受 `MAX_CONTEXT_CHARS` 限制。
 没有配置模型时仅返回相关原文，不会智能模仿语气。
 如需模型生成，在本地 `.env` 配置 `LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL`，重启后生效。
 普通问答与协作模式保持原有行为，**不会读取私有工作区**。
@@ -111,9 +113,13 @@ then review it in the memory list. The default extracted key is `conversation.pr
 to a specific key before confirmation when needed. Matching kind/key conflicts require explicit
 replacement. Cross-key semantic contradiction detection is not implemented.
 
-Confirmed preferences are eligible without lexical overlap; other entries use lexical
-retrieval. At most 20 memory entries are selected, and provider context is bounded by
-`MAX_CONTEXT_CHARS`. Optional private Markdown belongs in `private/knowledge/`, never the tracked `knowledge/`.
+Confirmed preferences are eligible without lexical overlap; a reserved floor (5 of the 20
+total slots) keeps them from being evicted by a flood of matching facts, and any unused
+budget still favors preferences before low-relevance facts. Other entries use lexical
+retrieval. At most 20 memory entries are selected in total; if confirmed preferences and
+relevant facts together exceed that budget, the lowest-scoring preferences beyond the
+reserved floor are dropped. Provider context remains bounded by `MAX_CONTEXT_CHARS`.
+Optional private Markdown belongs in `private/knowledge/`, never the tracked `knowledge/`.
 Private Markdown is operator-maintained knowledge and bypasses candidate confirmation.
 The public chat and collaboration endpoints never read this workspace.
 
