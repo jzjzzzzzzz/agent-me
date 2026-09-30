@@ -22,6 +22,9 @@ from .text import normalized_tokens
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
 
+_MAX_MATCHES = 20
+_MAX_PREFERENCE_MATCHES = 5
+
 
 class Entry(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -185,17 +188,29 @@ class Store:
 
     def context(self, question: str):
         tokens = normalized_tokens(question)
-        matches = []
+        preferences: list[Match] = []
+        facts: list[Match] = []
         for item in self.entries():
             if item["status"] != "confirmed":
                 continue
             excerpt = f"{item['key']}: {item['content']}"
             overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
-            # Preferences are always supplied, but do not outrank relevant factual evidence.
+            # Preferences are always eligible, but do not outrank relevant factual evidence.
             if overlap or item["kind"] == "preference":
                 doc = Document(title=item["key"], path=f"memory/{item['id']}", text=excerpt)
-                matches.append(Match(document=doc, excerpt=excerpt, score=overlap))
-        return sorted(matches, key=lambda m: m.score, reverse=True)[:20]
+                match = Match(document=doc, excerpt=excerpt, score=overlap)
+                (preferences if item["kind"] == "preference" else facts).append(match)
+        # Preferences get a reserved floor of the budget so a flood of matching facts
+        # cannot evict a confirmed preference; facts then fill the rest, and any budget
+        # facts don't use goes back to preferences. Only once confirmed preferences and
+        # relevant facts together exceed the total budget do the lowest-scoring
+        # preferences beyond the reserved floor get dropped.
+        preferences.sort(key=lambda m: m.score, reverse=True)
+        facts.sort(key=lambda m: m.score, reverse=True)
+        reserved = min(len(preferences), _MAX_PREFERENCE_MATCHES)
+        kept_facts = facts[: _MAX_MATCHES - reserved]
+        kept_preferences = preferences[: _MAX_MATCHES - len(kept_facts)]
+        return sorted(kept_preferences + kept_facts, key=lambda m: m.score, reverse=True)
 
 
 def store(config: Settings = Depends(authorize)) -> Store:
