@@ -37,6 +37,27 @@ def _answer_content(response_body: bytes, max_answer_chars: int) -> str:
     return content
 
 
+def context_matches(matches: list[Match], max_context_chars: int) -> list[Match]:
+    """Return the complete source records that fit in the provider context budget."""
+    selected: list[Match] = []
+    used = 0
+    for match in matches:
+        record = f"Source: {match.document.path}\n{match.excerpt}"
+        separator = 2 if selected else 0
+        if used + separator + len(record) > max_context_chars:
+            continue
+        selected.append(match)
+        used += separator + len(record)
+    return selected
+
+
+def _context_text(matches: list[Match], max_context_chars: int) -> str:
+    return "\n\n".join(
+        f"Source: {match.document.path}\n{match.excerpt}"
+        for match in context_matches(matches, max_context_chars)
+    )
+
+
 async def _read_limited_response(response: httpx.Response, max_bytes: int) -> bytes:
     declared_length = response.headers.get("content-length")
     if declared_length is not None:
@@ -68,9 +89,7 @@ async def generate_answer(
     if settings.provider_state == "misconfigured":
         raise ProviderError("provider_configuration_incomplete", status_code=503)
 
-    context = "\n\n".join(f"Source: {match.document.path}\n{match.excerpt}" for match in matches)[
-        : settings.max_context_chars
-    ]
+    context = _context_text(matches, settings.max_context_chars)
     system = (
         "Answer only from the supplied context. If the context is insufficient, say so. "
         "Do not invent personal facts. Cite source paths in brackets. "

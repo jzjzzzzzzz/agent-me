@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 
 from .config import Settings, get_settings
 from .knowledge import Document, KnowledgeBase, Match
-from .provider import generate_answer
+from .provider import context_matches, generate_answer
 from .schemas import ChatTurn
 from .text import normalized_tokens
 
@@ -297,8 +297,13 @@ async def chat(
         question=payload.question, history=history, matches=matches, settings=config
     )
     await run_in_threadpool(db.save_chat, payload.question, answer)
+    response_matches = (
+        context_matches(matches, config.max_context_chars)
+        if mode == "openai-compatible"
+        else matches
+    )
     return {
         "answer": answer,
         "mode": mode,
-        "sources": [{"path": m.document.path, "excerpt": m.excerpt} for m in matches],
+        "sources": [{"path": m.document.path, "excerpt": m.excerpt} for m in response_matches],
     }

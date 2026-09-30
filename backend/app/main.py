@@ -10,7 +10,7 @@ from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .personal import router as personal_router
-from .provider import ProviderError, generate_answer
+from .provider import ProviderError, context_matches, generate_answer
 from .request_id import RequestIDMiddleware
 from .request_limits import RequestBodyLimitMiddleware
 from .schemas import (
@@ -187,6 +187,11 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
         matches=matches,
         settings=config,
     )
+    response_matches = (
+        context_matches(matches, config.max_context_chars)
+        if mode == "openai-compatible"
+        else matches
+    )
     return ChatResponse(
         answer=answer,
         mode=mode,
@@ -197,7 +202,7 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
                 excerpt=match.excerpt,
                 score=match.score,
             )
-            for match in matches
+            for match in response_matches
         ],
     )
 

@@ -316,6 +316,60 @@ async def test_collaboration_rejects_an_unknown_workflow(
 
 
 @pytest.mark.anyio
+async def test_provider_chat_sources_only_report_supplied_context(
+    client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.knowledge import Document, Match
+
+    first = Match(
+        Document("First", "first.md", "alpha details"),
+        "alpha details",
+        1.0,
+    )
+    second = Match(
+        Document("Second", "second.md", "beta details"),
+        "beta details",
+        0.9,
+    )
+
+    class StaticKnowledgeBase:
+        def search(self, question: str, *, limit: int = 4) -> list[Match]:
+            return [first, second]
+
+    async def fake_generate_answer(**kwargs):
+        return "Grounded answer", "openai-compatible"
+
+    settings = get_settings()
+    originals = (
+        settings.llm_base_url,
+        settings.llm_api_key,
+        settings.llm_model,
+        settings.max_context_chars,
+    )
+    settings.llm_base_url = "https://provider.example/v1"
+    settings.llm_api_key = "secret"
+    settings.llm_model = "model"
+    settings.max_context_chars = len("Source: first.md\nalpha details")
+    monkeypatch.setattr(main_module, "_knowledge_base", lambda *_: StaticKnowledgeBase())
+    monkeypatch.setattr(main_module, "generate_answer", fake_generate_answer)
+    try:
+        response = await client.post("/api/v1/chat", json={"question": "alpha beta"})
+    finally:
+        (
+            settings.llm_base_url,
+            settings.llm_api_key,
+            settings.llm_model,
+            settings.max_context_chars,
+        ) = originals
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mode"] == "openai-compatible"
+    assert [source["path"] for source in body["sources"]] == ["first.md"]
+
+
+@pytest.mark.anyio
 async def test_knowledge_search_runs_outside_the_async_event_loop(
     client: httpx.AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
