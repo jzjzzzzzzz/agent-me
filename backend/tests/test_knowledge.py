@@ -155,6 +155,38 @@ def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
     assert [match.document.path for match in matches] == ["a.md"]
 
 
+def test_long_excerpt_keeps_late_matching_term(tmp_path: Path) -> None:
+    (tmp_path / "late.md").write_text(
+        "# Late\n\n" + "filler " * 170 + "UniqueNeedle", encoding="utf-8"
+    )
+
+    match = KnowledgeBase(str(tmp_path)).search("UniqueNeedle")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert "UniqueNeedle" in match.excerpt
+
+
+def test_long_excerpt_keeps_widely_spaced_matches_when_they_fit(tmp_path: Path) -> None:
+    (tmp_path / "wide.md").write_text(
+        "Alpha " + "filler " * 50 + "Beta " + "filler " * 50 + "Gamma",
+        encoding="utf-8",
+    )
+
+    match = KnowledgeBase(str(tmp_path)).search("Alpha Beta Gamma")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert all(term in match.excerpt for term in ("Alpha", "Beta", "Gamma"))
+
+
+def test_long_excerpt_preserves_unicode_match(tmp_path: Path) -> None:
+    (tmp_path / "unicode.md").write_text("填充 " * 400 + "Évaluation", encoding="utf-8")
+
+    match = KnowledgeBase(str(tmp_path)).search("évaluation")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert "Évaluation" in match.excerpt
+
+
 @pytest.mark.parametrize(
     ("document_text", "question"),
     [

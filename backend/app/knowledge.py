@@ -84,6 +84,40 @@ def _query_tokens(value: str) -> set[str]:
     return normalized_tokens(value) - _STOP_WORDS
 
 
+def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
+    """Return a bounded excerpt positioned around the terms that matched."""
+    if len(paragraph) <= limit:
+        return paragraph
+
+    # Match the same word/Han token boundaries and normalization as search. Keep
+    # original-text offsets so excerpts remain readable and preserve Unicode.
+    token_pattern = re.compile(r"[\w\u3400-\u9fff]+", re.UNICODE)
+    hits: list[tuple[int, int]] = []
+    for match in token_pattern.finditer(paragraph):
+        if normalized_tokens(match.group()) & query:
+            hits.append(match.span())
+    if not hits:
+        return paragraph[:limit]
+
+    first, last = hits[0][0], hits[-1][1]
+    if last - first <= limit:
+        start = max(0, min(first - (limit - (last - first)) // 2, len(paragraph) - limit))
+    else:
+        start = max(0, min(first - limit // 2, len(paragraph) - limit))
+    end = start + limit
+    # Avoid cutting a word at either edge when a small adjustment is possible.
+    if start and paragraph[start].isalnum():
+        boundary = paragraph.find(" ", start, min(end, start + 100))
+        if boundary >= 0:
+            start = boundary + 1
+            end = start + limit
+    if end < len(paragraph) and paragraph[end - 1].isalnum():
+        boundary = paragraph.rfind(" ", max(start, end - 100), end)
+        if boundary >= 0:
+            end = boundary
+    return paragraph[start:end]
+
+
 _H1_HEADING = re.compile(r"^\s{0,3}#\s+(.*?)(?:\s+#+)?\s*$")
 
 
@@ -275,7 +309,7 @@ class KnowledgeBase:
                 matches.append(
                     Match(
                         document=document,
-                        excerpt=paragraph[:1_000],
+                        excerpt=_excerpt(paragraph, overlap),
                         score=round(score, 4),
                     )
                 )
