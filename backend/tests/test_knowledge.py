@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.knowledge import KnowledgeBase, KnowledgeLoadError
+from app.knowledge import KnowledgeBase, KnowledgeLoadError, _excerpt
 
 
 def test_documents_are_relative_sorted_and_utf8(tmp_path: Path) -> None:
@@ -153,6 +153,48 @@ def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
     matches = KnowledgeBase(str(tmp_path)).search("Alpha Python", limit=1)
 
     assert [match.document.path for match in matches] == ["a.md"]
+
+
+def test_long_excerpt_keeps_late_matching_term(tmp_path: Path) -> None:
+    (tmp_path / "late.md").write_text(
+        "# Late\n\n" + "filler " * 170 + "UniqueNeedle", encoding="utf-8"
+    )
+
+    match = KnowledgeBase(str(tmp_path)).search("UniqueNeedle")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert "UniqueNeedle" in match.excerpt
+
+
+def test_long_excerpt_keeps_widely_spaced_matches_when_they_fit(tmp_path: Path) -> None:
+    (tmp_path / "wide.md").write_text(
+        "Alpha " + "filler " * 50 + "Beta " + "filler " * 50 + "Gamma",
+        encoding="utf-8",
+    )
+
+    match = KnowledgeBase(str(tmp_path)).search("Alpha Beta Gamma")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert all(term in match.excerpt for term in ("Alpha", "Beta", "Gamma"))
+
+
+def test_long_excerpt_preserves_unicode_match(tmp_path: Path) -> None:
+    (tmp_path / "unicode.md").write_text("填充 " * 400 + "Évaluation", encoding="utf-8")
+
+    match = KnowledgeBase(str(tmp_path)).search("évaluation")[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert "Évaluation" in match.excerpt
+
+
+def test_excerpt_word_boundary_adjustment_does_not_drop_a_match() -> None:
+    paragraph = "a" * 51 + " needle " + "b" * 36 + " other " + "c" * 2 + " " + "d" * 20
+
+    excerpt = _excerpt(paragraph, {"needle", "other"}, limit=50)
+
+    assert len(excerpt) <= 50
+    assert "needle" in excerpt
+    assert "other" in excerpt
 
 
 @pytest.mark.parametrize(

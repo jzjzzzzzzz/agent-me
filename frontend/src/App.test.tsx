@@ -331,11 +331,13 @@ it("applies the configured public profile and question limit", async () => {
 
   expect(await screen.findByText("Documentation Helper")).toBeInTheDocument();
   expect(screen.getByText("Answers from reviewed documentation.")).toBeInTheDocument();
-  expect(document.title).toContain("Documentation Helper");
-  expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
-    "content",
-    "Answers from reviewed documentation.",
-  );
+  await waitFor(() => {
+    expect(document.title).toContain("Documentation Helper");
+    expect(document.querySelector('meta[name="description"]')).toHaveAttribute(
+      "content",
+      "Answers from reviewed documentation.",
+    );
+  });
   expect(screen.getByLabelText(/ask the example/i)).toHaveAttribute("maxlength", "42");
   expect(screen.getByText(/0 \/ 42 characters/)).toBeInTheDocument();
 });
