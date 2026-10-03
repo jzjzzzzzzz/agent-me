@@ -100,7 +100,8 @@ def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
         return paragraph[:limit]
 
     first, last = hits[0][0], hits[-1][1]
-    if last - first <= limit:
+    all_hits_fit = last - first <= limit
+    if all_hits_fit:
         start = max(0, min(first - (limit - (last - first)) // 2, len(paragraph) - limit))
     else:
         start = max(0, min(first - limit // 2, len(paragraph) - limit))
@@ -108,12 +109,12 @@ def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
     # Avoid cutting a word at either edge when a small adjustment is possible.
     if start and paragraph[start].isalnum():
         boundary = paragraph.find(" ", start, min(end, start + 100))
-        if boundary >= 0:
+        if boundary >= 0 and boundary + 1 <= first:
             start = boundary + 1
             end = start + limit
     if end < len(paragraph) and paragraph[end - 1].isalnum():
         boundary = paragraph.rfind(" ", max(start, end - 100), end)
-        if boundary >= 0:
+        if boundary >= (last if all_hits_fit else hits[0][1]):
             end = boundary
     return paragraph[start:end]
 

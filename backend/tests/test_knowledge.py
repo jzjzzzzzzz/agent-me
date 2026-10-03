@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.knowledge import KnowledgeBase, KnowledgeLoadError
+from app.knowledge import KnowledgeBase, KnowledgeLoadError, _excerpt
 
 
 def test_documents_are_relative_sorted_and_utf8(tmp_path: Path) -> None:
@@ -185,6 +185,16 @@ def test_long_excerpt_preserves_unicode_match(tmp_path: Path) -> None:
 
     assert len(match.excerpt) <= 1_000
     assert "Évaluation" in match.excerpt
+
+
+def test_excerpt_word_boundary_adjustment_does_not_drop_a_match() -> None:
+    paragraph = "a" * 51 + " needle " + "b" * 36 + " other " + "c" * 2 + " " + "d" * 20
+
+    excerpt = _excerpt(paragraph, {"needle", "other"}, limit=50)
+
+    assert len(excerpt) <= 50
+    assert "needle" in excerpt
+    assert "other" in excerpt
 
 
 @pytest.mark.parametrize(
