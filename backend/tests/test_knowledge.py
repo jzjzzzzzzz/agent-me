@@ -155,6 +155,19 @@ def test_search_order_and_limit_are_deterministic(tmp_path: Path) -> None:
     assert [match.document.path for match in matches] == ["a.md"]
 
 
+@pytest.mark.parametrize("separator", ["\n", "\t", "\r\n", "\u00a0"])
+def test_excerpt_uses_whitespace_boundaries_at_both_edges(separator: str) -> None:
+    paragraph = ("abcdefghij" + separator) * 200 + "needle " + ("klmnopqrst" + separator) * 200
+
+    excerpt = _excerpt(paragraph, {"needle"})
+
+    assert len(excerpt) <= 1_000
+    assert "needle" in excerpt
+    assert excerpt.lstrip().startswith("abcdefghij")
+    assert excerpt.rstrip().endswith("klmnopqrst")
+    assert excerpt == _excerpt(paragraph, {"needle"})
+
+
 def test_long_excerpt_keeps_late_matching_term(tmp_path: Path) -> None:
     (tmp_path / "late.md").write_text(
         "# Late\n\n" + "filler " * 170 + "UniqueNeedle", encoding="utf-8"
