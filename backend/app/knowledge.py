@@ -108,12 +108,22 @@ def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
     end = start + limit
     # Avoid cutting a word at either edge when a small adjustment is possible.
     if start and paragraph[start].isalnum():
-        boundary = paragraph.find(" ", start, min(end, start + 100))
+        boundary = next(
+            (index for index in range(start, min(end, start + 100)) if paragraph[index].isspace()),
+            -1,
+        )
         if boundary >= 0 and boundary + 1 <= first:
             start = boundary + 1
             end = start + limit
     if end < len(paragraph) and paragraph[end - 1].isalnum():
-        boundary = paragraph.rfind(" ", max(start, end - 100), end)
+        boundary = next(
+            (
+                index
+                for index in range(end - 1, max(start, end - 100) - 1, -1)
+                if paragraph[index].isspace()
+            ),
+            -1,
+        )
         if boundary >= (last if all_hits_fit else hits[0][1]):
             end = boundary
     return paragraph[start:end]
