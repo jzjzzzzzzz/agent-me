@@ -4,7 +4,7 @@ import pytest
 
 from app.identity import IdentityStore
 from app.learning import LearningPipeline
-from app.memory import MemoryConflict, MemoryInputError, Store
+from app.memory import MemoryConflict, MemoryInputError, MemoryNotFound, Store
 from app.memory_models import EntityInput, Entry, IngestionInput, RelationshipInput, SourceInput
 
 BASE = "/api/v1/personal"
@@ -307,7 +307,7 @@ def test_reviewed_delete_is_atomic_against_a_concurrent_new_dependency(tmp_path)
                 )
             )
             return "added"
-        except MemoryConflict:
+        except MemoryNotFound:
             return "missing"
 
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -317,4 +317,27 @@ def test_reviewed_delete_is_atomic_against_a_concurrent_new_dependency(tmp_path)
     if outcome[0] == "stale":
         assert len(db.entries()) == len(identity.entities()) == 1
     else:
+        assert not db.entries() and not identity.entities()
+
+
+@pytest.mark.parametrize("first", ["add", "delete"])
+def test_reviewed_delete_checks_both_serialized_orders(tmp_path, first):
+    db = Store(tmp_path)
+    identity = IdentityStore(db)
+    person = entity(identity, "Alex Example")
+    preview = identity.preview_delete(person["id"])
+    candidate = Entry(key="new.fact", content="Unreviewed new dependency", entity_id=person["id"])
+    if first == "add":
+        db.add(candidate)
+        with pytest.raises(MemoryConflict, match="scope changed"):
+            identity.delete(
+                person["id"], expected_revision=person["revision"], digest=preview["digest"]
+            )
+        assert len(db.entries()) == len(identity.entities()) == 1
+    else:
+        identity.delete(
+            person["id"], expected_revision=person["revision"], digest=preview["digest"]
+        )
+        with pytest.raises(MemoryNotFound, match="Entity not found"):
+            db.add(candidate)
         assert not db.entries() and not identity.entities()
