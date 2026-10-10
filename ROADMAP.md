@@ -33,7 +33,18 @@ The repository currently provides:
 - deterministic evaluation fixtures; and
 - a runnable FastAPI + React reference application using fictional public examples.
 
-Current boundaries are equally important: conversations are not persisted, the knowledge source is not yet a structured identity store, continuous ingestion is not implemented, and the Verifier does not prove factual truth or semantic entailment.
+The opt-in single-owner private workspace additionally provides typed fact, preference,
+event, and decision records; server-controlled source links and timestamps; pending/confirmed
+review; transactional revision snapshots and same-key supersession; restore-as-candidate;
+optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
+version-2 export. The memory core runs independently of HTTP and model providers, with a
+deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
+
+Current boundaries are equally important: public conversations are not persisted; private
+conversations are persisted for display but not re-injected as evidence. The knowledge source
+is not yet a structured identity graph, pre-migration revision history cannot be reconstructed,
+continuous ingestion beyond explicit remember instructions is not implemented, and the Verifier does not prove factual truth or
+semantic entailment.
 
 ## Workstreams
 

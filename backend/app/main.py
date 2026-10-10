@@ -9,6 +9,7 @@ from . import __version__
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
+from .memory import MemoryConflict, MemoryError, MemoryNotFound
 from .personal import router as personal_router
 from .provider import ProviderError, context_matches, generate_answer
 from .request_id import RequestIDMiddleware
@@ -58,6 +59,21 @@ async def private_no_cache(request: Request, call_next):
     if is_qa_response or request.url.path.startswith("/api/v1/personal"):
         response.headers["Cache-Control"] = "no-store"
     return response
+
+
+@app.exception_handler(MemoryError)
+async def memory_error_handler(_request: Request, error: MemoryError):
+    detail: str | dict = str(error)
+    if isinstance(error, MemoryConflict) and error.conflicts is not None:
+        detail = {
+            "message": str(error),
+            "conflict_ids": list(error.conflicts),
+            "conflict_revisions": error.conflicts,
+        }
+    return JSONResponse(
+        status_code=404 if isinstance(error, MemoryNotFound) else 409,
+        content={"detail": detail},
+    )
 
 
 _PROVIDER_ERROR_MESSAGES = {

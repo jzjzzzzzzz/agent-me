@@ -3,12 +3,6 @@
 from __future__ import annotations
 
 import secrets
-import sqlite3
-from contextlib import contextmanager
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Literal
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,25 +10,22 @@ from starlette.concurrency import run_in_threadpool
 
 from .config import Settings, get_settings
 from .knowledge import Document, KnowledgeBase, Match
+from .memory import (
+    Confirm,
+    EditEntry,
+    Entry,
+    MemoryExport,
+    MemoryMutation,
+    MemoryRecord,
+    MemoryRevision,
+    RestoreMemory,
+    Store,
+    StoredTurn,
+)
 from .provider import context_matches, generate_answer
 from .schemas import ChatTurn
-from .text import normalized_tokens
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
-
-_MAX_MATCHES = 20
-_MAX_PREFERENCE_MATCHES = 5
-
-
-class Entry(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    kind: Literal["fact", "preference", "event", "decision"] = "fact"
-    key: str = Field(min_length=1, max_length=100)
-    content: str = Field(min_length=1, max_length=2000)
-
-
-class Confirm(BaseModel):
-    replace_ids: list[str] = Field(default_factory=list, max_length=100)
 
 
 class PersonalChat(BaseModel):
@@ -55,186 +46,41 @@ def authorize(
     return config
 
 
-class Store:
-    def __init__(self, directory: str):
-        self.root = Path(directory)
-        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        self.path = self.root / "twin.sqlite3"
-        if self.path.is_symlink():
-            raise ValueError("Database must not be a symbolic link")
-        with self.connect() as db:
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS entries (
-                    id TEXT PRIMARY KEY, kind TEXT NOT NULL, key TEXT NOT NULL,
-                    content TEXT NOT NULL, source TEXT NOT NULL, status TEXT NOT NULL,
-                    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS turns (
-                    id TEXT PRIMARY KEY, role TEXT NOT NULL, content TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-            """)
-        self.path.chmod(0o600)
-
-    @contextmanager
-    def connect(self):
-        db = sqlite3.connect(self.path, timeout=10)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA secure_delete=ON")
-        try:
-            with db:
-                yield db
-        finally:
-            db.close()
-
-    def entries(self):
-        with self.connect() as db:
-            return [dict(r) for r in db.execute("SELECT * FROM entries ORDER BY rowid")]
-
-    def add(self, entry: Entry, source: str = "manual"):
-        now = datetime.now(UTC).isoformat()
-        item = dict(
-            id=uuid4().hex,
-            **entry.model_dump(),
-            source=source,
-            status="pending",
-            created_at=now,
-            updated_at=now,
-        )
-        with self.connect() as db:
-            db.execute(
-                "INSERT INTO entries VALUES (:id,:kind,:key,:content,:source,:status,"
-                ":created_at,:updated_at)",
-                item,
-            )
-        return item
-
-    def edit(self, entry_id: str, entry: Entry):
-        with self.connect() as db:
-            cur = db.execute(
-                "UPDATE entries SET kind=?,key=?,content=?,status='pending',updated_at=? "
-                "WHERE id=?",
-                (entry.kind, entry.key, entry.content, datetime.now(UTC).isoformat(), entry_id),
-            )
-            if not cur.rowcount:
-                raise HTTPException(404, "Memory not found")
-        return {"status": "pending"}
-
-    def confirm(self, entry_id: str, replace_ids: list[str]):
-        with self.connect() as db:
-            db.execute("BEGIN IMMEDIATE")
-            item = db.execute("SELECT * FROM entries WHERE id=?", (entry_id,)).fetchone()
-            if not item:
-                raise HTTPException(404, "Memory not found")
-            conflicts = [
-                r[0]
-                for r in db.execute(
-                    "SELECT id FROM entries WHERE kind=? AND key=? "
-                    "AND status='confirmed' AND id!=?",
-                    (item["kind"], item["key"], entry_id),
-                )
-            ]
-            if set(conflicts) != set(replace_ids):
-                raise HTTPException(
-                    409,
-                    {
-                        "message": "Confirm replacement of conflicting memories",
-                        "conflict_ids": conflicts,
-                    },
-                )
-            for old_id in conflicts:
-                db.execute("DELETE FROM entries WHERE id=?", (old_id,))
-            db.execute(
-                "UPDATE entries SET status='confirmed',updated_at=? WHERE id=?",
-                (datetime.now(UTC).isoformat(), entry_id),
-            )
-        return {"status": "confirmed"}
-
-    def delete(self, entry_id: str):
-        with self.connect() as db:
-            db.execute("DELETE FROM entries WHERE id=?", (entry_id,))
-        return {"deleted": True}
-
-    def history(self):
-        with self.connect() as db:
-            rows = db.execute("SELECT * FROM turns ORDER BY rowid DESC LIMIT 100").fetchall()
-            return [dict(r) for r in reversed(rows)]
-
-    def clear_history(self):
-        with self.connect() as db:
-            db.execute("DELETE FROM turns")
-        return {"deleted": True}
-
-    def save_chat(self, question: str, answer: str):
-        turn_id = uuid4().hex
-        with self.connect() as db:
-            now = datetime.now(UTC).isoformat()
-            db.executemany(
-                "INSERT INTO turns VALUES (?,?,?,?)",
-                [(turn_id, "user", question, now), (uuid4().hex, "assistant", answer, now)],
-            )
-        # Explicit syntax only: do not silently infer personal facts from casual conversation.
-        for prefix in ("记住：", "记住:", "Remember:", "remember:"):
-            if question.startswith(prefix):
-                value = question[len(prefix) :].strip()
-                if value:
-                    self.add(
-                        Entry(
-                            kind="preference", key="conversation.preference", content=value[:2000]
-                        ),
-                        source=f"turn:{turn_id}",
-                    )
-                break
-
-    def context(self, question: str):
-        tokens = normalized_tokens(question)
-        preferences: list[Match] = []
-        facts: list[Match] = []
-        for item in self.entries():
-            if item["status"] != "confirmed":
-                continue
-            excerpt = f"{item['key']}: {item['content']}"
-            overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
-            # Preferences are always eligible, but do not outrank relevant factual evidence.
-            if overlap or item["kind"] == "preference":
-                doc = Document(title=item["key"], path=f"memory/{item['id']}", text=excerpt)
-                match = Match(document=doc, excerpt=excerpt, score=overlap)
-                (preferences if item["kind"] == "preference" else facts).append(match)
-        # Preferences get a reserved floor of the budget so a flood of matching facts
-        # cannot evict a confirmed preference; facts then fill the rest, and any budget
-        # facts don't use goes back to preferences. Only once confirmed preferences and
-        # relevant facts together exceed the total budget do the lowest-scoring
-        # preferences beyond the reserved floor get dropped.
-        preferences.sort(key=lambda m: m.score, reverse=True)
-        facts.sort(key=lambda m: m.score, reverse=True)
-        reserved = min(len(preferences), _MAX_PREFERENCE_MATCHES)
-        kept_facts = facts[: _MAX_MATCHES - reserved]
-        kept_preferences = preferences[: _MAX_MATCHES - len(kept_facts)]
-        return sorted(kept_preferences + kept_facts, key=lambda m: m.score, reverse=True)
-
-
 def store(config: Settings = Depends(authorize)) -> Store:
     return Store(config.personal_data_dir)
 
 
-@router.get("/entries")
-def entries(db: Store = Depends(store)):
-    return db.entries()
+@router.get("/entries", response_model=list[MemoryRecord])
+def entries(include_superseded: bool = False, db: Store = Depends(store)):
+    # Existing clients remain an active-memory view. Archives are an explicit opt-in.
+    return db.entries(include_superseded=include_superseded)
 
 
-@router.post("/entries")
+@router.post("/entries", response_model=MemoryRecord)
 def add(payload: Entry, db: Store = Depends(store)):
     return db.add(payload)
 
 
-@router.post("/entries/{entry_id}/edit")
-def edit(entry_id: str, payload: Entry, db: Store = Depends(store)):
-    return db.edit(entry_id, payload)
+@router.get("/entries/{entry_id}/history", response_model=list[MemoryRevision])
+def memory_history(entry_id: str, db: Store = Depends(store)):
+    return db.revisions(entry_id)
 
 
-@router.post("/entries/{entry_id}/confirm")
+@router.post("/entries/{entry_id}/restore", response_model=MemoryRecord)
+def restore(entry_id: str, payload: RestoreMemory, db: Store = Depends(store)):
+    return db.restore(entry_id, payload.revision, payload.expected_revision)
+
+
+@router.post("/entries/{entry_id}/edit", response_model=MemoryMutation)
+def edit(entry_id: str, payload: EditEntry, db: Store = Depends(store)):
+    return db.edit(entry_id, payload, payload.expected_revision)
+
+
+@router.post("/entries/{entry_id}/confirm", response_model=MemoryMutation)
 def confirm(entry_id: str, payload: Confirm, db: Store = Depends(store)):
-    return db.confirm(entry_id, payload.replace_ids)
+    return db.confirm(
+        entry_id, payload.replace_ids, payload.expected_revision, payload.replace_revisions
+    )
 
 
 @router.post("/entries/{entry_id}/delete")
@@ -242,7 +88,7 @@ def delete(entry_id: str, db: Store = Depends(store)):
     return db.delete(entry_id)
 
 
-@router.get("/history")
+@router.get("/history", response_model=list[StoredTurn])
 def history(db: Store = Depends(store)):
     return db.history()
 
@@ -252,11 +98,9 @@ def clear_history(db: Store = Depends(store)):
     return db.clear_history()
 
 
-@router.get("/export")
+@router.get("/export", response_model=MemoryExport)
 def export(db: Store = Depends(store)):
-    with db.connect() as connection:
-        turns = [dict(r) for r in connection.execute("SELECT * FROM turns ORDER BY rowid")]
-    return {"version": 1, "entries": db.entries(), "history": turns}
+    return db.export()
 
 
 @router.post("/chat")

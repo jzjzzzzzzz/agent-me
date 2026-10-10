@@ -66,12 +66,13 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 
 ### 4. 更新、冲突与删除
 
-- 修改已确认条目后，它重新变为待确认状态，旧内容立即退出记忆检索。
-- 相同 `kind + key` 的已确认条目视为冲突，必须明确确认替换；替换在数据库事务内完成。
+- 修改已确认条目后，它重新变为待确认状态，旧内容立即退出记忆检索，但保留为只读版本快照。
+- 相同 `kind + key` 的已确认条目视为冲突，必须明确确认替换；替换在数据库事务内完成，旧条目变为 `superseded`，不会再用于回答。
+- 记忆历史与恢复通过 API 或独立记忆核心操作；现有界面只显示活跃条目，不提供版本浏览。恢复旧版本会创建新的待确认候选，不会直接复活旧记忆。
 - 不同字段之间的语义矛盾尚不自动识别；请使用一致的字段命名。
-- 删除记忆后不再用于生成。聊天记录中已有的原文仍在，可另行清空全部聊天。
+- 删除记忆会同时删除该条目的全部版本快照。被替代条目和恢复产生的候选是独立记录，需要分别删除；删除新条目不会重新激活旧条目。聊天记录中已有的原文仍在，可另行清空全部聊天。
 - 历史聊天持久化用于显示（最近 100 条），本版不自动重新发送历史聊天给模型，避免删除的记忆通过旧对话重新进入上下文。因此不是完整的多轮指代对话。
-- 导出包含所有档案、记忆与完整聊天，请将导出文件视作私有资料。当前不提供导入接口。
+- 导出版本 `2` 包含所有活跃与已替代记忆、版本历史及完整聊天；通过同一数据库快照读取。当前不提供导入接口，旧导出不会被后续删除追溯清除。
 - 清空聊天不会删除记忆；删除所有本地数据时，先停止后端，再删除 `private/`，重新初始化会生成新密钥。
 
 ### 5. 隐私与发布
@@ -111,7 +112,9 @@ Add profile fields as typed entries (`fact`, `preference`, `event`, `decision`).
 entries are pending until confirmed. Use `Remember: ...` in private chat to propose a preference,
 then review it in the memory list. The default extracted key is `conversation.preference`; edit it
 to a specific key before confirmation when needed. Matching kind/key conflicts require explicit
-replacement. Cross-key semantic contradiction detection is not implemented.
+replacement. Replaced records become read-only `superseded` archives, excluded from answer context.
+Edits preserve prior revision snapshots. Version browsing and restoration are API/core capabilities,
+not new reference-UI features. Cross-key semantic contradiction detection is not implemented.
 
 Confirmed preferences are eligible without lexical overlap; a reserved floor (5 of the 20
 total slots) keeps them from being evicted by a flood of matching facts, and any unused
@@ -126,8 +129,9 @@ The public chat and collaboration endpoints never read this workspace.
 The database persists chat for display (latest 100 turns); it does not replay history to the model,
 so deleted memory cannot leak back through old turns. This first version does not provide full
 multi-turn contextual conversation. Deleting memory does not erase its existing chat transcript:
-use Clear history separately. Export includes the full transcript and all entries; import is not
-implemented. Stop the backend before removing `private/` to erase the entire workspace and token.
+use Clear history separately. Deleting a record purges its own revision snapshots, not independently
+restored candidates or archived replacements. Export version `2` includes the full transcript,
+active and archived entries, and revision snapshots. Import is not implemented. Stop the backend before removing `private/` to erase the entire workspace and token.
 
 Without model credentials, answers are excerpts, not personalized generation. Configure the three
 `LLM_*` values in your ignored `.env` and restart for generated answers. When enabled, your question,
@@ -147,12 +151,80 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 
 | Method | Path (prefix `/api/v1/personal`) | Purpose |
 | --- | --- | --- |
-| GET | `/entries` | List profile and memory entries with provenance and timestamps |
+| GET | `/entries` | List active entries; `?include_superseded=true` includes archives |
 | POST | `/entries` | Add pending `{kind, key, content}` |
-| POST | `/entries/{id}/edit` | Replace fields and return to pending |
+| POST | `/entries/{id}/edit` | Replace fields, snapshot the change, and return to pending |
+| GET | `/entries/{id}/history` | Read ordered revision snapshots |
+| POST | `/entries/{id}/restore` | Propose a historical `{revision, expected_revision?}` as a new pending entry |
 | POST | `/entries/{id}/confirm` | Confirm with `{replace_ids: []}`; 409 reports conflicts |
-| POST | `/entries/{id}/delete` | Delete memory |
+| POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
-| GET | `/export` | Export all entries and turns |
+| GET | `/export` | Version-2 snapshot of all entries, turns, and revisions |
 | POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
+
+### Typed memory contract / 结构化记忆契约
+
+The independent [memory core](../backend/app/memory.py) owns the lifecycle, SQLite transactions,
+source links, snapshots, and retrieval. It does not import FastAPI, HTTP clients, configuration,
+or the model provider. The [personal API](../backend/app/personal.py) is a transport adapter;
+`MemoryNotFound` and `MemoryConflict` domain errors map to HTTP 404 and 409.
+
+OpenAPI describes `MemoryRecord`, `MemoryRevision`, `StoredTurn`, and `MemoryExport`.
+A memory contains `kind`, `key`, `content`, server-generated `id`, `source`, `status`
+(`pending`, `confirmed`, or `superseded`), UTC `created_at` / `updated_at` timestamps,
+a monotonically increasing `revision`, and nullable `superseded_by`.
+The default list excludes superseded records; export includes them.
+
+- Manual sources are `manual`; explicit remember instructions use `turn:<id>`.
+- An edit attributes the new version to `manual`, while snapshots preserve the previous source.
+- Restore creates a **new pending record** with `source = memory:<original-id>@<revision>`.
+  Its confirmation still needs explicit replacement if the original kind/key has a current record.
+- `created`, `edited`, `confirmed`, and `superseded` snapshots are stored with their mutations
+  in the same transaction. Repeated confirmation without a version precondition is a no-op.
+- Existing databases migrate automatically. Their known state becomes a `baseline` snapshot;
+  pre-migration edits or deleted replacements cannot be reconstructed.
+- The source turn, explicitly requested candidate, and initial snapshot are written atomically.
+  Ordinary conversation still creates no inferred memory. Remember text remains capped at 2,000 characters.
+
+Entry creation rejects client-set provenance, IDs, timestamps, revision, or status.
+Confirmation rejects unknown fields, duplicate or blank replacement IDs, non-string IDs,
+IDs longer than 100 characters, and lists longer than 100 IDs with HTTP 422.
+Valid but mismatched conflict sets return HTTP 409 with `conflict_ids` and `conflict_revisions`.
+
+For race-safe review, clients should send `expected_revision` on edit, confirmation, and restore.
+Confirmation can also send `replace_revisions: {"<conflict-id>": <reviewed-revision>}`.
+The server compares these preconditions inside the write transaction; stale requests return 409
+without changing any entries or snapshots. These fields are optional for compatibility with
+existing clients; callers omitting them do **not** receive stale-review protection.
+
+Export uses version `2` (separate from the repository release version) and adds `revisions`.
+Entries, full history, and snapshots are read in one database transaction. An older version-1
+export consumer must be updated; the existing reference UI downloads the JSON without parsing it.
+There is still no import or backup-restoration contract.
+
+Deletion removes the selected record and all of its snapshots in one transaction. It does not
+cascade to separate archived/restored records, transcript text, previous exports, or provider data.
+A historical `source` or `superseded_by` ID can refer to a record subsequently deleted by its owner.
+Retrieval reads only current confirmed records, never snapshots or chat history. Deleting a
+replacement never makes an archived record current again. Already-running generation is not
+cancelled by a later deletion.
+
+记忆核心可脱离 HTTP 服务和模型服务独立运行。创建、修改、确认、替代的快照与状态变更在同一
+事务提交；旧数据库自动迁移为已知状态的基线，不伪造之前的变化历史。API 默认只列出活跃条目，
+历史和已替代条目可显式查询；它们不参与回答。恢复只创建来源可追溯的新候选，仍须确认。
+删除会清除所选条目及其全部快照，不自动删除独立的恢复候选、已替代条目或聊天原文。
+
+### Pure Agent verification / 纯 Agent 验证
+
+Run from the repository root, without credentials or a running server:
+
+```bash
+make evaluate-memory
+```
+
+Expected: `MEMORY_EVAL 18/18 passed`. The synthetic longitudinal cases cover positive retrieval,
+pending exclusion, unsupported queries, correction, stale approval, supersession, provenance,
+restore-as-candidate, deletion, preference fidelity, and empty export after forgetting.
+`make evaluate` runs these cases alongside the existing collaboration evaluation.
+These deterministic checks do not measure semantic entailment, embedding quality, or personality imitation.

@@ -178,3 +178,10 @@ Malformed request schemas, unknown fields, invalid roles, and blank strings cont
 ## Provider failures
 
 Partial provider configuration makes `/ready` return `503` instead of silently changing answer mode. Provider timeouts, rejected requests, rate limits, invalid JSON, invalid completion shapes, and oversized answers return classified `502`/`503` errors. Upstream bodies, URLs, and credentials are never copied into client errors.
+
+## Private memory lifecycle
+
+The opt-in private API is separate from public chat and collaboration. Its complete route table,
+version-2 export format, revision preconditions, deletion boundaries, and independent Agent core
+are documented in [Private AI Twin](PERSONAL.md#typed-memory-contract--结构化记忆契约).
+No public endpoint reads the private database.

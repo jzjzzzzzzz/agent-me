@@ -91,3 +91,17 @@ The public reference endpoints do not persist requests. The opt-in, token-protec
 [private workspace](PERSONAL.md) persists its own chats and confirmed memories in SQLite;
 public endpoints never read that database. Add a database only when the product needs
 persistence, and document the purpose, retention, and access controls before collecting data.
+
+## Independent personal-memory core
+
+`backend/app/memory.py` provides the local single-owner memory repository and typed records without
+FastAPI, provider, or configuration imports. It maintains pending, confirmed, and superseded states,
+transactional revision snapshots, optional optimistic review preconditions, and source-linked
+restore candidates. Only current confirmed records participate in context assembly.
+`backend/app/personal.py` adapts these operations to authenticated routes; `backend/app/main.py`
+translates domain errors into HTTP responses. Public Q&A and collaboration do not use this store.
+
+`scripts/evaluate_memory.py` exercises longitudinal changes with disposable synthetic data and no
+provider calls. See [memory contracts](PERSONAL.md#typed-memory-contract--结构化记忆契约) for migration,
+export, and deletion semantics. This is not yet entity resolution, semantic memory extraction,
+or automatic ingestion of ordinary conversation.
