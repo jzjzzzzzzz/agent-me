@@ -14,13 +14,14 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from .agency_schema import extend_agency
+from .control_schema import extend_control
 from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
 from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQuery
 from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
-_SCHEMA_VERSION = 5
+_SCHEMA_VERSION = 6
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
 _RECORD_COLUMNS = (
@@ -191,6 +192,7 @@ class Store:
         """)
         extend_identity(db)
         extend_agency(db)
+        extend_control(db)
 
     @contextmanager
     def connect(self):
@@ -296,8 +298,12 @@ class Store:
             tasks = records(db, "tasks")
             notes = records(db, "notes")
             events = records(db, "action_events")
+            from .learning_policy import settings as learning_settings
+
+            learning_policy = learning_settings(db)
+            consolidation_plans = records(db, "consolidation_plans")
         return {
-            "version": 5,
+            "version": 6,
             "owner_id": owner_id,
             "owner_entity_id": owner_entity[0] if owner_entity else None,
             "entries": entries,
@@ -318,6 +324,8 @@ class Store:
             "tasks": tasks,
             "notes": notes,
             "action_events": events,
+            "learning_policy": learning_policy,
+            "consolidation_plans": consolidation_plans,
         }
 
     @staticmethod
@@ -513,9 +521,23 @@ class Store:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             item = self._reviewable(db, entry_id, expected_revision)
-            self._entity(db, item["entity_id"])
+            entity = self._entity(db, item["entity_id"])
+            from .learning_policy import matches_prefix
+            from .learning_policy import settings as learning_settings
+
+            policy = learning_settings(db)["policy"]
+            labels = {item["sensitivity"], entity["sensitivity"] if entity else "public"}
+            strict_review = bool(labels & set(policy["require_revision_labels"])) or matches_prefix(
+                item["key"], policy["require_revision_key_prefixes"]
+            )
+            if strict_review and expected_revision is None:
+                raise MemoryPermissionDenied("Learning policy requires revision-bound owner review")
             conflict_revisions = self._conflicts(db, dict(item))
             conflicts = list(conflict_revisions)
+            if strict_review and conflicts and replace_revisions is None:
+                raise MemoryPermissionDenied(
+                    "Learning policy requires revision-bound replacement review"
+                )
             if set(conflicts) != set(replace_ids):
                 raise MemoryConflict(
                     "Confirm replacement of conflicting memories", conflicts=conflict_revisions

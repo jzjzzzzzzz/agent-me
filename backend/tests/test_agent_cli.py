@@ -15,6 +15,46 @@ def call(tmp_path, capsys, *args):
     return status, json.loads(output.out if status != 2 else output.err)
 
 
+def test_cli_learning_policy_and_digest_reviewed_consolidation(tmp_path, capsys):
+    assert call(tmp_path, capsys, "learning", "policy")[1]["revision"] == 1
+    status, result = call(
+        tmp_path,
+        capsys,
+        "learning",
+        "configure",
+        "--expected-revision",
+        "1",
+        "--policy-json",
+        '{"require_revision_key_prefixes":["profile."]}',
+    )
+    assert status == 0 and result["revision"] == 2
+    for _ in range(2):
+        assert (
+            call(
+                tmp_path,
+                capsys,
+                "memory",
+                "add",
+                "--key",
+                "project",
+                "--content",
+                "Fictional Orchid",
+            )[0]
+            == 0
+        )
+    status, plan = call(tmp_path, capsys, "consolidate", "preview")
+    assert status == 0 and len(plan["groups"]) == 1
+    assert (
+        call(tmp_path, capsys, "consolidate", "apply", plan["id"], "--digest", plan["digest"])[0]
+        == 2
+    )
+    status, applied = call(
+        tmp_path, capsys, "consolidate", "apply", plan["id"], "--digest", plan["digest"], "--yes"
+    )
+    assert status == 0 and applied["merged_count"] == 1
+    assert len(call(tmp_path, capsys, "memory", "list")[1]) == 1
+
+
 def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     status, source = call(tmp_path, capsys, "source", "register", "--name", "Synthetic notes")
     assert status == 0 and not source["approved"]
@@ -40,7 +80,7 @@ def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     )
     destination = tmp_path / "private-export.json"
     assert call(tmp_path, capsys, "export", str(destination))[0] == 0
-    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 5
+    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 6
     if os.name == "posix":
         assert destination.stat().st_mode & 0o777 == 0o600
     before = destination.read_bytes()

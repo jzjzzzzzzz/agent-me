@@ -11,9 +11,11 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.consolidation import ConsolidationManager
 from app.learning import LearningPipeline
+from app.learning_policy import LearningPolicyManager
 from app.memory import MemoryConflict, MemoryPermissionDenied, Store
-from app.memory_models import IngestionInput, SourceInput
+from app.memory_models import Entry, IngestionInput, LearningPolicy, SourceInput
 
 
 @dataclass(frozen=True)
@@ -168,6 +170,80 @@ def evaluate() -> list[EvaluationResult]:
             "source-instructions-remain-unaccepted-data",
             injection["status"] == "completed" and not db.context("arbitrary commands"),
         )
+        control_db = Store(str(Path(directory) / "owner-control"))
+        control_learning = LearningPipeline(control_db)
+        control_source = control_learning.register(
+            SourceInput(kind="document", name="Fictional control")
+        )
+        control_learning.approve(control_source["id"])
+        policy = LearningPolicyManager(control_db)
+        policy.configure(LearningPolicy(source_kinds=[]), 1)
+        try:
+            control_learning.ingest(
+                control_source["id"], IngestionInput(content="fact a: Orchid")
+            )
+            blocked = False
+        except MemoryPermissionDenied:
+            blocked = True
+        check(
+            "owner-policy-can-deny-approved-source",
+            blocked and not control_db.entries(),
+        )
+        policy.configure(
+            LearningPolicy(max_candidates=1, blocked_key_prefixes=["profile."]), 2
+        )
+        failed = control_learning.ingest(
+            control_source["id"],
+            IngestionInput(content="fact a: Orchid\nfact b: Cedar"),
+        )
+        check(
+            "candidate-policy-is-atomic",
+            failed["status"] == "failed" and not control_db.entries(),
+        )
+        failed = control_learning.ingest(
+            control_source["id"],
+            IngestionInput(content="fact PROFILE.name: Fictional Example"),
+        )
+        check(
+            "identity-prefix-policy-case-aware",
+            failed["status"] == "failed" and not control_db.entries(),
+        )
+        policy.configure(LearningPolicy(require_revision_key_prefixes=["profile."]), 3)
+        critical = control_db.add(
+            Entry(key="profile.name", content="Fictional Example")
+        )
+        try:
+            control_db.confirm(critical["id"], [])
+            blocked = False
+        except MemoryPermissionDenied:
+            blocked = True
+        check(
+            "identity-review-can-require-exact-revision",
+            blocked and not control_db.context("Example"),
+        )
+        control_db.confirm(critical["id"], [], 1)
+        duplicate = control_db.add(
+            Entry(key="profile.name", content="Fictional Example")
+        )
+        consolidation = ConsolidationManager(control_db)
+        plan = consolidation.preview()
+        check(
+            "consolidation-preview-no-effects",
+            len(plan["groups"]) == 1 and len(control_db.entries()) == 2,
+        )
+        merged = consolidation.apply(plan["id"], plan["digest"])
+        check(
+            "consolidation-preserves-history-and-idempotency",
+            merged["merged_count"] == 1
+            and consolidation.apply(plan["id"], plan["digest"]) == merged
+            and len(control_db.entries()) == 1
+            and control_db.revisions(duplicate["id"])[-1]["change"] == "superseded",
+        )
+        for _ in range(2):
+            control_db.add(Entry(key="project", content="Fictional Cedar"))
+        pending_plan = consolidation.preview()
+        consolidation.apply(pending_plan["id"], pending_plan["digest"])
+        check("pending-consolidation-not-acceptance", not control_db.context("Cedar"))
     return results
 
 

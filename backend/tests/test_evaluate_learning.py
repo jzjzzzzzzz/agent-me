@@ -16,7 +16,7 @@ def test_learning_evaluation_is_repeatable_and_covers_real_state():
     module = load_evaluator()
     first = module.evaluate()
     assert first == module.evaluate()
-    assert len(first) == 17
+    assert len(first) == 24
     assert len({result.case_id for result in first}) == len(first)
     assert all(result.passed for result in first)
 

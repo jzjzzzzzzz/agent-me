@@ -13,14 +13,17 @@ from pydantic import ValidationError
 from .agency import Agency
 from .agency_models import PermissionInput, ToolInvocation
 from .agent_runtime import AgentIntent, AgentRuntime
+from .consolidation import ConsolidationManager
 from .identity import IdentityStore
 from .knowledge import KnowledgeBase
 from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
+from .learning_policy import LearningPolicyManager
 from .memory import MemoryError, MemoryInputError, MemoryNotFound, Store
 from .memory_models import (
     EntityInput,
     Entry,
     IngestionInput,
+    LearningPolicy,
     RelationshipInput,
     RetentionPolicy,
     SourceInput,
@@ -177,6 +180,18 @@ def parser() -> argparse.ArgumentParser:
     apply = retention.add_parser("apply")
     apply.add_argument("id")
     apply.add_argument("--yes", action="store_true")
+    learning = commands.add_parser("learning").add_subparsers(dest="action", required=True)
+    learning.add_parser("policy")
+    configure = learning.add_parser("configure")
+    configure.add_argument("--policy-json", required=True)
+    configure.add_argument("--expected-revision", type=int, required=True)
+    consolidate = commands.add_parser("consolidate").add_subparsers(dest="action", required=True)
+    consolidate.add_parser("preview")
+    consolidate.add_parser("plans")
+    apply = consolidate.add_parser("apply")
+    apply.add_argument("id")
+    apply.add_argument("--digest", required=True)
+    apply.add_argument("--yes", action="store_true")
     for command in ("ask", "retrieve"):
         child = commands.add_parser(command)
         child.add_argument("question")
@@ -261,6 +276,22 @@ def execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
     identity = IdentityStore(store)
+    if args.command == "learning":
+        policy = LearningPolicyManager(store)
+        if args.action == "policy":
+            return policy.settings()
+        return policy.configure(
+            LearningPolicy.model_validate_json(args.policy_json), args.expected_revision
+        )
+    if args.command == "consolidate":
+        manager = ConsolidationManager(store)
+        if args.action == "preview":
+            return manager.preview()
+        if args.action == "plans":
+            return manager.plans()
+        if not args.yes:
+            raise MemoryInputError("Consolidation requires --yes and the reviewed preview digest")
+        return manager.apply(args.id, args.digest)
     if args.command in {"tools", "action", "tasks", "notes", "agent"}:
         agency = Agency(store)
         if args.command == "tools":

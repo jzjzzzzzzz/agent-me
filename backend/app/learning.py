@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from .learning_policy import matches_prefix
+from .learning_policy import settings as learning_settings
 from .memory import (
     MemoryConflict,
     MemoryInputError,
@@ -213,6 +215,12 @@ class LearningPipeline:
             item["sensitivity"] = max(
                 (item["sensitivity"], entity["sensitivity"]), key=_LEVEL.__getitem__
             )
+        policy = learning_settings(db)["policy"]
+        if (
+            item["kind"] not in policy["source_kinds"]
+            or item["sensitivity"] not in policy["labels"]
+        ):
+            raise MemoryPermissionDenied("Source is outside the owner's learning policy")
         return item
 
     @staticmethod
@@ -281,6 +289,12 @@ class LearningPipeline:
                             for field in ("valid_from", "valid_until", "occurred_at")
                         },
                     )
+                    policy = learning_settings(db)["policy"]
+                    if len(candidates) > policy["max_candidates"] or any(
+                        matches_prefix(candidate.entry.key, policy["blocked_key_prefixes"])
+                        for candidate in candidates
+                    ):
+                        raise MemoryInputError("Candidates are outside the owner's learning policy")
                 except MemoryInputError:
                     run.update(status="failed", error_code="extraction_invalid")
                     run["trace"].append(dict(stage="extraction", outcome="failed", count=0))

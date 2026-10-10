@@ -37,7 +37,7 @@ The opt-in single-owner private workspace additionally provides typed fact, pref
 event, and decision records; server-controlled source links and timestamps; pending/confirmed
 review; transactional revision snapshots and same-key supersession; restore-as-candidate;
 optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
-version-5 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+version-6 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
 deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
 
 Current boundaries are equally important: public conversations are not persisted; private
@@ -72,6 +72,11 @@ episode dates. See [personal retrieval contracts](docs/PERSONAL_RETRIEVAL.md).
 Typed know/recommend/act routing and three real local task/note tools now provide explicit
 per-tool data permissions, reviewed plans, live preconditions, inspectable outcomes, atomic effects,
 bounded retries and exact-output rollback. See [local agency contracts](docs/AGENCY.md).
+
+Learning policy now narrows source kinds, labels, candidate batches and keys, and supports stronger
+revision-bound review for sensitive/identity keys. Exact cross-record consolidation is explicitly
+previewed, digest-approved and history-preserving; it never accepts pending memories. See
+[learning control contracts](docs/LEARNING_CONTROL.md).
 
 ## Workstreams
 

@@ -337,9 +337,68 @@ class SelectedMemory(BaseModel):
     historical: bool
 
 
+class LearningPolicy(BaseModel):
+    """Owner policy can narrow learning/review, never bypass owner acceptance."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    source_kinds: list[Literal["document", "project", "conversation", "event"]] = Field(
+        default_factory=lambda: ["document", "project", "conversation", "event"], max_length=4
+    )
+    labels: list[Sensitivity] = Field(
+        default_factory=lambda: ["public", "private", "sensitive"], max_length=3
+    )
+    max_candidates: int = Field(default=100, ge=1, le=100, strict=True)
+    blocked_key_prefixes: list[Annotated[str, Field(min_length=1, max_length=100)]] = Field(
+        default_factory=list, max_length=20
+    )
+    require_revision_labels: list[Sensitivity] = Field(default_factory=list, max_length=3)
+    require_revision_key_prefixes: list[Annotated[str, Field(min_length=1, max_length=100)]] = (
+        Field(default_factory=list, max_length=20)
+    )
+
+    @field_validator("blocked_key_prefixes", "require_revision_key_prefixes")
+    @classmethod
+    def prefixes(cls, values):
+        for value in values:
+            valid_unicode(value)
+            if not value.strip():
+                raise ValueError("Policy prefixes cannot be blank")
+        return values
+
+
+class LearningSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: int = Field(ge=1)
+    policy: LearningPolicy
+
+
+class ConsolidationMember(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    revision: int = Field(ge=1)
+    fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ConsolidationGroup(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    keeper_id: str
+    members: list[ConsolidationMember] = Field(min_length=2, max_length=1000)
+
+
+class ConsolidationPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    owner_id: str
+    status: Literal["planned", "applied"]
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    groups: list[ConsolidationGroup] = Field(max_length=100)
+    created_at: AwareDatetime
+    merged_count: int = Field(default=0, ge=0)
+
+
 class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: Literal[5] = 5
+    version: Literal[6] = 6
     owner_id: str
     owner_entity_id: str | None = None
     entries: list[MemoryRecord]
@@ -360,3 +419,5 @@ class MemoryExport(BaseModel):
     tasks: list[TaskRecord]
     notes: list[NoteRecord]
     action_events: list[ActionEvent]
+    learning_policy: LearningSettings
+    consolidation_plans: list[ConsolidationPlan]

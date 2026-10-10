@@ -131,7 +131,7 @@ All paths have prefix `/api/v1/personal`, require the existing owner token, and 
 AskRequest controls are strictly typed; question/context are also bounded by server configuration.
 Verification results distinguish exact source matches, uncertain beliefs, absent current context,
 altered claims and non-factual presentation/context evidence. The optional owner-subject binding is
-included in version-5 private export, not in public profile or public Q&A.
+included in version-6 private export, not in public profile or public Q&A.
 
 ## Evaluation
 

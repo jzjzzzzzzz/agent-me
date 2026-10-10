@@ -15,8 +15,8 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | Learning | Explicitly approved document/project/conversation/event sources | `learning.py` registration/review; core/API/CLI approval tests |
 | Learning | Candidate extraction before owner acceptance | `learning.py` exact field/paragraph candidates; `test_learning.py`; semantic inference remains out of scope |
 | Learning | Deduplication, entity resolution, temporal conflict handling | Canonical exact deduplication, Unicode-equivalent key conflicts and same-kind/key review exist; confirmed alias resolution and interval/episode conflict handling exist; semantic inference remains unproven |
-| Learning | Retention, forgetting and consolidation | Record/snapshot/origin deletion and replay-aware digest forgetting exist; `retention.py` preview/apply policy exists; explicit cross-record consolidation remains |
-| Learning | Sensitive/identity-defining review policies | Every extracted candidate needs owner confirmation; sensitivity floor is enforced; richer policy configuration remains |
+| Learning | Retention, forgetting and consolidation | Replay-aware forgetting and reviewed retention exist; `consolidation.py` provides exact cross-record preview/digest apply, preserved histories/origins and no auto-acceptance; Core/API/CLI tests |
+| Learning | Sensitive/identity-defining review policies | Every candidate requires owner confirmation; `learning_policy.py` configures source/label/size/key boundaries and stricter revision-bound label/identity review; `evaluate_learning.py` now 24 cases |
 | Learning | Replayable traces and recoverable failure | `learning.py` atomic batches, durable failed/completed runs, stable retry IDs; concurrency/failure tests |
 | Retrieval | Hybrid documents/memory and relationship-aware context | `retrieval.py` lexical/field/alias/relationship hybrid, namespaced bounded documents and temporal selection; retrieval tests |
 | Retrieval | Temporal selection and stale/disputed knowledge | Valid-time and knowledge-time selection, expiry/future exclusion and effective belief states; `evaluate_identity.py` |
@@ -45,6 +45,9 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 5. Typed contextual agency and real bounded tools with permissions and approval gates
    (implemented; [contracts](AGENCY.md), Core/API/CLI tests and 17-case agency evaluation).
 6. Portability/import, audit/threat-model coverage, longitudinal metrics, complete acceptance audit.
+   Learning-policy configuration and exact consolidation are implemented; see
+   [learning controls](LEARNING_CONTROL.md). Portable import, broad owner-copy deletion,
+   ingestion/access audit, threat model and longitudinal metrics still remain.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed
    branch, and verify the remote commit and CI. Only then consider the full objective achieved.
 

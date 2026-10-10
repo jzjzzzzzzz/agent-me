@@ -38,7 +38,7 @@ async def test_learning_api_auth_approval_ingestion_origins_and_export(personal)
     assert origins[0]["excerpt"] == "Alex Example"
     assert (await client.get(BASE + "/learning/runs", headers=HEADERS)).json()[0] == run
     exported = (await client.get(BASE + "/export", headers=HEADERS)).json()
-    assert MemoryExport.model_validate(exported).version == 5
+    assert MemoryExport.model_validate(exported).version == 6
     assert Store(config.personal_data_dir).entries()[0]["status"] == "pending"
 
 

@@ -148,3 +148,11 @@ data labels/entity scopes, digest-bound owner approval, and live source/revision
 precede effects. Effects and result events commit atomically; idempotency, bounded retry
 and exact-output undo are native Core/API/CLI behavior. No provider or source text grants
 execution authority. See [local agency](AGENCY.md) and `scripts/evaluate_agency.py`.
+
+## Explicit learning policy and consolidation
+
+`learning_policy.py` narrows accepted source types/labels/batch sizes/keys and can require
+revision-bound owner review for sensitive or identity-defining records. `consolidation.py`
+archives only fully equal records through fingerprinted, digest-reviewed atomic plans.
+History/origins remain attributable, pending records never become accepted implicitly,
+and live consumers reject stale revisions. See [learning controls](LEARNING_CONTROL.md).

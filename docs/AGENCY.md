@@ -79,7 +79,7 @@ Cancellation is available before successful execution. Successful actions use ro
 Plans and notes/tasks can contain private owner-entered text. Deleting an evidence memory
 blocks future execution but does not automatically purge independent task/note/plan copies.
 Rollback removes an eligible created output, not the plan's arguments or audit events.
-Snapshot export version `5` contains these private records. General portable import and
+Snapshot export version `6` contains these private records. General portable import and
 owner purging of independent action copies are tracked in the
 [acceptance ledger](AGENT_IMPLEMENTATION.md); importing data must not silently restore
 execution permissions or approved runnable operations.
@@ -109,11 +109,11 @@ not this shared owner credential.
 ## Local CLI
 
 No HTTP server, environment configuration, or model provider is needed. Choose a private
-root with the global `--root` option; never use a tracked directory for real owner data.
+root with the global `--data-dir` option; never use a tracked directory for real owner data.
 
 ```bash
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo tools permissions
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo tools configure tasks.create \
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo tools permissions
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo tools configure tasks.create \
   --expected-revision 1 --policy-json '{"enabled":true,"labels":["private"],"entity_ids":null}'
 ```
 
@@ -131,14 +131,14 @@ Write a fictional invocation to a local JSON file:
 ```
 
 ```bash
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo action plan /tmp/invocation.json
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo action plan /tmp/invocation.json
 # Inspect the returned arguments, permission/data revisions and digest before approval.
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo action approve PLAN_ID \
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo action approve PLAN_ID \
   --expected-revision 1 --digest REVIEWED_DIGEST
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo action execute PLAN_ID --yes
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo tasks
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo action events PLAN_ID
-PYTHONPATH=backend .venv/bin/python -m app.agent_cli --root /tmp/agent-me-demo action rollback PLAN_ID --yes
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo action execute PLAN_ID --yes
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo tasks
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo action events PLAN_ID
+PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo action rollback PLAN_ID --yes
 ```
 
 `agent FILE` accepts the typed intent envelope; `action list`, `action cancel ID`, and

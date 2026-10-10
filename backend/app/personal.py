@@ -23,13 +23,16 @@ from .agency_models import (
 )
 from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
 from .config import Settings, get_settings
+from .consolidation import ConsolidationManager
 from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
 from .learning import LearningPipeline
+from .learning_policy import LearningPolicyManager
 from .memory import Store
 from .memory_models import (
     CandidateOrigin,
     Confirm,
+    ConsolidationPlan,
     EditEntry,
     EntityInput,
     EntityRecord,
@@ -39,6 +42,8 @@ from .memory_models import (
     IdentityContext,
     IngestionInput,
     IngestionRun,
+    LearningPolicy,
+    LearningSettings,
     MemoryExport,
     MemoryMutation,
     MemoryRecord,
@@ -105,6 +110,15 @@ class ConfigureRetention(IdentityReview):
     policy: RetentionPolicy
 
 
+class ConfigureLearning(IdentityReview):
+    policy: LearningPolicy
+
+
+class ReviewedDigest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class OwnerBinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
     entity_id: str | None = Field(default=None, min_length=1, max_length=100)
@@ -148,6 +162,31 @@ def authorize(
 
 def store(config: Settings = Depends(authorize)) -> Store:
     return Store(config.personal_data_dir)
+
+
+@router.get("/learning/policy", response_model=LearningSettings)
+def learning_policy(db: Store = Depends(store)):
+    return LearningPolicyManager(db).settings()
+
+
+@router.post("/learning/policy", response_model=LearningSettings)
+def configure_learning(payload: ConfigureLearning, db: Store = Depends(store)):
+    return LearningPolicyManager(db).configure(payload.policy, payload.expected_revision)
+
+
+@router.post("/consolidation/preview", response_model=ConsolidationPlan)
+def preview_consolidation(db: Store = Depends(store)):
+    return ConsolidationManager(db).preview()
+
+
+@router.get("/consolidation/plans", response_model=list[ConsolidationPlan])
+def consolidation_plans(db: Store = Depends(store)):
+    return ConsolidationManager(db).plans()
+
+
+@router.post("/consolidation/{plan_id}/apply", response_model=ConsolidationPlan)
+def apply_consolidation(plan_id: str, payload: ReviewedDigest, db: Store = Depends(store)):
+    return ConsolidationManager(db).apply(plan_id, payload.digest)
 
 
 @router.post("/agent", response_model=AgentOutcome)
