@@ -4,6 +4,7 @@ import {
   type ActionPlan, type AgencyData, type Invocation, type PermissionInput, type ToolPermission,
 } from "./agencyApi";
 import { isErasureCatalogue, isErasurePreview, isErasureResult, sameErasureRequest, type ErasurePreview, type ErasureRequest } from "./erasureApi";
+import { isAuditRows, isDestination, isImportReceipt, isImportReview, snapshotBody, snapshotFits, strictSnapshotJson, type DestinationState, type ImportReview, type RawSnapshot } from "./migrationApi";
 export type Sensitivity = "public" | "private" | "sensitive";
 export type MemoryKind = "fact" | "preference" | "event" | "decision";
 export type MemoryStatus = "pending" | "confirmed" | "superseded";
@@ -188,11 +189,11 @@ const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/,
 const idPath = (id: string) => encodeURIComponent(id);
 
 export function createPersonalClient(token: string, signal: AbortSignal) {
-  async function request<T>(path: string, guard: Guard<T>, body?: unknown): Promise<T> {
+  async function request<T>(path: string, guard: Guard<T>, body?: unknown, serialized?: string): Promise<T> {
     const response = await fetch(`${apiBase}/api/v1/personal${path}`, {
-      method: body === undefined ? "GET" : "POST", signal, cache: "no-store",
+      method: body === undefined && serialized === undefined ? "GET" : "POST", signal, cache: "no-store",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: serialized ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
     let value: unknown;
     try { value = await response.json(); }
@@ -213,6 +214,41 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
     return value;
   }
   return {
+    async loadMigration() {
+      const [destination, audit] = await Promise.all([request("/portability/state", isDestination), request("/audit?limit=100", isAuditRows)]);
+      if (audit.some(row => row.owner_id !== destination.owner_id)) throw new PersonalApiError(502, "invalid");
+      return { destination, audit };
+    },
+    async inspectAudit(destination: DestinationState, limit: number) {
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw new PersonalApiError(422, "invalid");
+      const rows = await request(`/audit?limit=${limit}`, isAuditRows);
+      if (rows.length > limit || rows.some(row => row.owner_id !== destination.owner_id)) throw new PersonalApiError(409, "stale");
+      return rows;
+    },
+    async previewImport(snapshot: RawSnapshot, destination: DestinationState) {
+      if (!destination.empty) throw new PersonalApiError(409, "stale");
+      if (!snapshotFits(snapshot, destination)) throw new PersonalApiError(413, "invalid");
+      const value = await request("/portability/preview", isImportReview, undefined, snapshotBody(snapshot, destination.owner_id));
+      if (value.owner_id !== snapshot.ownerId || value.source_version !== snapshot.version || value.destination_owner_id !== destination.owner_id) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async importSnapshot(snapshot: RawSnapshot, review: ImportReview, destination: DestinationState) {
+      if (!destination.empty || !snapshotFits(snapshot, destination) || review.owner_id !== snapshot.ownerId || review.source_version !== snapshot.version || review.destination_owner_id !== destination.owner_id) throw new PersonalApiError(409, "stale");
+      const value = await request("/portability/import", isImportReceipt, undefined, snapshotBody(snapshot, destination.owner_id, review.digest));
+      if (value.owner_id !== review.owner_id || value.destination_owner_id !== review.destination_owner_id || value.source_version !== review.source_version || value.digest !== review.digest ||
+        Object.keys(value.counts).length !== Object.keys(review.counts).length || Object.entries(review.counts).some(([key, n]) => value.counts[key] !== n)) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async exportSnapshot(destination: DestinationState) {
+      const response = await fetch(`${apiBase}/api/v1/personal/export`, { method: "GET", signal, cache: "no-store", headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new PersonalApiError(response.status, response.status === 409 ? "stale" : "request");
+      const raw = await response.text();
+      let header: Record<string, unknown>;
+      try { header = strictSnapshotJson(raw); } catch { throw new PersonalApiError(502, "invalid"); }
+      if (header.version !== 8) throw new PersonalApiError(502, "invalid");
+      if (header.owner_id !== destination.owner_id) throw new PersonalApiError(409, "stale");
+      return raw;
+    },
     loadErasure: () => request("/owner/erasure/catalogue", isErasureCatalogue),
     async previewErasure(input: ErasureRequest) {
       const value = await request("/owner/erasure/preview", isErasurePreview, input);

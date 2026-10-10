@@ -59,6 +59,7 @@ class ImportPreview(BaseModel):
     digest: str = Field(pattern=r"^[0-9a-f]{64}$")
     source_version: Literal[6, 7, 8]
     owner_id: str
+    destination_owner_id: str | None = None
     counts: dict[str, int]
     tool_permissions_restored: Literal[False] = False
     executable_plans_restored: Literal[False] = False
@@ -69,6 +70,14 @@ class ImportPreview(BaseModel):
 class ImportResult(ImportPreview):
     imported: Literal[True] = True
     archive_id: str
+
+
+class ImportDestination(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    owner_id: str
+    empty: bool = Field(strict=True)
+    max_snapshot_bytes: int = Field(ge=1, le=16 * 1024 * 1024)
+    max_request_body_bytes: int = Field(ge=1024, le=10_000_000)
 
 
 class RevisionDelete(BaseModel):

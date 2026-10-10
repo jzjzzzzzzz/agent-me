@@ -86,6 +86,7 @@ from .owner_models import (
     DisclosurePolicy,
     DisclosureSettings,
     ImportArchive,
+    ImportDestination,
     ImportPreview,
     ImportResult,
     RevisionDelete,
@@ -93,7 +94,7 @@ from .owner_models import (
     WorkspacePurge,
 )
 from .personal_agent import ClaimVerifier, PersonalAgent
-from .portability import PortableMemory
+from .portability import MAX_IMPORT_BYTES, PortableMemory
 from .provider import context_matches, extractive_answer, generate_answer
 from .retention import RetentionManager
 from .retrieval import PersonalRetriever
@@ -173,6 +174,7 @@ class ReviewedDigest(BaseModel):
 class ImportPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
     snapshot: dict = Field(max_length=40)
+    expected_destination_owner_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class ImportApproval(ImportPayload):
@@ -270,12 +272,27 @@ def clear_audit(db: Store = Depends(store)):
 
 @router.post("/portability/preview", response_model=ImportPreview)
 def preview_import(payload: ImportPayload, db: Store = Depends(store)):
-    return PortableMemory(db).preview(payload.snapshot)
+    return PortableMemory(db).preview(
+        payload.snapshot, expected_destination_owner_id=payload.expected_destination_owner_id
+    )
+
+
+@router.get("/portability/state", response_model=ImportDestination)
+def import_destination(config: Settings = Depends(authorize), db: Store = Depends(store)):
+    return {
+        **PortableMemory(db).destination(),
+        "max_snapshot_bytes": MAX_IMPORT_BYTES,
+        "max_request_body_bytes": config.max_request_body_bytes,
+    }
 
 
 @router.post("/portability/import", response_model=ImportResult)
 def import_snapshot(payload: ImportApproval, db: Store = Depends(store)):
-    return PortableMemory(db).apply(payload.snapshot, payload.digest)
+    return PortableMemory(db).apply(
+        payload.snapshot,
+        payload.digest,
+        expected_destination_owner_id=payload.expected_destination_owner_id,
+    )
 
 
 @router.get("/portability/archives", response_model=list[ImportArchive])
