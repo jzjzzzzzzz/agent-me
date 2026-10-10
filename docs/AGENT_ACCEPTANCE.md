@@ -28,7 +28,7 @@ Executed on the developed branch after the final capability changes:
 
 - `make lint`: locked dependency/version checks, Python lint/format and unchanged frontend
   lint/typecheck pass.
-- `make test`: **469 backend tests** and **153 unchanged frontend regression tests** pass.
+- `make test`: **473 backend tests** and **153 unchanged frontend regression tests** pass.
 - `make docs`: Markdown links and 16 maintained bilingual lesson pages pass.
 - `make evaluate`: collaboration 4/4, memory 18/18, learning 24/24, identity 19/19,
   retrieval 16/16, agency 17/17, owner control 14/14 and longitudinal 20 stages pass.
@@ -51,7 +51,8 @@ head equality and hosted CI are verified after push and recorded on the pull req
 local success is not substituted for an unobserved hosted check.
 
 The capability commit `ebd0820` was pushed and its exact remote SHA verified. Hosted
-[CI](https://github.com/jzjzzzzzzz/agent-me/actions/runs/38032439586) and CodeQL passed.
+[CI](https://github.com/jzjzzzzzzz/agent-me/actions/runs/38032439586) passed. A CodeQL parser
+performance finding was then addressed by a linear scanner and focused regressions.
 The current delivery head, review state and re-run gate results are available on
 [PR #170](https://github.com/jzjzzzzzzz/agent-me/pull/170); this records delivery, not an
 automatic merge into `main`.

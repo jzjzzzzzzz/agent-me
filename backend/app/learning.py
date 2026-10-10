@@ -31,11 +31,6 @@ EXTRACTOR = "exact-excerpts-v1"
 MAX_DOCUMENT_BYTES = 200_000
 MAX_CANDIDATES = 100
 _LEVEL = {"public": 0, "private": 1, "sensitive": 2}
-_FIELD = re.compile(
-    r"^\s*(?:[-*]\s+)?(?P<kind>fact|preference|event|decision)\s+"
-    r"(?P<key>[^\s:]{1,100})\s*:\s*(?P<value>.+?)\s*$",
-    re.IGNORECASE,
-)
 
 
 @dataclass(frozen=True)
@@ -48,6 +43,42 @@ class Candidate:
 
 def _slug(text: str) -> str:
     return re.sub(r"[^\w.-]+", ".", text.casefold()).strip(".")[:64] or "untitled"
+
+
+def _field_parts(line: str):
+    """Linear scanner for '[-*] kind key: value', preserving codepoint spans."""
+    cursor = len(line) - len(line.lstrip())
+    end = len(line.rstrip())
+    if cursor < end and line[cursor] in "-*":
+        cursor += 1
+        if cursor >= end or not line[cursor].isspace():
+            return None
+        while cursor < end and line[cursor].isspace():
+            cursor += 1
+    start = cursor
+    while cursor < end and not line[cursor].isspace():
+        cursor += 1
+    kind = line[start:cursor].lower()
+    if kind not in {"fact", "preference", "event", "decision"}:
+        return None
+    while cursor < end and line[cursor].isspace():
+        cursor += 1
+    start = cursor
+    while cursor < end and not line[cursor].isspace() and line[cursor] != ":":
+        cursor += 1
+        if cursor - start > 100:
+            return None
+    key = line[start:cursor]
+    if not key:
+        return None
+    while cursor < end and line[cursor].isspace():
+        cursor += 1
+    if cursor >= end or line[cursor] != ":":
+        return None
+    cursor += 1
+    while cursor < end and line[cursor].isspace():
+        cursor += 1
+    return (kind, key, cursor, end) if cursor < end else None
 
 
 def extract(content: str, source: dict, mode: str, temporal=None) -> list[Candidate]:
@@ -79,12 +110,11 @@ def extract(content: str, source: dict, mode: str, temporal=None) -> list[Candid
         for line in content.splitlines(keepends=True):
             stripped = line.strip()
             if stripped and not stripped.startswith(("#", "```")):
-                match = _FIELD.match(line)
-                if not match:
+                parts = _field_parts(line)
+                if parts is None:
                     raise MemoryInputError("Fields mode requires 'kind key: content' lines")
-                start = offset + match.start("value")
-                end = offset + match.end("value")
-                append(match["kind"].lower(), match["key"], start, end)
+                kind, key, start, end = parts
+                append(kind, key, offset + start, offset + end)
             offset += len(line)
     else:
         # Whole paragraphs remain quotations, not model-inferred personal claims.

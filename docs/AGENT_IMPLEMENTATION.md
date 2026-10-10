@@ -69,5 +69,6 @@ Branch `feat/personal-agent-roadmap` is pushed to the requested `jzjzzzzzzz/agen
 Local/remote capability commit `ebd0820` matched exactly. Its hosted
 [CI run](https://github.com/jzjzzzzzzz/agent-me/actions/runs/38032439586) passed backend,
 Python 3.11, Windows PowerShell, unchanged frontend, documentation/private-data and container gates;
-CodeQL also passed. Subsequent documentation-only delivery commits retain the same capability
-implementation; the pull request's current-head checks remain the authoritative final status.
+CodeQL scanning identified a field-parser performance finding, addressed by a linear scanner
+with large-whitespace/span regressions. The pull request's current-head CI and security checks
+remain the authoritative final status, rather than the earlier scan's workflow completion alone.

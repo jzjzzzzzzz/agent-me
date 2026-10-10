@@ -1,5 +1,6 @@
 import json
 from concurrent.futures import ThreadPoolExecutor
+from time import perf_counter
 
 import pytest
 
@@ -25,6 +26,32 @@ def learning(tmp_path):
 
 def approved(pipeline, source):
     return pipeline.approve(source["id"], expected_revision=source["revision"])
+
+
+@pytest.mark.parametrize("prefix", ["fact !:", "fact !:a"])
+def test_large_trailing_whitespace_is_linear_and_preserves_invalid_or_exact_span(prefix):
+    content = prefix + " " * 79000
+    source = {"kind": "document", "name": "Fictional scanner", "sensitivity": "private"}
+    started = perf_counter()
+    if prefix.endswith("a"):
+        candidate = extract(content, source, "fields")[0]
+        assert candidate.excerpt == "a" and content[candidate.start : candidate.end] == "a"
+    else:
+        with pytest.raises(MemoryInputError):
+            extract(content, source, "fields")
+    assert perf_counter() - started < 1
+
+
+@pytest.mark.parametrize(
+    "line", [" \t- FACT\t中文.key \t: \t值:正文 \t\r\n", "* preference response.style: concise\n"]
+)
+def test_linear_field_scanner_preserves_unicode_whitespace_bullets_and_literal_colons(line):
+    candidates = extract(
+        line, {"kind": "document", "name": "Fictional", "sensitivity": "private"}, "fields"
+    )
+    assert len(candidates) == 1
+    assert line[candidates[0].start : candidates[0].end] == candidates[0].excerpt
+    assert candidates[0].entry.content in {"值:正文", "concise"}
 
 
 def test_source_approval_revision_and_no_implicit_learning(learning, monkeypatch):
