@@ -72,7 +72,7 @@ def test_exact_excerpts_types_review_and_export(learning):
     db.confirm(entries[0]["id"], [], 1)
     assert db.context("Alex Example")
     exported = MemoryExport.model_validate(db.export())
-    assert exported.version == 7
+    assert exported.version == 8
     assert len(exported.origins) == 2 and len(exported.ingestion_runs) == 1
 
 

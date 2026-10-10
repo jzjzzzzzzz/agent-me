@@ -90,8 +90,8 @@ label, but `known` results do not retroactively reclassify an independently conf
 
 Sensitive structured records are excluded from context unless the owner explicitly opts in. Editing
 without a sensitivity field preserves it; restoring a historical version cannot implicitly lower the
-current label. The CLI never calls a provider. On `/personal/chat`, `allow_sensitive: true` allows the
-selected sensitive memory excerpts to reach the configured provider. It does not create automatic PII
+current label. The CLI never calls a provider. On `/personal/chat`, sensitive transmission requires `allow_sensitive: true`, explicit
+`allow_provider: true`, and an enabled matching [disclosure policy](DISCLOSURE.md) allowing that label. It does not create automatic PII
 classification, redact questions, or classify manually maintained private Markdown.
 
 ## Independent Python example
@@ -149,7 +149,7 @@ workspace token. It outputs JSON and never loads provider configuration.
 | `memory restore ID --revision N` | Propose an old version as a new candidate |
 | `memory delete ID --yes` | Purge this record/versions/origins and register forgetting digests |
 | `recall QUESTION --allow-sensitive` | Local current-memory retrieval, with optional explicit disclosure |
-| `export FILE` | Export version-7 private snapshot; refuses overwrite unless `--force` |
+| `export FILE` | Export version-8 private snapshot; refuses overwrite unless `--force` |
 
 Export permissions are restricted to 0600 on POSIX; Windows access protection depends on filesystem
 ACLs rather than POSIX mode bits. Export is plaintext and is not an import, encryption, or backup-recovery
@@ -167,7 +167,7 @@ All paths use `/api/v1/personal` and the existing owner token:
 | GET | `/learning/runs` | Latest 100 durable run records |
 | GET | `/entries/{id}/origins` | Exact source excerpts and code-point spans |
 
-Private export is now version `7` and includes sources, ingestion runs, origins and forgetting digests
+Private export is now version `8` and includes sources, ingestion runs, origins and forgetting digests
 alongside entries/history/revisions, read in one database snapshot. Older export consumers must be
 updated. The repository release version is unchanged; the reference UI downloads JSON without parsing it.
 
@@ -190,7 +190,7 @@ are documented in [Structured identity and time](IDENTITY_TIME.md).
 
 ## Configurable owner learning and consolidation
 
-Export version `7` adds `learning_policy` and `consolidation_plans`. The
+Export version `8` adds `learning_policy` and `consolidation_plans`. The
 [learning control contracts](LEARNING_CONTROL.md) document narrow source/label/size/key policies,
 stronger revision-bound sensitive/identity review, and explicit exact cross-record consolidation.
 No configuration bypasses candidate acceptance; no consolidation invents semantic equivalence.

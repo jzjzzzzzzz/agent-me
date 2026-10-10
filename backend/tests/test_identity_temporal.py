@@ -336,4 +336,4 @@ def test_version_three_upgrade_preserves_sources_and_history_without_inventing_c
     assert db.revisions("legacy")[0]["revision"] == 2
     assert db.export()["sources"][0]["owner_id"] == db.owner_id
     assert db.context("LegacyOrchid")
-    assert MemoryExport.model_validate(db.export()).version == 7
+    assert MemoryExport.model_validate(db.export()).version == 8

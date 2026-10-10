@@ -38,7 +38,7 @@ async def test_learning_api_auth_approval_ingestion_origins_and_export(personal)
     assert origins[0]["excerpt"] == "Alex Example"
     assert (await client.get(BASE + "/learning/runs", headers=HEADERS)).json()[0] == run
     exported = (await client.get(BASE + "/export", headers=HEADERS)).json()
-    assert MemoryExport.model_validate(exported).version == 7
+    assert MemoryExport.model_validate(exported).version == 8
     assert Store(config.personal_data_dir).entries()[0]["status"] == "pending"
 
 
@@ -75,7 +75,7 @@ async def test_learning_review_contract_is_strict(personal, payload):
 
 
 async def test_sensitive_memory_never_reaches_provider_without_explicit_opt_in(
-    personal, monkeypatch
+    personal, monkeypatch, configured_private_provider
 ):
     import app.personal as module
 
@@ -98,14 +98,18 @@ async def test_sensitive_memory_never_reaches_provider_without_explicit_opt_in(
 
     monkeypatch.setattr(module, "generate_answer", answer)
     assert (
-        await client.post(BASE + "/chat", headers=HEADERS, json={"question": "Synthetic query"})
+        await client.post(
+            BASE + "/chat",
+            headers=HEADERS,
+            json={"question": "Synthetic query", "allow_provider": True},
+        )
     ).status_code == 200
     assert captured[-1] == []
     assert (
         await client.post(
             BASE + "/chat",
             headers=HEADERS,
-            json={"question": "Synthetic query", "allow_sensitive": True},
+            json={"question": "Synthetic query", "allow_sensitive": True, "allow_provider": True},
         )
     ).status_code == 200
     assert captured[-1] == ["private.style: SensitiveOrchid"]

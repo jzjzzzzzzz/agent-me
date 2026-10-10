@@ -165,3 +165,12 @@ become inert historical archives. `audit.py` stores bounded content-free operati
 core ingestion/retrieval and authenticated HTTP/CLI adapters use it. `owner_control.py`
 provides explicit revision-bound independent-copy erasure and all-SQLite purge. See
 [owner control](OWNER_CONTROL.md) and the [threat model](THREAT_MODEL.md).
+
+## Optional disclosure and longitudinal measurement
+
+`disclosure.py` owns default-off revisioned endpoint/model-bound data authorization independently
+of provider credentials. The private adapter additionally requires per-request opt-in and refreshes
+data before forwarding whole scoped records. Imports archive, rather than restore, that grant.
+`evaluate_longitudinal.py` measures actual atomic answers through twenty state transitions with
+independent fictional labels and explicit metric denominators. See [disclosure](DISCLOSURE.md)
+and [longitudinal evaluation](LONGITUDINAL_EVALUATION.md).

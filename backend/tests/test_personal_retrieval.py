@@ -192,6 +192,87 @@ def test_dispute_and_expiry_never_become_asserted_current_fact(agent):
     assert expired["id"] in answer.evidence[0].path
 
 
+def test_bound_owner_alias_conflicts_are_not_masked_by_known_entity_label(agent):
+    db, _, brain = agent
+    identity = IdentityStore(db)
+    owner = person(identity, "Fictional display label")
+    identity.bind_owner(owner["id"])
+    add(db, "identity.name", "FactualAlex", entity_id=owner["id"])
+    add(db, "profile.name", "IncorrectAlex")
+    result = brain.ask(AskRequest(question="What is my name?"))
+    assert result.status == "disputed" and all(row.verdict == "uncertain" for row in result.claims)
+    assert all(row.purpose == "context" for row in result.evidence if row.kind == "entity_label")
+
+
+def test_overlapping_alias_intervals_conflict_but_adjacent_periods_do_not(agent):
+    db, _, brain = agent
+    add(
+        db,
+        "identity.name",
+        "FactualAlex",
+        valid_from="2000-01-01T00:00:00Z",
+        valid_until="2010-01-01T00:00:00Z",
+    )
+    add(
+        db,
+        "profile.name",
+        "IncorrectAlex",
+        valid_from="2005-01-01T00:00:00Z",
+        valid_until="2015-01-01T00:00:00Z",
+    )
+    assert (
+        brain.ask(AskRequest(question="What is my name?", as_of="2007-01-01T00:00:00Z")).status
+        == "disputed"
+    )
+    assert (
+        brain.ask(
+            AskRequest(
+                question="What is my name?",
+                since="2001-01-01T00:00:00Z",
+                until="2014-01-01T00:00:00Z",
+            )
+        ).status
+        == "disputed"
+    )
+    # Non-overlapping values of the same field are history, not a fabricated conflict.
+    rows = db.entries()
+    db.edit(
+        rows[1]["id"],
+        Entry(key="profile.name", content="IncorrectAlex", valid_from="2010-01-01T00:00:00Z"),
+        2,
+    )
+    db.confirm(rows[1]["id"], [], 3)
+    assert (
+        brain.ask(
+            AskRequest(
+                question="What is my name?",
+                since="2001-01-01T00:00:00Z",
+                until="2014-01-01T00:00:00Z",
+            )
+        ).status
+        == "known"
+    )
+
+
+def test_distinct_unknown_fields_are_not_implicitly_contradictions(agent):
+    db, _, brain = agent
+    add(db, "custom.alpha", "Orchid one")
+    add(db, "custom.beta", "Orchid two")
+    answer = brain.ask(AskRequest(question="Orchid", intent="recall"))
+    assert answer.status == "known" and len(answer.claims) == 2
+
+
+def test_identity_shaped_preference_is_not_factual_name_authority(agent):
+    db, _, brain = agent
+    add(db, "identity.name", "PreferredOrchid", kind="preference")
+    answer = brain.ask(AskRequest(question="What is my name?"))
+    assert answer.status == "unknown" and not answer.claims
+    assert (
+        brain.ask(AskRequest(question="What are my preferences?", intent="preferences")).status
+        == "known"
+    )
+
+
 def test_documents_and_memory_use_distinct_namespaces_and_exact_quotes(tmp_path):
     db = Store(str(tmp_path / "workspace"))
     add(db, "topic.orchid", "Orchid uses SQLite")

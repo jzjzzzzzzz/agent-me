@@ -31,6 +31,7 @@ ARCHIVE_KEYS = {
     "retention_plans",
     "consolidation_plans",
     "source_approvals",
+    "disclosure_permissions",
 }
 
 
@@ -40,9 +41,9 @@ class ImportArchive(BaseModel):
     model_config = ConfigDict(extra="forbid")
     id: str
     owner_id: str
-    source_version: Literal[6, 7]
+    source_version: Literal[6, 7, 8]
     snapshot_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    authority: dict[str, list[dict]] = Field(max_length=6)
+    authority: dict[str, list[dict]] = Field(max_length=7)
     created_at: AwareDatetime
 
     @field_validator("authority")
@@ -56,12 +57,13 @@ class ImportArchive(BaseModel):
 class ImportPreview(BaseModel):
     model_config = ConfigDict(extra="forbid")
     digest: str = Field(pattern=r"^[0-9a-f]{64}$")
-    source_version: Literal[6, 7]
+    source_version: Literal[6, 7, 8]
     owner_id: str
     counts: dict[str, int]
     tool_permissions_restored: Literal[False] = False
     executable_plans_restored: Literal[False] = False
     learning_sources_require_review: Literal[True] = True
+    provider_permissions_restored: Literal[False] = False
 
 
 class ImportResult(ImportPreview):
@@ -87,3 +89,39 @@ class ActionDelete(RevisionDelete):
 
 class SourceDelete(RevisionDelete):
     forget_memories: bool = Field(default=False, strict=True)
+
+
+class DisclosurePolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    enabled: bool = Field(default=False, strict=True)
+    target_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    labels: list[Literal["public", "private", "sensitive"]] = Field(
+        default_factory=lambda: ["public", "private"], max_length=3
+    )
+    namespaces: list[Literal["public", "private", "memory"]] = Field(
+        default_factory=lambda: ["public", "memory"], max_length=3
+    )
+    entity_ids: list[str] | None = Field(default=None, max_length=100)
+    memory_ids: list[str] | None = Field(default=None, max_length=100)
+    document_paths: list[str] | None = Field(default=None, max_length=100)
+
+    @field_validator("entity_ids", "memory_ids", "document_paths")
+    @classmethod
+    def bounded_names(cls, values):
+        if values is not None:
+            if len(values) != len(set(values)):
+                raise ValueError("Disclosure scope names must be unique")
+            for value in values:
+                if not value.strip() or len(value) > 300:
+                    raise ValueError("Disclosure scope names must be bounded and nonblank")
+                try:
+                    value.encode("utf-8")
+                except UnicodeError:
+                    raise ValueError("Disclosure scope names must be valid Unicode") from None
+        return values
+
+
+class DisclosureSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: int = Field(ge=1)
+    policy: DisclosurePolicy

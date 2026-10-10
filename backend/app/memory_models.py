@@ -8,7 +8,7 @@ from typing import Annotated, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .agency_models import ActionEvent, ActionPlan, NoteRecord, TaskRecord, ToolPermission
-from .owner_models import AuditEvent, ImportArchive, ReplayKey
+from .owner_models import AuditEvent, DisclosureSettings, ImportArchive, ReplayKey
 
 Sensitivity = Literal["public", "private", "sensitive"]
 Belief = Literal["known", "inferred", "disputed", "outdated", "unknown"]
@@ -417,7 +417,7 @@ class ConsolidationPlan(BaseModel):
 
 class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: Literal[7] = 7
+    version: Literal[8] = 8
     owner_id: str
     owner_entity_id: str | None = None
     entries: list[MemoryRecord]
@@ -443,3 +443,4 @@ class MemoryExport(BaseModel):
     audit_events: list[AuditEvent]
     import_archives: list[ImportArchive]
     ingestion_replay_keys: list[ReplayKey]
+    disclosure_policy: DisclosureSettings

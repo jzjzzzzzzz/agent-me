@@ -37,7 +37,7 @@ The opt-in single-owner private workspace additionally provides typed fact, pref
 event, and decision records; server-controlled source links and timestamps; pending/confirmed
 review; transactional revision snapshots and same-key supersession; restore-as-candidate;
 optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
-version-7 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+version-8 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
 deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
 
 Current boundaries are equally important: public conversations are not persisted; private
@@ -46,7 +46,7 @@ pre-migration revision history cannot be reconstructed,
 controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
 semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
 Unified hybrid retrieval, live atomic source-value verification and approved local tools now exist;
-portable import and operational audit now exist; longitudinal metrics and final acceptance remain in progress; the Verifier does not prove factual truth or semantic entailment.
+portable import and operational audit now exist; longitudinal metrics and explicit provider/data disclosure now exist; final acceptance is tracked in the ledger; the Verifier does not prove factual truth or semantic entailment.
 
 
 Approved document, project, conversation, and event sources can additionally propose pending
@@ -82,6 +82,11 @@ Digest-reviewed portable import now preserves personal state while moving histor
 into inert archives. Content-free ingestion/access audit, independent-copy erasure and explicit SQLite
 purge are owner-controlled. See [owner control](docs/OWNER_CONTROL.md) and the
 [connected-tool threat model](docs/THREAT_MODEL.md).
+
+Default-off, per-request opt-in provider disclosure is target-bound and label/namespace/entity/record/
+document-scoped. Twenty longitudinal stages measure status, coverage, provenance, privacy, preference
+fidelity, declared-confidence calibration and correction cost. See
+[disclosure](docs/DISCLOSURE.md) and [longitudinal evaluation](docs/LONGITUDINAL_EVALUATION.md).
 
 ## Workstreams
 

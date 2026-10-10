@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control knowledge-check build lock lock-check version-check
+.PHONY: setup dev test lint format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -42,6 +42,7 @@ evaluate:
 	.venv/bin/python scripts/evaluate_retrieval.py
 	.venv/bin/python scripts/evaluate_agency.py
 	.venv/bin/python scripts/evaluate_owner_control.py
+	.venv/bin/python scripts/evaluate_longitudinal.py
 
 evaluate-memory:
 	.venv/bin/python scripts/evaluate_memory.py
@@ -60,6 +61,9 @@ evaluate-agency:
 
 evaluate-owner-control:
 	.venv/bin/python scripts/evaluate_owner_control.py
+
+evaluate-longitudinal:
+	.venv/bin/python scripts/evaluate_longitudinal.py
 
 knowledge-check:
 	.venv/bin/python scripts/check_knowledge.py

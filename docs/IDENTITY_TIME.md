@@ -3,7 +3,7 @@
 This is pure Agent core/API/CLI functionality. It does not add a frontend or require a graph database,
 model provider, or server. The [acceptance ledger](AGENT_IMPLEMENTATION.md) tracks the full roadmap;
 unified retrieval, local contextual tools, portable import and operational audit are implemented;
-longitudinal metrics and final full-roadmap acceptance remain in progress.
+longitudinal metrics are implemented; final full-roadmap acceptance is tracked in the ledger.
 
 ## Owner-reviewed identity
 

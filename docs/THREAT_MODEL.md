@@ -46,9 +46,9 @@ Core/CLI does not load HTTP configuration or provider credentials.
 
 Personal atomic `ask/retrieve/verify`, learning, identity, retention, consolidation, local
 tools and owner control do not call providers. Optional legacy `/personal/chat` generation
-uses owner-configured provider credentials and an explicit authenticated request; selected
-context/questions may reach that provider. Sensitive-memory disclosure requires per-request
-owner opt-in. Owner-maintained private Markdown is not automatically PII-classified.
+requires owner-configured credentials, an enabled target/data-scoped [disclosure policy](DISCLOSURE.md)
+and per-request `allow_provider: true`; credentials alone do not enable transmission. Sensitive
+context additionally requires per-request opt-in and allowed policy labels. Owner-maintained private Markdown is not automatically PII-classified.
 The legacy free-prose path is not certified by the atomic verifier. Provider failures are
 classified without copying upstream bodies, credentials or URLs into responses.
 

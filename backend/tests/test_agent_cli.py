@@ -15,6 +15,41 @@ def call(tmp_path, capsys, *args):
     return status, json.loads(output.out if status != 2 else output.err)
 
 
+def test_cli_disclosure_policy_is_owner_configured_without_loading_credentials(tmp_path, capsys):
+    assert call(tmp_path, capsys, "disclosure", "policy")[1]["policy"]["enabled"] is False
+    status, configured = call(
+        tmp_path,
+        capsys,
+        "disclosure",
+        "configure",
+        "--expected-revision",
+        "1",
+        "--policy-json",
+        json.dumps(
+            {
+                "enabled": True,
+                "target_id": "f" * 64,
+                "namespaces": ["memory"],
+                "labels": ["private"],
+            }
+        ),
+    )
+    assert status == 0 and configured["revision"] == 2
+    assert (
+        call(
+            tmp_path,
+            capsys,
+            "disclosure",
+            "configure",
+            "--expected-revision",
+            "1",
+            "--policy-json",
+            '{"enabled":false}',
+        )[0]
+        == 2
+    )
+
+
 def test_cli_reviewed_portable_import_audit_and_workspace_erasure(tmp_path, capsys):
     from app.memory import Entry, Store
 
@@ -147,7 +182,7 @@ def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     )
     destination = tmp_path / "private-export.json"
     assert call(tmp_path, capsys, "export", str(destination))[0] == 0
-    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 7
+    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 8
     if os.name == "posix":
         assert destination.stat().st_mode & 0o777 == 0o600
     before = destination.read_bytes()

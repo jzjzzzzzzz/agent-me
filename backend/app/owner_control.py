@@ -172,6 +172,8 @@ class OwnerControl:
                     ("retention_revision", "1"),
                     ("learning_policy", "{}"),
                     ("learning_revision", "1"),
+                    ("disclosure_policy", "{}"),
+                    ("disclosure_revision", "1"),
                 ],
             )
             record(db, "owner.workspace_purge", counts={"deleted": sum(counts.values())})

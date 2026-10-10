@@ -79,7 +79,7 @@ Cancellation is available before successful execution. Successful actions use ro
 Plans and notes/tasks can contain private owner-entered text. Deleting an evidence memory
 blocks future execution but does not automatically purge independent task/note/plan copies.
 Rollback removes an eligible created output, not the plan's arguments or audit events.
-Snapshot export version `7` contains these private records. The
+Snapshot export version `8` contains these private records. The
 [owner-control contracts](OWNER_CONTROL.md) provide portable import and explicit output,
 action, source, archive and SQLite-workspace erasure. Imported approvals are inert archive
 data, never silently restored execution permissions or approved runnable operations.

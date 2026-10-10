@@ -249,7 +249,7 @@ def test_version_six_import_and_bounded_count_and_byte_limits(tmp_path, monkeypa
     original, _ = seed(tmp_path / "source")
     snapshot = original.export()
     snapshot["version"] = 6
-    for key in ["audit_events", "import_archives", "ingestion_replay_keys"]:
+    for key in ["audit_events", "import_archives", "ingestion_replay_keys", "disclosure_policy"]:
         del snapshot[key]
     destination = Store(str(tmp_path / "dest"))
     importer = PortableMemory(destination)
@@ -265,3 +265,16 @@ def test_version_six_import_and_bounded_count_and_byte_limits(tmp_path, monkeypa
     with pytest.raises(MemoryInputError, match="16 MiB"):
         importer.preview(original.export())
     assert "Fictional" not in json.dumps(AuditLog(destination).events())
+
+
+def test_version_seven_snapshot_gets_disabled_disclosure_defaults(tmp_path):
+    source, _ = seed(tmp_path / "source")
+    snapshot = source.export()
+    snapshot["version"] = 7
+    del snapshot["disclosure_policy"]
+    destination = Store(str(tmp_path / "destination"))
+    portable = PortableMemory(destination)
+    preview = portable.preview(snapshot)
+    assert preview["source_version"] == 7
+    portable.apply(snapshot, preview["digest"])
+    assert destination.export()["disclosure_policy"]["policy"]["enabled"] is False

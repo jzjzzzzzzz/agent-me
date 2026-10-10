@@ -48,7 +48,7 @@ def test_version_five_upgrade_preserves_reviewed_memory_and_tool_authority(tmp_p
         connection.execute("PRAGMA user_version=5")
     reopened = Store(str(tmp_path))
     assert reopened.owner_id == db.owner_id and reopened.context("Orchid")
-    assert reopened.export()["version"] == 7
+    assert reopened.export()["version"] == 8
     assert LearningPolicyManager(reopened).settings()["revision"] == 1
     assert Agency(reopened).execute(plan["id"])["status"] == "completed"
     assert len(Agency(reopened).tasks()) == 1
@@ -156,7 +156,7 @@ def test_consolidation_is_reviewed_idempotent_and_preserves_origins_and_history(
     origins = pipeline.origins(keeper["id"])
     assert origins[0]["excerpt"] == "Fictional Orchid" and origins[0]["source_id"] == source_id
     assert origins[0]["memory_revision"] == 3
-    assert db.context("Orchid") and MemoryExport.model_validate(db.export()).version == 7
+    assert db.context("Orchid") and MemoryExport.model_validate(db.export()).version == 8
 
 
 def test_pending_consolidation_is_never_auto_confirmation(tmp_path):

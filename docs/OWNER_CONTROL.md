@@ -1,13 +1,13 @@
 # Portable owner control and operational audit
 
 The Core, authenticated private API, and local CLI share one implementation. Public
-endpoints never access it. Schema/export version `7` adds content-free audit, inert
+endpoints never access it. Schema extension `7` introduced content-free audit, inert
 import-authority archives and ingestion replay keys; migration preserves existing data
 and tool state. This is a bounded personal-memory format, not a filesystem backup.
 
 ## Digest-reviewed portable import
 
-`PortableMemory.preview(snapshot)` validates a version-7 snapshot (or supported version-6
+`PortableMemory.preview(snapshot)` validates a version-8 snapshot (or supported version-6/7
 legacy format) and returns an owner ID, collection counts, exact digest and explicit
 authority dispositions. Preview does not write imported data. `apply(snapshot, digest)`
 requires that reviewed digest and rechecks all destination preconditions under a write lock.
@@ -33,7 +33,8 @@ import into that now nonempty workspace fails rather than replacing data.
 | Prior import archives | Preserve as inert, owner-inspectable historical copies |
 | Audit | Preserve up to the 10000-event operational bound, then append the import event |
 
-All tools remain disabled in a fresh imported workspace. Old approval IDs cannot execute
+All tools and provider disclosure remain disabled in a fresh imported workspace. Version 8
+adds `disclosure_policy`; its former grant is inspection-only archive data. Old approval IDs cannot execute
 or roll back; archive IDs are never routed to tools. Historical source approvals are also
 inspectable in the archive. Re-approval starts a new source revision/campaign; old runs are
 inspection history, not resumable permission. Version 7 retains exact original replay keys;

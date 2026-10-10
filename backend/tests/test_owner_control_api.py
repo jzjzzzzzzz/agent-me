@@ -34,7 +34,7 @@ async def test_private_import_preview_digest_apply_and_inert_archives(personal, 
     archives = (await client.get(BASE + "/portability/archives", headers=H)).json()
     assert len(archives) == 1
     exported = MemoryExport.model_validate((await client.get(BASE + "/export", headers=H)).json())
-    assert exported.entries[0].content == "FictionalOrchid" and exported.version == 7
+    assert exported.entries[0].content == "FictionalOrchid" and exported.version == 8
 
 
 async def test_access_audit_redacts_inputs_and_denied_request_details(personal):
@@ -127,7 +127,9 @@ async def test_private_output_erasure_and_literal_workspace_purge_review(persona
     assert "IndependentFictionalCopy" not in json.dumps(db.export())
 
 
-async def test_in_flight_chat_cannot_repopulate_a_purged_workspace(personal, monkeypatch):
+async def test_in_flight_chat_cannot_repopulate_a_purged_workspace(
+    personal, monkeypatch, configured_private_provider
+):
     from app import personal as module
 
     client, config = personal
@@ -141,7 +143,9 @@ async def test_in_flight_chat_cannot_repopulate_a_purged_workspace(personal, mon
 
     monkeypatch.setattr(module, "generate_answer", purge_during_generation)
     response = await client.post(
-        BASE + "/chat", headers=H, json={"question": "Remember: StalePrivatePreference"}
+        BASE + "/chat",
+        headers=H,
+        json={"question": "Remember: StalePrivatePreference", "allow_provider": True},
     )
     assert response.status_code == 409 and "StalePrivate" not in response.text
     assert not db.history() and not db.entries()

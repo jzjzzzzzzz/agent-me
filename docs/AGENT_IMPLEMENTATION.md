@@ -4,6 +4,8 @@ Tracking proposal: [#169](https://github.com/jzjzzzzzzz/agent-me/issues/169).
 Scope: implement the [full AI Twin roadmap](../ROADMAP.md) through the independent Python
 Agent core, authenticated adapters, and owner-facing CLI. No frontend changes are planned.
 This ledger is not a release promise or a claim that the roadmap is complete.
+The [final acceptance audit](AGENT_ACCEPTANCE.md) maps all six completion signals to
+implementation, direct tests/evaluations, runtime acceptance and explicit contract boundaries.
 
 ## Acceptance requirements
 
@@ -26,9 +28,9 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | Agency | Plan/approval gates and inspectable calls/results | Digest/revision-bound review, live preconditions, inspectable plans/results/events; `test_agency.py`, `test_agency_api.py` |
 | Agency | Idempotency, retry, rollback and clear know/recommend/act boundaries | Real SQLite effects, atomic failure, concurrent idempotency, bounded explicit retries and unchanged-output rollback; `evaluate_agency.py` 17 cases |
 | Verification | Atomic claim/evidence mapping and temporal consistency | `personal_agent.py` constrained atomic values and live authoritative verification; arbitrary paraphrase entailment remains unproven |
-| Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle, relationship, temporal, privacy, injection-as-data, forged-claim and in-flight deletion suites exist; full metrics remain |
-| Verification | Calibration, coverage, provenance and correction-effort metrics | Boolean memory evaluation exists; longitudinal metrics remain |
-| Owner control | Local/provider boundaries, labels, selective disclosure | Local core, structured sensitivity labels and explicit opt-in exist; document/provider policy expansion remains |
+| Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle, relationship, temporal, privacy, injection-as-data, forged-claim and in-flight deletion suites; longitudinal evaluation and conflict/interval/preference regressions |
+| Verification | Calibration, coverage, provenance and correction-effort metrics | `evaluate_longitudinal.py`: 20 labeled stages, declared-confidence Brier/coverage, answer/provenance coverage, abstention, privacy/style fidelity and accepted/rejected correction effort; mutation and missing-denominator tests |
+| Owner control | Local/provider boundaries, labels, selective disclosure | Provider-free atomic Core/CLI, dual opt-in target-bound provider policy, labels, server namespaces and entity/record/document scopes; actual mock-HTTP payload tests in `test_disclosure.py` |
 | Owner control | Review/correct/export/delete interfaces and portable formats | Core/API/CLI lifecycle, portable import with inert authority archives, revision-bound independent-copy erasure and SQLite purge; `test_portability.py`, `test_owner_control.py` and API/CLI tests |
 | Owner control | Ingestion/access audit and connected-tool threat model | Content-free core ingestion/retrieval and authenticated API/CLI operational audit, explicit rotation/clear; `docs/THREAT_MODEL.md`, owner-control evaluation 14 cases |
 
@@ -48,7 +50,10 @@ This ledger is not a release promise or a claim that the roadmap is complete.
    Learning-policy configuration, selectively previewed exact consolidation, portable import,
    independent-copy deletion, operational audit and threat model are implemented; see
    [learning controls](LEARNING_CONTROL.md) and [owner control](OWNER_CONTROL.md).
-   Provider/document disclosure-policy refinements, longitudinal metrics and full acceptance remain.
+   Provider/document disclosure policy and 20-stage longitudinal metrics are implemented; see
+   [disclosure](DISCLOSURE.md) and [longitudinal evaluation](LONGITUDINAL_EVALUATION.md).
+   All six workstream contracts have implementation/test evidence. Final audit, push and hosted CI
+   verification remain; this ledger is not a claim that external truth or future integrations are solved.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed
    branch, and verify the remote commit and CI. Only then consider the full objective achieved.
 

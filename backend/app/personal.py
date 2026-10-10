@@ -25,6 +25,7 @@ from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeInt
 from .audit import AuditLog
 from .config import Settings, get_settings
 from .consolidation import ConsolidationManager
+from .disclosure import DisclosureManager, target_id
 from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
 from .learning import LearningPipeline
@@ -70,6 +71,8 @@ from .owner_control import OwnerControl
 from .owner_models import (
     ActionDelete,
     AuditEvent,
+    DisclosurePolicy,
+    DisclosureSettings,
     ImportArchive,
     ImportPreview,
     ImportResult,
@@ -79,7 +82,7 @@ from .owner_models import (
 )
 from .personal_agent import ClaimVerifier, PersonalAgent
 from .portability import PortableMemory
-from .provider import context_matches, generate_answer
+from .provider import context_matches, extractive_answer, generate_answer
 from .retention import RetentionManager
 from .retrieval import PersonalRetriever
 from .retrieval_models import (
@@ -98,6 +101,7 @@ class PersonalChat(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     question: str = Field(min_length=1, max_length=8000)
     allow_sensitive: bool = Field(default=False, strict=True)
+    allow_provider: bool = Field(default=False, strict=True)
     _unicode = field_validator("question")(valid_unicode)
 
 
@@ -126,6 +130,10 @@ class ConfigureRetention(IdentityReview):
 
 class ConfigureLearning(IdentityReview):
     policy: LearningPolicy
+
+
+class ConfigureDisclosure(IdentityReview):
+    policy: DisclosurePolicy
 
 
 class ReviewedDigest(BaseModel):
@@ -187,6 +195,36 @@ def store(request: Request, config: Settings = Depends(authorize)) -> Store:
     db = Store(config.personal_data_dir)
     request.state.personal_store = db
     return db
+
+
+@router.get("/disclosure/policy", response_model=DisclosureSettings)
+def disclosure_policy(db: Store = Depends(store)):
+    return DisclosureManager(db).settings()
+
+
+@router.get("/disclosure/target")
+def disclosure_target(config: Settings = Depends(authorize), db: Store = Depends(store)):
+    configured = config.provider_state == "openai-compatible"
+    return {
+        "configured": configured,
+        "target_id": target_id(config.llm_base_url, config.llm_model) if configured else None,
+    }
+
+
+@router.post("/disclosure/policy", response_model=DisclosureSettings)
+def configure_disclosure(
+    payload: ConfigureDisclosure, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    if payload.policy.enabled and (
+        config.provider_state != "openai-compatible"
+        or payload.policy.target_id != target_id(config.llm_base_url, config.llm_model)
+    ):
+        from .memory import MemoryPermissionDenied
+
+        raise MemoryPermissionDenied(
+            "Disclosure must name the currently configured provider target"
+        )
+    return DisclosureManager(db).configure(payload.policy, payload.expected_revision)
 
 
 @router.get("/audit", response_model=list[AuditEvent])
@@ -606,9 +644,39 @@ async def chat(
     # Deliberately don't re-inject stored conversations: deleted memories must not return
     # through stale chat history. History is persisted for display, not factual grounding.
     history: list[ChatTurn] = []
-    answer, mode = await generate_answer(
-        question=payload.question, history=history, matches=matches, settings=config
-    )
+    if payload.allow_provider:
+        provider_config = config.model_copy(deep=True)
+        if provider_config.provider_state != "openai-compatible":
+            from .memory import MemoryPermissionDenied
+
+            raise MemoryPermissionDenied("A configured provider is required for disclosure")
+        # Refresh document evidence; memory values/subjects/privacy are re-read by the policy gate.
+        public = await run_in_threadpool(knowledge.search, payload.question)
+        local = await run_in_threadpool(local_knowledge.search, payload.question)
+        local = [
+            Match(
+                Document(m.document.title, "private/knowledge/" + m.document.path, m.document.text),
+                m.excerpt,
+                m.score,
+            )
+            for m in local
+        ]
+        permitted = await run_in_threadpool(
+            DisclosureManager(db).authorize,
+            target_id(provider_config.llm_base_url, provider_config.llm_model),
+            [("memory", m) for m in private]
+            + [("private", m) for m in local]
+            + [("public", m) for m in public],
+            allow_sensitive=payload.allow_sensitive,
+        )
+        matches = context_matches(
+            sorted(permitted, key=lambda m: m.score, reverse=True), config.max_context_chars
+        )
+        answer, mode = await generate_answer(
+            question=payload.question, history=history, matches=matches, settings=provider_config
+        )
+    else:
+        answer, mode = extractive_answer(matches), "extractive"
     await run_in_threadpool(
         db.save_chat, payload.question, answer, expected_owner_id=workspace_owner
     )

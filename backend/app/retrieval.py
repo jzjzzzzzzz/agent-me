@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import heapq
 import json
 import re
 import unicodedata
@@ -22,6 +23,40 @@ _STOP = set(
         "the this to was what when where which who why will with you your tell about please know"
     ).split()
 )
+
+
+def conflicting_intervals(group):
+    """Sweep overlapping intervals; each undisputed ID is drained once, not all-pairs."""
+    active, pending, ends, disputed = {}, {}, [], set()
+    ordered = sorted(
+        group, key=lambda item: utc(item.valid_from) or datetime.min.replace(tzinfo=UTC)
+    )
+    for index, item in enumerate(ordered):
+        start = utc(item.valid_from) or datetime.min.replace(tzinfo=UTC)
+        while ends and ends[0][0] <= start:
+            _, _, value, item_id = heapq.heappop(ends)
+            active[value] -= 1
+            if not active[value]:
+                del active[value]
+            if value in pending:
+                pending[value].discard(item_id)
+                if not pending[value]:
+                    del pending[value]
+        value = canonical_alias(item.value)
+        if len(active) > 1 or active and value not in active:
+            disputed.add(item.id)
+            for other in list(pending):
+                if other != value:
+                    disputed.update(pending.pop(other))
+        else:
+            pending.setdefault(value, set()).add(item.id)
+        active[value] = active.get(value, 0) + 1
+        heapq.heappush(
+            ends, (utc(item.valid_until) or datetime.max.replace(tzinfo=UTC), index, value, item.id)
+        )
+    return disputed
+
+
 _FACETS = {
     "name": ("name", "名字", "姓名", "叫什么"),
     "skills": ("skills", "abilities", "技能", "擅长", "能力"),
@@ -353,6 +388,10 @@ class PersonalRetriever:
             )
             if purpose is None:
                 continue
+            if item["kind"] == "preference" and intent != "preferences":
+                purpose = (
+                    "presentation" if selected_item["effective_belief"] == "known" else "context"
+                )
             if asks_when and item["category"] == "episodic":
                 purpose = "context"
             if request.minimum_confidence is not None and (
@@ -412,6 +451,13 @@ class PersonalRetriever:
             if ("name" in facets or intent == "profile") and not any(
                 (request.as_of, request.known_at, request.since, request.until)
             ):
+                has_name_value = any(
+                    candidate.kind == "memory_value"
+                    and candidate.purpose == "answer"
+                    and field_facet(candidate.field) == "name"
+                    and candidate.entity_id in {item_id, None}
+                    for candidate in candidates
+                )
                 candidates.append(
                     evidence(
                         kind="entity_label",
@@ -426,6 +472,7 @@ class PersonalRetriever:
                         observed_at=item["updated_at"],
                         score=0.8,
                         reasons=["alias"],
+                        purpose="context" if has_name_value else "answer",
                     )
                 )
             if intent in {"relationships", "projects"} and not any(
@@ -495,25 +542,26 @@ class PersonalRetriever:
             ]
         trace.append(dict(stage="retrieve", outcome="completed", count=len(candidates)))
         groups = {}
+        owner_entity = self.identity.owner()["entity_id"]
         for item in candidates:
             if item.kind == "memory_value" and item.purpose == "answer" and item.belief == "known":
                 groups.setdefault(
                     (
-                        item.entity_id,
-                        field_facet(item.field),
+                        owner_entity
+                        if item.entity_id is None and scoped and subjects == [owner_entity]
+                        else item.entity_id,
+                        field_facet(item.field) or canonical_alias(item.field),
                         item.occurred_at,
-                        item.valid_from,
-                        item.valid_until,
                     ),
                     [],
                 ).append(item)
-        disputed = {
-            item.id
-            for group in groups.values()
-            if len({canonical_alias(item.value) for item in group}) > 1
-            for item in group
-            if field_facet(item.field) not in {"project", "goals"}
-        }
+        disputed = set().union(
+            *(
+                conflicting_intervals(group)
+                for key, group in groups.items()
+                if key[1] not in {"project", "goals"}
+            )
+        )
         if disputed:
             candidates = [
                 evidence(**{**item.model_dump(exclude={"id"}), "belief": "disputed"})

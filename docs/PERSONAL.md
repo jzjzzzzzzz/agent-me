@@ -61,7 +61,7 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 记忆总计最多选取 20 条；若已确认偏好与相关事实合计超出该预算，底线配额之外得分最低的偏好会被舍弃。
 发送给模型的上下文仍受 `MAX_CONTEXT_CHARS` 限制。
 没有配置模型时仅返回相关原文，不会智能模仿语气。
-如需模型生成，在本地 `.env` 配置 `LLM_BASE_URL`、`LLM_API_KEY` 和 `LLM_MODEL`，重启后生效。
+如需私有模型生成，配置三个 `LLM_*` 值后，还须通过 API/CLI 授权披露策略，并在每次请求显式设置 `allow_provider: true`；参见[披露契约](DISCLOSURE.md)。
 普通问答与协作模式保持原有行为，**不会读取私有工作区**。
 
 ### 4. 更新、冲突与删除
@@ -81,8 +81,8 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 Git 和 Docker 构建上下文都排除 `private/`、环境文件和数据库文件。
 不要把 `PERSONAL_DATA_DIR` 改成公开目录；自定义目录需要自行添加忽略规则。
 
-**本地保存不等于不发送到模型。** 启用模型后，私有问题、检索到的已确认记忆（包括偏好）、
-私有及公开知识片段会发送给你配置的服务商。密钥验证仅限制工作区访问，不会加密磁盘数据库。
+私有聊天默认本地处理，配置模型凭据不会自动启用披露。只有已授权目标／数据范围与每次请求的
+`allow_provider: true` 同时满足时，问题和筛选后的上下文才会发送给服务商。密钥验证仅限制工作区访问，不会加密磁盘数据库。
 请保持服务绑定 `127.0.0.1`；这是单用户工作区，不是具备用户隔离的公网多租户服务。
 若要只在本机处理信息，请清空三个 `LLM_*` 配置，使用本地摘录模式。
 
@@ -130,14 +130,14 @@ The database persists chat for display (latest 100 turns); it does not replay hi
 so deleted memory cannot leak back through old turns. This first version does not provide full
 multi-turn contextual conversation. Deleting memory does not erase its existing chat transcript:
 use Clear history separately. Deleting a record purges its own revision snapshots, not independently
-restored candidates or archived replacements. Export version `7` includes the full transcript,
+restored candidates or archived replacements. Export version `8` includes the full transcript,
 active and archived entries, and revision snapshots. [Portable import and explicit owner erasure](OWNER_CONTROL.md)
 are available through Core/API/CLI. Stop the backend before removing `private/` and its
 `personal.env` token to erase the initialized filesystem workspace.
 
 Without model credentials, answers are excerpts, not personalized generation. Configure the three
-`LLM_*` values in your ignored `.env` and restart for generated answers. When enabled, your question,
-retrieved memories/preferences and knowledge excerpts are sent to that provider. The browser token
+`LLM_*` values in your ignored `.env`, review the [disclosure policy](DISCLOSURE.md), and explicitly
+opt in on each request for generated answers. Only permitted context is sent to that provider. The browser token
 is held only in page memory. The database is not encrypted. Bind services to loopback; this is not
 a public multi-user deployment. Git exclusion does not imply provider privacy or erase Git history.
 
@@ -162,7 +162,7 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
-| GET | `/export` | Version-7 snapshot including learning provenance and forgetting digests |
+| GET | `/export` | Version-8 snapshot including learning provenance and forgetting digests |
 | POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
 
 ### Typed memory contract / 结构化记忆契约
@@ -200,7 +200,7 @@ The server compares these preconditions inside the write transaction; stale requ
 without changing any entries or snapshots. These fields are optional for compatibility with
 existing clients; callers omitting them do **not** receive stale-review protection.
 
-Export uses version `7` (separate from the repository release version) and includes `revisions`,
+Export uses version `8` (separate from the repository release version) and includes `revisions`,
 `sources`, `ingestion_runs`, `origins`, and `forgotten` digest records.
 Entries, full history, and snapshots are read in one database transaction. An older version-1 or version-2
 export consumer must be updated; the existing reference UI downloads the JSON without parsing it.
@@ -225,14 +225,14 @@ cancelled by a later deletion.
 
 Structured records default to `private`. `sensitive` records are excluded from `Store.context`
 and private chat unless the owner explicitly sets `allow_sensitive=True` / `{"allow_sensitive": true}`.
-When an external model is configured, that opt-in permits the selected sensitive memory excerpts to
-be sent with the question. CLI recall is local and never calls a provider. Source labels become a
+Provider transmission additionally requires an enabled matching disclosure policy and
+`allow_provider: true`; sensitive data must also be permitted by its labels. CLI recall is local and never calls a provider. Source labels become a
 floor for extracted candidates; cross-source duplicate pending candidates retain the highest label.
 Edits without an explicit sensitivity field preserve the label, and restoration never implicitly
 lowers the current classification. Label lowering requires a separate explicit owner edit.
 
 Labels do not automatically classify PII, redact the owner's question, or classify manually maintained
-private Markdown. Those existing Markdown and question/provider boundaries remain unchanged.
+private Markdown. The [disclosure policy](DISCLOSURE.md) additionally bounds document namespaces/paths and provider targets.
 The reference UI does not provide sensitive-memory opt-in; use the API or CLI for that operation.
 
 ### Pure Agent verification / 纯 Agent 验证
@@ -268,7 +268,7 @@ The older private chat endpoint remains a separate compatibility contract.
 
 ## Local owner agency
 
-Snapshot version `7` additionally includes `tool_permissions`, `action_plans`, `tasks`, `notes`,
+Snapshot version `8` additionally includes `tool_permissions`, `action_plans`, `tasks`, `notes`,
 and `action_events`. Tool defaults remain disabled. These are independent private data copies;
 memory deletion does not delete task/note/plan arguments. The [agency contracts](AGENCY.md)
 document explicit approval, inspection, rollback and current deletion boundaries.
@@ -276,7 +276,7 @@ document explicit approval, inspection, rollback and current deletion boundaries
 
 ## Portability, audit and independent-copy control
 
-Snapshot version `7` adds `audit_events`, `import_archives` and `ingestion_replay_keys`.
+Snapshot version `8` adds `audit_events`, `import_archives` and `ingestion_replay_keys`.
 The [owner-control contracts](OWNER_CONTROL.md) describe exact reviewed import into an empty
 workspace, non-restoration of execution authority, content-free operational audit and explicit
 source/action/output/archive/transcript/SQLite-state deletion boundaries.

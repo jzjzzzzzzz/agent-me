@@ -164,7 +164,9 @@ def test_context_drops_lowest_scoring_preferences_once_budget_is_exceeded(tmp_pa
     }
 
 
-async def test_private_provider_receives_only_current_confirmed_context(personal, monkeypatch):
+async def test_private_provider_receives_only_current_confirmed_context(
+    personal, monkeypatch, configured_private_provider
+):
     import app.personal as personal_module
 
     client, config = personal
@@ -181,7 +183,9 @@ async def test_private_provider_receives_only_current_confirmed_context(personal
     db.confirm(approved["id"], [])
     db.save_chat("OldSecret", "Old answer")
     response = await client.post(
-        "/api/v1/personal/chat", headers=HEADERS, json={"question": "PendingSecret"}
+        "/api/v1/personal/chat",
+        headers=HEADERS,
+        json={"question": "PendingSecret", "allow_provider": True},
     )
     assert response.status_code == 200
     assert response.headers["cache-control"] == "no-store"
@@ -192,7 +196,11 @@ async def test_private_provider_receives_only_current_confirmed_context(personal
     assert captured[0]["history"] == []
     db.delete(pending["id"])
     db.delete(approved["id"])
-    await client.post("/api/v1/personal/chat", headers=HEADERS, json={"question": "paragraphs"})
+    await client.post(
+        "/api/v1/personal/chat",
+        headers=HEADERS,
+        json={"question": "paragraphs", "allow_provider": True},
+    )
     assert not captured[-1]["matches"]
 
 
@@ -364,7 +372,7 @@ def test_legacy_workspace_migrates_once_without_inventing_history(tmp_path):
     db.edit("legacy", Entry(key="project", content="CurrentOrchid"), 1)
     reopened = Store(str(tmp_path))
     assert [r["change"] for r in reopened.revisions("legacy")] == ["baseline", "edited"]
-    assert reopened.export()["version"] == 7
+    assert reopened.export()["version"] == 8
 
 
 def test_revision_writes_roll_back_with_failed_supersession(tmp_path, monkeypatch):
@@ -443,7 +451,7 @@ async def test_revision_route_auth_export_and_delete(personal):
     assert response.headers["cache-control"] == "no-store"
     assert response.json()[0]["change"] == "created"
     exported = (await client.get("/api/v1/personal/export", headers=HEADERS)).json()
-    assert exported["version"] == 7
+    assert exported["version"] == 8
     assert exported["revisions"] == response.json()
     await client.post(f"/api/v1/personal/entries/{item['id']}/delete", headers=HEADERS)
     assert (await client.get(endpoint, headers=HEADERS)).status_code == 404
@@ -600,16 +608,18 @@ def test_concurrent_initialization_migrates_once_and_rejects_future_schema(tmp_p
     item = stores[0].add(Entry(key="project", content="SyntheticOrchid"))
     assert len(stores[-1].revisions(item["id"])) == 1
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
-        connection.execute("PRAGMA user_version=8")
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+        connection.execute("PRAGMA user_version=9")
     with pytest.raises(ValueError, match="newer"):
         Store(str(tmp_path))
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
         assert connection.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 1
 
 
-async def test_superseded_versions_never_reach_provider_or_public_routes(personal, monkeypatch):
+async def test_superseded_versions_never_reach_provider_or_public_routes(
+    personal, monkeypatch, configured_private_provider
+):
     import app.personal as personal_module
 
     client, config = personal
@@ -626,10 +636,13 @@ async def test_superseded_versions_never_reach_provider_or_public_routes(persona
     current = db.add(Entry(kind="preference", key="style", content="CurrentOrchid"))
     db.confirm(current["id"], [original["id"]])
     response = await client.post(
-        "/api/v1/personal/chat", headers=HEADERS, json={"question": "SupersededOrchid"}
+        "/api/v1/personal/chat",
+        headers=HEADERS,
+        json={"question": "SupersededOrchid", "allow_provider": True},
     )
     assert response.status_code == 200
     assert captured == ["style: CurrentOrchid"]
     assert all("SupersededOrchid" not in source["excerpt"] for source in response.json()["sources"])
+    config.llm_base_url = config.llm_api_key = config.llm_model = ""
     public = await client.post("/api/v1/chat", json={"question": "CurrentOrchid"})
     assert public.json()["sources"] == []

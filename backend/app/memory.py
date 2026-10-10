@@ -21,7 +21,7 @@ from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQue
 from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
-_SCHEMA_VERSION = 7
+_SCHEMA_VERSION = 8
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
 _RECORD_COLUMNS = (
@@ -308,8 +308,11 @@ class Store:
                 dict(run_id=row[0], key=row[1])
                 for row in db.execute("SELECT id,replay_key FROM ingestion_runs ORDER BY rowid")
             ]
+            from .disclosure import settings as disclosure_settings
+
+            disclosure_policy = disclosure_settings(db)
         return {
-            "version": 7,
+            "version": 8,
             "owner_id": owner_id,
             "owner_entity_id": owner_entity[0] if owner_entity else None,
             "entries": entries,
@@ -335,6 +338,7 @@ class Store:
             "audit_events": audit_events,
             "import_archives": import_archives,
             "ingestion_replay_keys": replay_keys,
+            "disclosure_policy": disclosure_policy,
         }
 
     @staticmethod

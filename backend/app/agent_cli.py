@@ -15,6 +15,7 @@ from .agency_models import PermissionInput, ToolInvocation
 from .agent_runtime import AgentIntent, AgentRuntime
 from .audit import AuditLog
 from .consolidation import ConsolidationManager
+from .disclosure import DisclosureManager
 from .identity import IdentityStore
 from .knowledge import KnowledgeBase
 from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
@@ -32,7 +33,7 @@ from .memory_models import (
     TemporalQuery,
 )
 from .owner_control import OwnerControl
-from .owner_models import WorkspacePurge
+from .owner_models import DisclosurePolicy, WorkspacePurge
 from .personal_agent import ClaimVerifier, PersonalAgent
 from .portability import MAX_IMPORT_BYTES, PortableMemory
 from .retention import RetentionManager
@@ -263,6 +264,11 @@ def parser() -> argparse.ArgumentParser:
     audit = commands.add_parser("audit").add_subparsers(dest="action", required=True)
     audit.add_parser("events").add_argument("--limit", type=int, default=100)
     audit.add_parser("clear").add_argument("--yes", action="store_true")
+    disclosure = commands.add_parser("disclosure").add_subparsers(dest="action", required=True)
+    disclosure.add_parser("policy")
+    configure = disclosure.add_parser("configure")
+    configure.add_argument("--policy-json", required=True)
+    configure.add_argument("--expected-revision", type=int, required=True)
     portability = commands.add_parser("portability").add_subparsers(dest="action", required=True)
     for name in ("preview", "import"):
         child = portability.add_parser(name)
@@ -316,6 +322,13 @@ def _execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
     identity = IdentityStore(store)
+    if args.command == "disclosure":
+        manager = DisclosureManager(store)
+        if args.action == "policy":
+            return manager.settings()
+        return manager.configure(
+            DisclosurePolicy.model_validate_json(args.policy_json), args.expected_revision
+        )
     if args.command == "audit":
         if args.action == "events":
             return AuditLog(store).events(args.limit)

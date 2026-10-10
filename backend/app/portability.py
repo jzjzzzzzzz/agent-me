@@ -195,9 +195,9 @@ class PortableMemory:
         if (
             not isinstance(payload, dict)
             or type(payload.get("version")) is not int
-            or payload["version"] not in {6, 7}
+            or payload["version"] not in {6, 7, 8}
         ):
-            raise MemoryInputError("Supported portable snapshot versions are 6 and 7")
+            raise MemoryInputError("Supported portable snapshot versions are 6, 7 and 8")
         if len(encoded(payload)) > MAX_IMPORT_BYTES:
             raise MemoryInputError("Snapshot exceeds the 16 MiB import limit")
         version = payload["version"]
@@ -214,7 +214,7 @@ class PortableMemory:
             ):
                 raise MemoryInputError("Snapshot violates the portable schema")
             raw.update(
-                version=7,
+                version=8,
                 audit_events=[],
                 import_archives=[],
                 ingestion_replay_keys=[
@@ -225,6 +225,10 @@ class PortableMemory:
                     for item in legacy_runs
                 ],
             )
+        if version < 8:
+            if "disclosure_policy" in raw:
+                raise MemoryInputError("Legacy snapshot cannot contain disclosure extensions")
+            raw.update(version=8, disclosure_policy={"revision": 1, "policy": {}})
         lists = [value for value in raw.values() if isinstance(value, list)]
         if (
             any(len(value) > MAX_COLLECTION for value in lists)
@@ -255,6 +259,8 @@ class PortableMemory:
                     "retention_revision",
                     "learning_policy",
                     "learning_revision",
+                    "disclosure_policy",
+                    "disclosure_revision",
                 }
                 or key.endswith("_revision")
                 and value != "1"
@@ -365,7 +371,10 @@ class PortableMemory:
                     "consolidation_plans",
                 ]
             }
-            | {"source_approvals": data["sources"]},
+            | {
+                "source_approvals": data["sources"],
+                "disclosure_permissions": [data["disclosure_policy"]],
+            },
         )
         db.execute(
             "INSERT INTO import_archives VALUES (?,?)", (archive.id, archive.model_dump_json())

@@ -4,7 +4,7 @@ Both components run independently of HTTP and providers. Every candidate still n
 explicit owner acceptance. Policy never enables automatic confirmation or tool execution.
 Schema extension `6` introduced the typed policy and consolidation plans without changing
 existing records, reviewed sources, task/note permissions, or action approvals.
-Current export version `7` also includes portable owner-control and audit records.
+Current export version `8` also includes portable owner-control and audit records.
 
 ## Learning policy
 
