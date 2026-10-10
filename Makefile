@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
+.PHONY: setup dev test lint audit format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -24,6 +24,9 @@ lint: lock-check version-check
 	.venv/bin/ruff check backend scripts
 	.venv/bin/ruff format --check backend scripts
 	cd frontend && npm run lint && npm run typecheck
+
+audit:
+	cd frontend && npm run audit:deps
 
 format:
 	.venv/bin/ruff format backend

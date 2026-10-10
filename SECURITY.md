@@ -24,6 +24,12 @@ Pull requests and `main` run the normal lint/test/container workflow plus CodeQL
 queries can inspect unchanged code. Dependabot monitors Python, npm, GitHub Actions, and container
 dependencies; secret scanning is enabled on the public repository.
 
+The frontend CI job also runs `npm run audit:deps` against the locked dependency graph, including
+development dependencies, and fails on moderate-or-higher known advisories or an unavailable audit
+service. Run `make audit` locally after `npm ci`. Audit results depend on the registry's current
+advisory data; a clean result is not a guarantee that undisclosed vulnerabilities do not exist.
+Dependency updates must preserve lint, typecheck, regression tests and production builds.
+
 These checks complement review, locked dependency audits, threat modeling, and deployment controls.
 A green scan does not prove that knowledge content is publishable or that an operator's ingress,
 rate limits, credentials, and privacy notice are correctly configured.
