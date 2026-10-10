@@ -144,6 +144,32 @@ def test_review_is_local_opaque_content_bound_and_does_not_grant_disclosure(
     assert not fixture.manager.settings()["policy"]["enabled"]
 
 
+@pytest.mark.parametrize("content", [TEXT + "\r\n", "\ufeff" + TEXT + "\r\n"])
+def test_review_and_delivery_preserve_exact_bom_and_crlf_bytes(
+    tmp_path, capsys, monkeypatch, content
+):
+    fixture = setup(tmp_path)
+    raw = content.encode("utf-8")
+    fixture.content_file.write_bytes(raw)
+    requests = model(
+        monkeypatch,
+        proposals={
+            "candidates": [{"kind": "fact", "key": "identity.name", "quote": "示例林"}],
+        },
+    )
+    _, review = invoke(capsys, command(fixture, "review"))
+    assert review["content_hash"] == hashlib.sha256(raw).hexdigest()
+    assert review["source_bytes"] == len(raw) and review["source_chars"] == len(content)
+    args = command(fixture)
+    args[args.index("--reviewed-content-hash") + 1] = review["content_hash"]
+    assert invoke(capsys, args)[0] == 0 and len(requests) == 1
+    assert json.loads(requests[0].content)["messages"][1]["content"] == content
+    record = fixture.store.entries()[0]
+    origin = fixture.pipeline.origins(record["id"])[0]
+    assert origin["document_hash"] == review["content_hash"]
+    assert content[origin["start"] : origin["end"]] == record["content"]
+
+
 def test_explicit_configuration_ignores_all_settings_sources(tmp_path, monkeypatch):
     fixture = setup(tmp_path)
     for field in Settings.model_fields:

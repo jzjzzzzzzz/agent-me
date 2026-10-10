@@ -162,7 +162,9 @@ PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-de
 `--valid-from`, `--valid-until`, `--occurred-at` are owner declarations, not model-derived dates.
 Both review and ingestion read only the named bounded UTF-8 source file (80,000 codepoints/200,000
 bytes), not the workspace's Markdown corpus. Changes to its actual content or endpoint/model after
-review fail before delivery; current source/disclosure revisions and live authority are checked by
+review fail before delivery. Reads preserve the exact UTF-8 bytes, including CRLF and a BOM, rather
+than applying platform text-mode newline conversion. Current source/disclosure revisions and live
+authority are checked by
 the same adapter as HTTP. The CLI does not compute a replacement reviewed hash on the owner's behalf.
 Changed policy/learning/subject/source authority during delivery blocks storage, not already delivered
 text. All candidates still require separate `memory confirm` review; retain the original file to review

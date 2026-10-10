@@ -80,7 +80,8 @@ class ExplicitProvider(BaseModel):
 
 def _read_regular(path: Path, limit: int, label: str):
     try:
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags)
         with os.fdopen(descriptor, "rb") as handle:
             if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
                 raise MemoryInputError(f"{label} must be a regular file")
