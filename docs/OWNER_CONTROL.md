@@ -1,5 +1,7 @@
 # Portable owner control and operational audit
 
+The [selective erasure workbench](ERASURE_REVIEW.md) adds native/API/CLI exact scope preview and digest application, without changing legacy deletion or export contracts.
+
 The Core, authenticated private API, and local CLI share one implementation. Public
 endpoints never access it. Schema extension `7` introduced content-free audit, inert
 import-authority archives and ingestion replay keys; migration preserves existing data

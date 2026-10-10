@@ -1,0 +1,518 @@
+{
+  "catalogue": {
+    "owner_id": "b860cec3245841809e0635869dd37f5a",
+    "items": [
+      {
+        "kind": "note",
+        "record": {
+          "table": "notes",
+          "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+          "id": "a28ace786809417985ffe07358075b17",
+          "revision": 1,
+          "label": "Fictional independent note"
+        }
+      },
+      {
+        "kind": "action",
+        "record": {
+          "table": "action_plans",
+          "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+          "id": "800ceb4c68b749f29c6892418ebe4a18",
+          "revision": 3,
+          "label": "notes.create"
+        }
+      },
+      {
+        "kind": "source",
+        "record": {
+          "table": "sources",
+          "key": "f92c65a2a54185ec14d206fa0a199da41b456e520a18a2bd2288661b850ddfaa",
+          "id": "6b93b527144541359650d9e94e3d0b2c",
+          "revision": 2,
+          "label": "Fictional erasure source"
+        }
+      }
+    ]
+  },
+  "note": {
+    "request": {
+      "kind": "note",
+      "id": "a28ace786809417985ffe07358075b17",
+      "expected_owner_id": "b860cec3245841809e0635869dd37f5a",
+      "expected_revision": 1,
+      "purge_output": false,
+      "expected_output_revision": null,
+      "forget_memories": false
+    },
+    "target": {
+      "table": "notes",
+      "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+      "id": "a28ace786809417985ffe07358075b17",
+      "revision": 1,
+      "label": "Fictional independent note"
+    },
+    "digest": "4396a22d82723d51d346258e8825fe216b56c4c6b2e1864cd24fd0f28b8e23c4",
+    "removed": [
+      {
+        "table": "action_events",
+        "key": "6733f4ccf8393a68ba940e3bb9d332977bece24630d0f70a67ab04a237ad414e",
+        "id": "1c28abb571ab4c4eb3e49c6541b977bb",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "ce33620e7a93fc5840e4c61685031e75c691d21807287749c08bf67a9e761914",
+        "id": "994ad07724024be1bfc05c7414fad48d",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "9269a47e0d83d19806b6dc050298aecd209a8e3426f7c8ecb643f68fb42b5fa3",
+        "id": "9b8c9581aa4642279e1a3f7515810bd9",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "569092fbf8217937c3f8976beea5a3880da4e55dc047bd08a773102744187292",
+        "id": "a19d8f563999470ca249e51053ded6ef",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_plans",
+        "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+        "id": "800ceb4c68b749f29c6892418ebe4a18",
+        "revision": 3,
+        "label": "notes.create"
+      },
+      {
+        "table": "notes",
+        "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+        "id": "a28ace786809417985ffe07358075b17",
+        "revision": 1,
+        "label": "Fictional independent note"
+      }
+    ],
+    "updated": [],
+    "added": [],
+    "retained": []
+  },
+  "actionOnly": {
+    "request": {
+      "kind": "action",
+      "id": "800ceb4c68b749f29c6892418ebe4a18",
+      "expected_owner_id": "b860cec3245841809e0635869dd37f5a",
+      "expected_revision": 3,
+      "purge_output": false,
+      "expected_output_revision": null,
+      "forget_memories": false
+    },
+    "target": {
+      "table": "action_plans",
+      "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+      "id": "800ceb4c68b749f29c6892418ebe4a18",
+      "revision": 3,
+      "label": "notes.create"
+    },
+    "digest": "b6598d8de6fedd22c05c887a70d3bce3a352f84444b11548ba4747e69afe9d80",
+    "removed": [
+      {
+        "table": "action_events",
+        "key": "6733f4ccf8393a68ba940e3bb9d332977bece24630d0f70a67ab04a237ad414e",
+        "id": "1c28abb571ab4c4eb3e49c6541b977bb",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "ce33620e7a93fc5840e4c61685031e75c691d21807287749c08bf67a9e761914",
+        "id": "994ad07724024be1bfc05c7414fad48d",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "9269a47e0d83d19806b6dc050298aecd209a8e3426f7c8ecb643f68fb42b5fa3",
+        "id": "9b8c9581aa4642279e1a3f7515810bd9",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "569092fbf8217937c3f8976beea5a3880da4e55dc047bd08a773102744187292",
+        "id": "a19d8f563999470ca249e51053ded6ef",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_plans",
+        "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+        "id": "800ceb4c68b749f29c6892418ebe4a18",
+        "revision": 3,
+        "label": "notes.create"
+      }
+    ],
+    "updated": [],
+    "added": [],
+    "retained": [
+      {
+        "table": "notes",
+        "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+        "id": "a28ace786809417985ffe07358075b17",
+        "revision": 1,
+        "label": "Fictional independent note"
+      }
+    ]
+  },
+  "actionOutput": {
+    "request": {
+      "kind": "action",
+      "id": "800ceb4c68b749f29c6892418ebe4a18",
+      "expected_owner_id": "b860cec3245841809e0635869dd37f5a",
+      "expected_revision": 3,
+      "purge_output": true,
+      "expected_output_revision": 1,
+      "forget_memories": false
+    },
+    "target": {
+      "table": "action_plans",
+      "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+      "id": "800ceb4c68b749f29c6892418ebe4a18",
+      "revision": 3,
+      "label": "notes.create"
+    },
+    "digest": "51294478ff665a3045106e4d471e8defd046c4cd74e53a97eb0afda07b4f0db3",
+    "removed": [
+      {
+        "table": "action_events",
+        "key": "6733f4ccf8393a68ba940e3bb9d332977bece24630d0f70a67ab04a237ad414e",
+        "id": "1c28abb571ab4c4eb3e49c6541b977bb",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "ce33620e7a93fc5840e4c61685031e75c691d21807287749c08bf67a9e761914",
+        "id": "994ad07724024be1bfc05c7414fad48d",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "9269a47e0d83d19806b6dc050298aecd209a8e3426f7c8ecb643f68fb42b5fa3",
+        "id": "9b8c9581aa4642279e1a3f7515810bd9",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "569092fbf8217937c3f8976beea5a3880da4e55dc047bd08a773102744187292",
+        "id": "a19d8f563999470ca249e51053ded6ef",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_plans",
+        "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+        "id": "800ceb4c68b749f29c6892418ebe4a18",
+        "revision": 3,
+        "label": "notes.create"
+      },
+      {
+        "table": "notes",
+        "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+        "id": "a28ace786809417985ffe07358075b17",
+        "revision": 1,
+        "label": "Fictional independent note"
+      }
+    ],
+    "updated": [],
+    "added": [],
+    "retained": []
+  },
+  "sourceOnly": {
+    "request": {
+      "kind": "source",
+      "id": "6b93b527144541359650d9e94e3d0b2c",
+      "expected_owner_id": "b860cec3245841809e0635869dd37f5a",
+      "expected_revision": 2,
+      "purge_output": false,
+      "expected_output_revision": null,
+      "forget_memories": false
+    },
+    "target": {
+      "table": "sources",
+      "key": "f92c65a2a54185ec14d206fa0a199da41b456e520a18a2bd2288661b850ddfaa",
+      "id": "6b93b527144541359650d9e94e3d0b2c",
+      "revision": 2,
+      "label": "Fictional erasure source"
+    },
+    "digest": "8848091a0a82be8ebe289ba78f2379597ff244e3a431a302a406ff83d2982276",
+    "removed": [
+      {
+        "table": "ingestion_runs",
+        "key": "00733f7d8848679fa69b32479108d4ff2e93fd3d96593093f9ee11a46d5d6ad7",
+        "id": "1b72d5dbddbe4f5482402e2e8a7a86ea",
+        "revision": null,
+        "label": "ingestion_runs"
+      },
+      {
+        "table": "origins",
+        "key": "6026d4c532385e4ad12c74e86c31fdc7c45e3deb60c1b5ad48dee60a385d30f6",
+        "id": "2e60a0ef45c040e49d6c9081bf36ff65",
+        "revision": null,
+        "label": "origins"
+      },
+      {
+        "table": "sources",
+        "key": "f92c65a2a54185ec14d206fa0a199da41b456e520a18a2bd2288661b850ddfaa",
+        "id": "6b93b527144541359650d9e94e3d0b2c",
+        "revision": 2,
+        "label": "Fictional erasure source"
+      }
+    ],
+    "updated": [],
+    "added": [],
+    "retained": [
+      {
+        "table": "action_events",
+        "key": "6733f4ccf8393a68ba940e3bb9d332977bece24630d0f70a67ab04a237ad414e",
+        "id": "1c28abb571ab4c4eb3e49c6541b977bb",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "ce33620e7a93fc5840e4c61685031e75c691d21807287749c08bf67a9e761914",
+        "id": "994ad07724024be1bfc05c7414fad48d",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "9269a47e0d83d19806b6dc050298aecd209a8e3426f7c8ecb643f68fb42b5fa3",
+        "id": "9b8c9581aa4642279e1a3f7515810bd9",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "569092fbf8217937c3f8976beea5a3880da4e55dc047bd08a773102744187292",
+        "id": "a19d8f563999470ca249e51053ded6ef",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_plans",
+        "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+        "id": "800ceb4c68b749f29c6892418ebe4a18",
+        "revision": 3,
+        "label": "notes.create"
+      },
+      {
+        "table": "entries",
+        "key": "a157cbe900b9babfdadb5dec312b252e9a2924ef974179bcced351b809f1864f",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 2,
+        "label": "project"
+      },
+      {
+        "table": "entries",
+        "key": "852ce9fed201a23ae875475e2f1274aad8465c3c5d8cc8a8abbe07a9df2f1d95",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": 1,
+        "label": "project"
+      },
+      {
+        "table": "memory_digests",
+        "key": "a157cbe900b9babfdadb5dec312b252e9a2924ef974179bcced351b809f1864f",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": null,
+        "label": "memory_digests"
+      },
+      {
+        "table": "memory_digests",
+        "key": "852ce9fed201a23ae875475e2f1274aad8465c3c5d8cc8a8abbe07a9df2f1d95",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": null,
+        "label": "memory_digests"
+      },
+      {
+        "table": "notes",
+        "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+        "id": "a28ace786809417985ffe07358075b17",
+        "revision": 1,
+        "label": "Fictional independent note"
+      },
+      {
+        "table": "revisions",
+        "key": "57bff194658002d16b3cf33e54fc22d7cf2ccf890243c04a1a960286043a1f21",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 1,
+        "label": "project"
+      },
+      {
+        "table": "revisions",
+        "key": "a70ef2fcf5f5fab098f877aa0354cbbded70300387a6318f93158f8de2f95d28",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 2,
+        "label": "project"
+      },
+      {
+        "table": "revisions",
+        "key": "c1a2f70afdc84deb22e2d5851ae4e1a6d68e65d631b3b5ae29de9e880e299831",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": 1,
+        "label": "project"
+      }
+    ]
+  },
+  "sourceForget": {
+    "request": {
+      "kind": "source",
+      "id": "6b93b527144541359650d9e94e3d0b2c",
+      "expected_owner_id": "b860cec3245841809e0635869dd37f5a",
+      "expected_revision": 2,
+      "purge_output": false,
+      "expected_output_revision": null,
+      "forget_memories": true
+    },
+    "target": {
+      "table": "sources",
+      "key": "f92c65a2a54185ec14d206fa0a199da41b456e520a18a2bd2288661b850ddfaa",
+      "id": "6b93b527144541359650d9e94e3d0b2c",
+      "revision": 2,
+      "label": "Fictional erasure source"
+    },
+    "digest": "9fca9978bc5fd1d1cf686ac30ef345019cd09273f02f2fe5668bae1c3581e132",
+    "removed": [
+      {
+        "table": "entries",
+        "key": "a157cbe900b9babfdadb5dec312b252e9a2924ef974179bcced351b809f1864f",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 2,
+        "label": "project"
+      },
+      {
+        "table": "entries",
+        "key": "852ce9fed201a23ae875475e2f1274aad8465c3c5d8cc8a8abbe07a9df2f1d95",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": 1,
+        "label": "project"
+      },
+      {
+        "table": "ingestion_runs",
+        "key": "00733f7d8848679fa69b32479108d4ff2e93fd3d96593093f9ee11a46d5d6ad7",
+        "id": "1b72d5dbddbe4f5482402e2e8a7a86ea",
+        "revision": null,
+        "label": "ingestion_runs"
+      },
+      {
+        "table": "memory_digests",
+        "key": "a157cbe900b9babfdadb5dec312b252e9a2924ef974179bcced351b809f1864f",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": null,
+        "label": "memory_digests"
+      },
+      {
+        "table": "memory_digests",
+        "key": "852ce9fed201a23ae875475e2f1274aad8465c3c5d8cc8a8abbe07a9df2f1d95",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": null,
+        "label": "memory_digests"
+      },
+      {
+        "table": "origins",
+        "key": "6026d4c532385e4ad12c74e86c31fdc7c45e3deb60c1b5ad48dee60a385d30f6",
+        "id": "2e60a0ef45c040e49d6c9081bf36ff65",
+        "revision": null,
+        "label": "origins"
+      },
+      {
+        "table": "revisions",
+        "key": "57bff194658002d16b3cf33e54fc22d7cf2ccf890243c04a1a960286043a1f21",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 1,
+        "label": "project"
+      },
+      {
+        "table": "revisions",
+        "key": "a70ef2fcf5f5fab098f877aa0354cbbded70300387a6318f93158f8de2f95d28",
+        "id": "5cfc9c6412aa4302aebcfe4a2a8c9846",
+        "revision": 2,
+        "label": "project"
+      },
+      {
+        "table": "revisions",
+        "key": "c1a2f70afdc84deb22e2d5851ae4e1a6d68e65d631b3b5ae29de9e880e299831",
+        "id": "fcd8c65aa81f4b0689293f69704c802b",
+        "revision": 1,
+        "label": "project"
+      },
+      {
+        "table": "sources",
+        "key": "f92c65a2a54185ec14d206fa0a199da41b456e520a18a2bd2288661b850ddfaa",
+        "id": "6b93b527144541359650d9e94e3d0b2c",
+        "revision": 2,
+        "label": "Fictional erasure source"
+      }
+    ],
+    "updated": [],
+    "added": [
+      {
+        "table": "forgotten",
+        "key": "1a98fb035c05307673cf2ed9dcdb448968d59bd9b1751739b38303e49861af51",
+        "id": "aa64d18411712e98cd42f5c268d251e3b247812a940a5431c8e6ac1c4a4fae57",
+        "revision": null,
+        "label": "forgotten"
+      }
+    ],
+    "retained": [
+      {
+        "table": "action_events",
+        "key": "6733f4ccf8393a68ba940e3bb9d332977bece24630d0f70a67ab04a237ad414e",
+        "id": "1c28abb571ab4c4eb3e49c6541b977bb",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "ce33620e7a93fc5840e4c61685031e75c691d21807287749c08bf67a9e761914",
+        "id": "994ad07724024be1bfc05c7414fad48d",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "9269a47e0d83d19806b6dc050298aecd209a8e3426f7c8ecb643f68fb42b5fa3",
+        "id": "9b8c9581aa4642279e1a3f7515810bd9",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_events",
+        "key": "569092fbf8217937c3f8976beea5a3880da4e55dc047bd08a773102744187292",
+        "id": "a19d8f563999470ca249e51053ded6ef",
+        "revision": null,
+        "label": "action_events"
+      },
+      {
+        "table": "action_plans",
+        "key": "8cfb68e969837df80087e84601721affe27e8c1213c0ec9509149cd036c4a30c",
+        "id": "800ceb4c68b749f29c6892418ebe4a18",
+        "revision": 3,
+        "label": "notes.create"
+      },
+      {
+        "table": "notes",
+        "key": "b89af38aeea13e3e93724ec2531435a40cb3a9fb4acf9376d65d21f89d83ed1d",
+        "id": "a28ace786809417985ffe07358075b17",
+        "revision": 1,
+        "label": "Fictional independent note"
+      }
+    ]
+  }
+}

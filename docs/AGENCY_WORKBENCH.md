@@ -1,5 +1,7 @@
 # Owner-reviewed local action workbench
 
+The [stored-data erasure workbench](ERASURE_REVIEW.md) separately clears saved action/output/source/archive copies through exact scope review; rollback alone does not erase them.
+
 Open the private workspace with its owner token, open the review workbench, then choose
 **Manage local tools & actions**. The pane loads on demand and exposes only the existing
 `tasks.create`, `tasks.complete` and `notes.create` tools. It calls no model, shell, browser

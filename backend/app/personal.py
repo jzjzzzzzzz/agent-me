@@ -27,6 +27,14 @@ from .audit import AuditLog
 from .config import Settings, get_settings
 from .consolidation import ConsolidationManager
 from .disclosure import DisclosureManager, target_id
+from .erasure import ReviewedErasure
+from .erasure_models import (
+    ErasureApproval,
+    ErasureCatalogue,
+    ErasurePreview,
+    ErasureRequest,
+    ErasureResult,
+)
 from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
 from .learning import LearningPipeline
@@ -283,6 +291,21 @@ def delete_import_archive(archive_id: str, db: Store = Depends(store)):
 @router.post("/tasks/{item_id}/delete")
 def delete_task(item_id: str, payload: RevisionDelete, db: Store = Depends(store)):
     return OwnerControl(db).delete_output("tasks", item_id, payload.expected_revision)
+
+
+@router.post("/owner/erasure/preview", response_model=ErasurePreview)
+def preview_erasure(payload: ErasureRequest, db: Store = Depends(store)):
+    return ReviewedErasure(db).preview(payload)
+
+
+@router.get("/owner/erasure/catalogue", response_model=ErasureCatalogue)
+def erasure_catalogue(db: Store = Depends(store)):
+    return ReviewedErasure(db).catalogue()
+
+
+@router.post("/owner/erasure/apply", response_model=ErasureResult)
+def apply_erasure(payload: ErasureApproval, db: Store = Depends(store)):
+    return ReviewedErasure(db).apply(payload)
 
 
 @router.post("/notes/{item_id}/delete")

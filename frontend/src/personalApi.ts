@@ -3,6 +3,7 @@ import {
   isEvent, isNote, isPermission, isPlan, isTask, rows, toolNames,
   type ActionPlan, type AgencyData, type Invocation, type PermissionInput, type ToolPermission,
 } from "./agencyApi";
+import { isErasureCatalogue, isErasurePreview, isErasureResult, sameErasureRequest, type ErasurePreview, type ErasureRequest } from "./erasureApi";
 export type Sensitivity = "public" | "private" | "sensitive";
 export type MemoryKind = "fact" | "preference" | "event" | "decision";
 export type MemoryStatus = "pending" | "confirmed" | "superseded";
@@ -212,6 +213,24 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
     return value;
   }
   return {
+    loadErasure: () => request("/owner/erasure/catalogue", isErasureCatalogue),
+    async previewErasure(input: ErasureRequest) {
+      const value = await request("/owner/erasure/preview", isErasurePreview, input);
+      if (!sameErasureRequest(input, value.request, true)) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async applyErasure(preview: ErasurePreview) {
+      const value = await request("/owner/erasure/apply", isErasureResult, { request: preview.request, digest: preview.digest });
+      if (!sameErasureRequest(value.request, preview.request) || value.digest !== preview.digest) throw new PersonalApiError(502, "invalid");
+      const counts = (rows: ErasurePreview["removed"]) => {
+        const result: Record<string, number> = {}; for (const row of rows) result[row.table] = (result[row.table] ?? 0) + 1; return result;
+      };
+      for (const [rows, actual] of [[preview.removed, value.removed_counts], [preview.retained, value.retained_counts]] as const) {
+        const expected = counts(rows);
+        if (Object.keys(expected).length !== Object.keys(actual).length || Object.entries(expected).some(([table, n]) => actual[table] !== n)) throw new PersonalApiError(502, "invalid");
+      }
+      return value;
+    },
     async loadAgency(): Promise<AgencyData> {
       const [owner, permissions, plans, tasks, notes] = await Promise.all([
         request("/identity/owner", isOwner), request("/tools/permissions", rows(isPermission)),

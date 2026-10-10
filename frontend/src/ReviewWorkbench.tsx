@@ -2,6 +2,8 @@ import { ReviewDialog } from "./ReviewDialog";
 import { IdentityReview, type IdentityAction } from "./IdentityReview";
 import { AgencyReview } from "./AgencyReview";
 import type { AgencyData } from "./agencyApi";
+import { ErasureReview } from "./ErasureReview";
+import type { ErasureCatalogue } from "./erasureApi";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
   createPersonalClient, ingestionWithinLimits, PersonalApiError,
@@ -28,6 +30,8 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
   const [identity, setIdentity] = useState<IdentityData | null>(null);
   const [agencyOpen, setAgencyOpen] = useState(false);
   const [agency, setAgency] = useState<AgencyData | null>(null);
+  const [erasureOpen, setErasureOpen] = useState(false);
+  const [erasure, setErasure] = useState<ErasureCatalogue | null>(null);
   const [epoch, setEpoch] = useState(0);
   const [askEntityId, setAskEntityId] = useState("");
   const [data, setData] = useState<WorkbenchData | null>(null);
@@ -94,12 +98,20 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
     const loaded = await client.load();
     const identities = identityOpen ? await client.loadIdentity() : null;
     const actions = agencyOpen ? await client.loadAgency() : null;
+    const copies = erasureOpen ? await client.loadErasure() : null;
     if (identities && loaded.entities.some(item => item.owner_id !== identities.owner.owner_id)) throw new PersonalApiError(502, "invalid");
     if (actions && [...loaded.entities, ...loaded.memories, ...loaded.sources].some(item => item.owner_id !== actions.owner_id) ||
       actions && identities && actions.owner_id !== identities.owner.owner_id) throw new PersonalApiError(502, "invalid");
+    if (copies && [...loaded.entities, ...loaded.memories, ...loaded.sources].some(item => item.owner_id !== copies.owner_id) ||
+      copies && actions && copies.owner_id !== actions.owner_id || copies && identities && copies.owner_id !== identities.owner.owner_id) throw new PersonalApiError(502, "invalid");
     const source = loaded.sources.find(item => item.id === sourceId && item.approved);
     const review = mode === "semantic" && source ? await client.semanticReview(source) : null;
-    if (!signal.aborted) { setData(loaded); setIdentity(identities); setAgency(actions); setSemantic(review); setEpoch(value => value + 1); }
+    if (!signal.aborted) {
+      setData(loaded); setIdentity(identities); setAgency(actions); setErasure(copies); setSemantic(review); setEpoch(value => value + 1);
+      if (sourceId && !loaded.sources.some(item => item.id === sourceId)) { setSourceId(""); setContent(""); }
+      if (editing && !loaded.memories.some(item => item.id === editing.id)) { setEditing(null); setEditContent(""); }
+      if (deleting && !loaded.memories.some(item => item.id === deleting.id)) setDeleting(null);
+    }
   }
   function invalidate() { setEpoch(value => value + 1); setAllowProvider(false); setAnswer(null); setInspection(null); setConflict(null); }
   async function mutation(action: (client: Client) => Promise<unknown>) {
@@ -215,6 +227,18 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
         }
       }}>{agencyOpen ? text.agency.close : text.agency.open}</button>
       {agencyOpen && agency && <AgencyReview data={data} agency={agency} text={text} busy={busy} epoch={epoch} perform={performIdentity} />}
+      <button disabled={busy} aria-expanded={erasureOpen} onClick={() => {
+        if (erasureOpen) { setErasureOpen(false); setErasure(null); }
+        else {
+          setErasureOpen(true);
+          void run(async (client, signal) => {
+            const value = await client.loadErasure();
+            if ([...data.entities, ...data.memories, ...data.sources].some(item => item.owner_id !== value.owner_id)) throw new PersonalApiError(502, "invalid");
+            if (!signal.aborted) setErasure(value);
+          });
+        }
+      }}>{erasureOpen ? text.erasure.close : text.erasure.open}</button>
+      {erasureOpen && erasure && <ErasureReview catalogue={erasure} text={text} epoch={epoch} busy={busy} perform={performIdentity} />}
       <section aria-label={t.sources}>
         <h4>{t.sources}</h4>
         <form onSubmit={register} className="review-form">

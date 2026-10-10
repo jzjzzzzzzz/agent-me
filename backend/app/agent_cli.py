@@ -307,6 +307,16 @@ def parser() -> argparse.ArgumentParser:
     child.add_argument("id")
     child.add_argument("--yes", action="store_true")
     owner = commands.add_parser("owner").add_subparsers(dest="action", required=True)
+    for name in ("preview-erasure", "apply-erasure"):
+        child = owner.add_parser(name)
+        child.add_argument(
+            "file",
+            type=Path,
+            help="Explicit JSON ErasureRequest; source/output choices are reviewed",
+        )
+        if name == "apply-erasure":
+            child.add_argument("--digest", required=True)
+            child.add_argument("--yes", action="store_true")
     child = owner.add_parser("purge")
     child.add_argument("--expected-owner-id", required=True)
     child.add_argument("--yes", action="store_true")
@@ -386,6 +396,23 @@ def _execute(args):
             raise MemoryInputError("Import requires --yes and the reviewed snapshot digest")
         return PortableMemory(store).apply(payload, args.digest)
     if args.command == "owner":
+        if args.action in {"preview-erasure", "apply-erasure"}:
+            from .erasure import ReviewedErasure
+            from .erasure_models import ErasureApproval, ErasureRequest
+
+            with args.file.open("rb") as handle:
+                data = handle.read(65537)
+            if len(data) > 65536:
+                raise MemoryInputError("Erasure request exceeds the byte limit")
+            request = ErasureRequest.model_validate_json(data)
+            manager = ReviewedErasure(store)
+            if args.action == "preview-erasure":
+                return manager.preview(request).model_dump(mode="json")
+            if not args.yes:
+                raise MemoryInputError("Erasure requires --yes and its reviewed scope digest")
+            return manager.apply(ErasureApproval(request=request, digest=args.digest)).model_dump(
+                mode="json"
+            )
         if not args.yes:
             raise MemoryInputError("Owner erasure requires --yes")
         owner = OwnerControl(store)
