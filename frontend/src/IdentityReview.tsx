@@ -1,3 +1,4 @@
+import { ReviewDialog } from "./ReviewDialog";
 import { FormEvent, useState } from "react";
 import {
   type createPersonalClient, type Entity, type EntityInput, type EntityRevision,
@@ -41,6 +42,7 @@ export function IdentityReview({ data, identity, text, busy, epoch, perform }: {
   const [predicate, setPredicate] = useState("works_on");
   const [relationSensitivity, setRelationSensitivity] = useState<Entity["sensitivity"]>("private");
   const [view, setView] = useState<View | null>(null);
+  const [deleteTrigger, setDeleteTrigger] = useState<HTMLElement | null>(null);
   const currentView = view?.epoch === epoch ? view : null;
   const confirmed = data.entities.filter(item => item.status === "confirmed");
   const nameOf = (id: string | null) => id ? data.entities.find(item => item.id === id)?.name ?? id : t.notBound;
@@ -73,6 +75,9 @@ export function IdentityReview({ data, identity, text, busy, epoch, perform }: {
     }, true);
   }
   async function previewDelete(record: Entity | Relationship, recordKind: "entity" | "relationship") {
+    // Disabling the clicked control during the request can blur it before the
+    // scope arrives. Capture it before the shared request mutex changes the DOM.
+    setDeleteTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
     await perform(async (client, signal) => {
       setView(null); const preview = await client.previewIdentityDelete(record, recordKind);
       if (!signal.aborted) setView({ epoch, kind: "delete", preview });
@@ -200,15 +205,17 @@ export function IdentityReview({ data, identity, text, busy, epoch, perform }: {
         </li>;
       })}</ul>
     </section>
-    {currentView?.kind === "owner" && <aside role="alertdialog" aria-label={t.bindOwner}>
+    {currentView?.kind === "owner" && <ReviewDialog label={t.bindOwner} onCancel={() => setView(null)}>
       <h5>{t.bindOwner}</h5><p>{nameOf(currentView.owner.entity_id)} → {currentView.target?.name ?? t.notBound}</p>
       {currentView.target && metadata(currentView.target)}
       <button disabled={busy} onClick={() => void perform(async (client, signal) => {
         await client.bindOwner(currentView.owner, currentView.target); if (!signal.aborted) { setView(null); setOwnerTarget(""); }
       }, true)}>{text.confirm}</button><button disabled={busy} onClick={() => setView(null)}>{text.cancel}</button>
-    </aside>}
-    {currentView?.kind === "delete" && <aside role="alertdialog" aria-label={t.deletionTargets}>
+    </ReviewDialog>}
+    {currentView?.kind === "delete" && <ReviewDialog label={t.deletionTargets} returnFocus={deleteTrigger} onCancel={() => setView(null)}>
       <h5>{t.deletionTargets}</h5><p>{t.deleteHint}</p>
+      <p><strong>{"name" in currentView.preview.record ? currentView.preview.record.name
+        : `${nameOf(currentView.preview.record.from_entity_id)} → ${currentView.preview.record.predicate} → ${nameOf(currentView.preview.record.to_entity_id)}`}</strong></p>
       {metadata(currentView.preview.record)}
       <p><code>{currentView.preview.digest}</code></p><p>{t.owner}: {currentView.preview.owner_binding ? nameOf(currentView.preview.record.id) : "—"}</p>
       <p>{t.historyCount}: {currentView.preview.history_count} · {t.originsCount}: {currentView.preview.origin_count}</p>
@@ -221,7 +228,7 @@ export function IdentityReview({ data, identity, text, busy, epoch, perform }: {
       <button disabled={busy} onClick={() => void perform(async (client, signal) => {
         const preview = currentView.preview; setView(null); await client.deleteIdentity(preview); if (!signal.aborted) resetForm();
       }, true)}>{t.confirmDelete}</button><button disabled={busy} onClick={() => setView(null)}>{text.cancel}</button>
-    </aside>}
+    </ReviewDialog>}
     {currentView && (currentView.kind === "entityHistory" || currentView.kind === "relationshipHistory") && <section className="review-inspection" aria-label={t.history}>
       <h5>{t.history}</h5><ol className="review-list">{currentView.rows.map(item => <li key={item.revision}>
         <strong>{"name" in item ? item.name : item.predicate}</strong> · <code>{item.change}</code>{metadata(item)}

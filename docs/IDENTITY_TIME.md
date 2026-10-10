@@ -232,3 +232,35 @@ forgetting, valid/knowledge time separation, future/expired/disputed states, and
 Additional tests cover native contracts, API/CLI operations, source binding, policy/target races,
 rollback, UTC equivalence, and migration without invented evidence. These checks do not establish
 semantic entailment, factual truth, automatically calibrated confidence, or personality imitation.
+
+## Repeatable browser acceptance
+
+`make e2e` builds the production frontend and runs Playwright Chromium on desktop (1280×900) and
+mobile-emulated (390×844) viewports. Install the test browser once with
+`cd frontend && npx playwright install chromium`; CI installs its Linux system dependencies too.
+The harness does not control a running Chrome/Safari window or reuse browser profiles.
+
+The owned test gateway binds to loopback port 4193 (override `AGENT_ME_E2E_PORT` if needed),
+starts Uvicorn on an OS-assigned loopback port and serves only built frontend assets plus the API
+proxy. It never reuses an existing server. An owned nonce-marked temporary directory contains
+fictional corpus/data. The helper rejects non-temporary, mismatched-marker, symlink or pre-existing
+private-data paths; it ignores `.env`, strips ambient Settings fields and clears provider credentials.
+The per-test API purge is permitted only after verifying the fixture health marker/profile, with
+one worker so tests never erase each other's workspace. `AGENT_ME_E2E_PYTHON` can select an
+alternate installed project Python interpreter. Shutdown terminates only the owned backend and
+removes its workspace after that process exits.
+
+Six scenarios cover source/identity/memory/relationship review, exact provenance, scoped answers,
+evidence deletion, ambiguous and sensitivity-filtered aliases, stale owner approval, historical
+cascade scope, changed-digest rejection, literal rendering, locale-preserved drafts and lock during
+an in-flight request. Page requests stay on the fixture origin; unexpected HTTP/JavaScript/console
+errors fail the test. Known negative-case HTTP 409 paths are declared explicitly, not globally ignored.
+Keyboard checks verify focus enters the inline review, Escape cancels and focus returns to the
+initiating control (captured before asynchronous preview disables it). Delete previews identify the
+specific entity/relationship, not merely its opaque ID.
+
+Screenshots and traces contain only fictional test data, under ignored `frontend/test-results/` and
+`frontend/playwright-report/`. Desktop/mobile screenshots are visually inspected locally; layout
+checks also reject horizontal viewport overflow. CI retains these fixture-only artifacts for seven
+days and gates container acceptance on the browser job. This is Chromium viewport acceptance,
+not a claim about every browser, mobile device, assistive technology or provider integration.

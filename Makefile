@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint audit format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
+.PHONY: setup dev test e2e lint audit format docs evaluate evaluate-memory evaluate-learning evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -19,6 +19,9 @@ dev:
 test:
 	.venv/bin/pytest backend/tests
 	cd frontend && npm test
+
+e2e:
+	cd frontend && npm run test:e2e
 
 lint: lock-check version-check
 	.venv/bin/ruff check backend scripts

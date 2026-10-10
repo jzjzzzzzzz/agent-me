@@ -292,3 +292,21 @@ Before requesting review:
 
 Do not open a public issue for a suspected vulnerability. Follow [SECURITY.md](SECURITY.md). Include
 a minimal reproduction without real credentials or user data. Maintainers will coordinate disclosure.
+
+### Isolated owner browser regression
+
+For owner-workbench changes, install the fixture browser once and run the production UI acceptance:
+
+```bash
+cd frontend
+npx playwright install chromium
+npm run test:e2e
+```
+
+The project Python environment must already be installed (normally `.venv` at the repository root).
+`make e2e` is the equivalent root command. The harness creates an owned fictional temporary
+workspace, does not load owner `.env`/provider credentials or reuse existing services/browser
+profiles, and purges only that verified fixture between sequential tests. `npm run typecheck` checks
+both the app and browser-test TypeScript. See [browser acceptance boundaries](docs/IDENTITY_TIME.md#repeatable-browser-acceptance).
+Do not commit test reports, traces, screenshots or downloaded browsers; their generated paths are
+ignored and excluded from Docker contexts. CI publishes only these fixture-generated artifacts.

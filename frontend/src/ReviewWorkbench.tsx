@@ -1,3 +1,4 @@
+import { ReviewDialog } from "./ReviewDialog";
 import { IdentityReview, type IdentityAction } from "./IdentityReview";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
@@ -266,13 +267,13 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
             <button disabled={busy} aria-label={actionName(text.delete, item)} onClick={() => setDeleting(item)}>{text.delete}</button>
           </div>
         </li>)}</ul>
-        {deleting && <aside role="alertdialog" aria-label={actionName(text.delete, deleting)}>
+        {deleting && <ReviewDialog label={actionName(text.delete, deleting)} onCancel={() => setDeleting(null)}>
           <h5>{text.delete}: {deleting.key}</h5><p>{deleting.content}</p>{metadata(deleting)}
           <button disabled={busy} onClick={() => {
             const memory = deleting; setDeleting(null); void mutation(client => client.remove(memory));
           }}>{text.delete}</button>
           <button disabled={busy} onClick={() => setDeleting(null)}>{text.cancel}</button>
-        </aside>}
+        </ReviewDialog>}
         {editing && <form className="review-form" onSubmit={event => {
           event.preventDefault(); if (!editContent.trim()) return;
           void run(async (client, signal) => {
