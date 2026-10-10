@@ -1,4 +1,8 @@
 /** Authenticated review contracts. Credentials and private content stay in page memory. */
+import {
+  isEvent, isNote, isPermission, isPlan, isTask, rows, toolNames,
+  type ActionPlan, type AgencyData, type Invocation, type PermissionInput, type ToolPermission,
+} from "./agencyApi";
 export type Sensitivity = "public" | "private" | "sensitive";
 export type MemoryKind = "fact" | "preference" | "event" | "decision";
 export type MemoryStatus = "pending" | "confirmed" | "superseded";
@@ -208,6 +212,51 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
     return value;
   }
   return {
+    async loadAgency(): Promise<AgencyData> {
+      const [owner, permissions, plans, tasks, notes] = await Promise.all([
+        request("/identity/owner", isOwner), request("/tools/permissions", rows(isPermission)),
+        request("/actions", rows(isPlan)), request("/tasks", rows(isTask)), request("/notes", rows(isNote)),
+      ]);
+      if (permissions.length !== toolNames.length || new Set(permissions.map(item => item.tool)).size !== toolNames.length ||
+        [...permissions, ...plans, ...tasks, ...notes].some(item => item.owner_id !== owner.owner_id)) {
+        throw new PersonalApiError(502, "invalid");
+      }
+      return { owner_id: owner.owner_id, permissions, plans, tasks, notes };
+    },
+    async configureTool(permission: ToolPermission, policy: PermissionInput) {
+      const value = await request(`/tools/permissions/${idPath(permission.tool)}`, isPermission, { ...policy, expected_revision: permission.revision, expected_owner_id: permission.owner_id });
+      if (value.tool !== permission.tool || value.owner_id !== permission.owner_id || value.revision !== permission.revision + 1) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async createAction(invocation: Invocation, ownerId: string) {
+      const value = await request("/actions", isPlan, invocation);
+      if (value.owner_id !== ownerId || value.invocation.tool !== invocation.tool || value.invocation.intent !== invocation.intent ||
+        value.invocation.idempotency_key !== invocation.idempotency_key) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async reviewAction(plan: ActionPlan) {
+      const plans = await request("/actions", rows(isPlan));
+      const value = plans.find(item => item.id === plan.id);
+      if (!value || value.revision !== plan.revision || value.digest !== plan.digest || value.status !== plan.status) throw new PersonalApiError(409, "stale");
+      if (value.owner_id !== plan.owner_id) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async approveAction(plan: ActionPlan) {
+      const value = await request(`/actions/${idPath(plan.id)}/approve`, isPlan, { expected_revision: plan.revision, digest: plan.digest });
+      if (value.id !== plan.id || value.owner_id !== plan.owner_id || value.digest !== plan.digest || value.status !== "approved") throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async act(plan: ActionPlan, action: "execute" | "rollback" | "cancel") {
+      const value = await request(`/actions/${idPath(plan.id)}/${action}`, isPlan, {});
+      if (value.id !== plan.id || value.owner_id !== plan.owner_id || value.digest !== plan.digest ||
+        !(action === "execute" ? ["completed", "failed"] : action === "rollback" ? ["rolled_back"] : ["cancelled"]).includes(value.status)) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
+    async actionEvents(plan: ActionPlan) {
+      const value = await request(`/actions/${idPath(plan.id)}/events`, rows(isEvent));
+      if (value.some(item => item.plan_id !== plan.id)) throw new PersonalApiError(502, "invalid");
+      return value;
+    },
     async load(): Promise<WorkbenchData> {
       const [sources, memories, runs, entities] = await Promise.all([
         request("/learning/sources", array(isSource)), request("/entries?include_superseded=true", array(isMemory)),

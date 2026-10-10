@@ -95,10 +95,14 @@ class Agency:
         with self.store.connect() as db:
             return [self._permission(db, name) for name in SPECS]
 
-    def configure(self, name, payload: PermissionInput, expected_revision: int):
+    def configure(
+        self, name, payload: PermissionInput, expected_revision: int, *, expected_owner_id=None
+    ):
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             item = self._permission(db, name)
+            if expected_owner_id is not None and expected_owner_id != self._owner(db):
+                raise MemoryConflict("Workspace owner changed; review tool permission again")
             if type(expected_revision) is not int or item["revision"] != expected_revision:
                 raise MemoryConflict("Tool permission changed; review it again")
             if payload.entity_ids is not None:
@@ -137,6 +141,8 @@ class Agency:
                 entity_ids.add(target["project_id"])
         # Updates inherit target lineage; omitting source_ids cannot bypass a subject/label scope.
         source_ids = sorted(set(request.source_ids) | set(target["source_ids"] if target else []))
+        if len(source_ids) > 20:
+            raise MemoryInputError("Combined action sources exceed the registered source limit")
         for item_id in source_ids:
             row = db.execute("SELECT * FROM entries WHERE id=?", (item_id,)).fetchone()
             if (

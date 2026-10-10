@@ -354,8 +354,11 @@ def tool_permissions(db: Store = Depends(store)):
 def configure_tool(name: ToolName, payload: PermissionUpdate, db: Store = Depends(store)):
     return Agency(db).configure(
         name,
-        PermissionInput.model_validate(payload.model_dump(exclude={"expected_revision"})),
+        PermissionInput.model_validate(
+            payload.model_dump(exclude={"expected_revision", "expected_owner_id"})
+        ),
         payload.expected_revision,
+        expected_owner_id=payload.expected_owner_id,
     )
 
 

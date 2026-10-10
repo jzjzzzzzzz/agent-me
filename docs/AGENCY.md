@@ -5,6 +5,8 @@ The independent owner Agent supports three real, bounded tools: `tasks.create`,
 mock tool log. No shell, browser, network, mail, filesystem-write plugin, or external
 service is registered. Public chat/collaboration cannot invoke them. This is a local
 single-owner capability, not delegated multi-user authentication.
+The [browser action workbench](AGENCY_WORKBENCH.md) exposes these native tools through
+independent permission/plan/approval/execution/cancellation/undo review; no external plugin is added.
 
 ## Know, recommend, act
 
@@ -27,6 +29,10 @@ revision and increments it. Each tool has a fixed workspace scope, an allowed se
 label list, and an optional allowlist of confirmed entity IDs. An empty label list denies
 all data; `entity_ids=null` allows all otherwise eligible entities, while `[]` excludes
 entity-bound data. It does not exclude owner-entered, unbound text.
+The core's optional `expected_owner_id` keyword and the API permission update's additive field
+also bind a reviewed update to the workspace UUID under the same write transaction. The browser
+supplies it; legacy callers may omit it. This prevents an old review matching a reset revision after
+workspace erasure, without changing authentication, persisted policy or export schema.
 
 Arguments are typed and bounded: task titles <=160 characters, descriptions <=2000,
 note content <=8000, and the serialized invocation <=65536 UTF-8 bytes. Due dates are
@@ -38,6 +44,8 @@ The effective output label cannot be lower than any declared input, source, targ
 or linked entity label. The entity allowlist covers declared projects and source subjects.
 Task completion inherits the target's source IDs, including live subject/privacy checks;
 omitting them from an update request cannot bypass its original data boundary.
+The canonical union of explicit and inherited source IDs must contain at most 20 unique IDs;
+over-limit unions are rejected before any plan is persisted.
 Arbitrary owner-entered text is not automatically classified or proved by source IDs.
 Only the owner can declare it appropriate for a permitted label.
 
@@ -93,7 +101,7 @@ authentication, request body limits, private validation redaction and `Cache-Con
 | --- | --- | --- |
 | POST | `/agent` | `AgentIntent` -> typed knowledge/recommendation/action plan |
 | GET | `/tools/permissions` | All default/current tool permissions |
-| POST | `/tools/permissions/{name}` | `enabled`, `labels`, `entity_ids`, `expected_revision` |
+| POST | `/tools/permissions/{name}` | `enabled`, `labels`, `entity_ids`, `expected_revision`, optional `expected_owner_id` |
 | GET / POST | `/actions` | Inspect latest 100 plans / create `ToolInvocation` plan |
 | POST | `/actions/{id}/approve` | Exact `expected_revision` and `digest` |
 | POST | `/actions/{id}/execute` | Execute an approved plan; no body |

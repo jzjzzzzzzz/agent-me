@@ -130,3 +130,4 @@ class ApprovalInput(BaseModel):
 
 class PermissionUpdate(PermissionInput):
     expected_revision: int = Field(ge=1, strict=True)
+    expected_owner_id: str | None = Field(default=None, min_length=1, max_length=100)

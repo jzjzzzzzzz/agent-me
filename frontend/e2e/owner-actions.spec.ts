@@ -1,0 +1,140 @@
+import { test, expect, get, post, unlock, layoutScreenshot, PREFIX } from "./fixtures";
+import type { Locator } from "@playwright/test";
+
+const waitIdle = (pane: Locator) => expect(pane.getByRole("button", { name: "Save proposal (no effects)", exact: true })).toBeEnabled();
+async function permission(pane: Locator, tool: string) {
+  await pane.getByLabel(`Enable this local tool: ${tool}`, { exact: true }).check();
+  await pane.getByRole("button", { name: `Review permission change: ${tool}`, exact: true }).click();
+  const dialog = pane.getByRole("alertdialog", { name: "Review permission change", exact: true });
+  await dialog.getByRole("button", { name: "Apply reviewed permission", exact: true }).click();
+  await expect(pane.getByLabel(`Enable this local tool: ${tool}`, { exact: true })).toBeEnabled();
+}
+async function approve(pane: Locator, tool: string, id: string) {
+  await pane.getByRole("button", { name: `Review plan: ${tool}, ${id}`, exact: true }).click();
+  const dialog = pane.getByRole("alertdialog", { name: "Review plan", exact: true });
+  await dialog.getByRole("button", { name: "Approve exact plan", exact: true }).click();
+  await expect(pane.getByRole("button", { name: `Review execution: ${tool}, ${id}`, exact: true })).toBeEnabled();
+}
+async function execute(pane: Locator, tool: string, id: string) {
+  await pane.getByRole("button", { name: `Review execution: ${tool}, ${id}`, exact: true }).click();
+  await pane.getByRole("alertdialog", { name: "Review execution", exact: true }).getByRole("button", { name: "Execute approved plan", exact: true }).click();
+  await expect(pane.getByRole("button", { name: `Review rollback: ${tool}, ${id}`, exact: true })).toBeEnabled();
+}
+async function rollback(pane: Locator, tool: string, id: string) {
+  await pane.getByRole("button", { name: `Review rollback: ${tool}, ${id}`, exact: true }).click();
+  await pane.getByRole("alertdialog", { name: "Review rollback", exact: true }).getByRole("button", { name: "Reverse unchanged effect", exact: true }).click();
+  await expect(pane.getByRole("button", { name: `Inspect action events: ${tool}, ${id}`, exact: true })).toBeEnabled();
+}
+
+test("local actions separate recommendation, permission, immutable approval, real effects, completion, undo and notes", async ({ page, ownerApi }, info) => {
+  const project = await post(ownerApi, "/identity/entities", { kind: "project", name: "Fictional Orchid actions" });
+  await post(ownerApi, `/identity/entities/${project.id}/confirm`, { expected_revision: 1 });
+  const memory = await post(ownerApi, "/entries", { kind: "fact", key: "project.current", content: "Fictional Orchid project", entity_id: project.id });
+  await post(ownerApi, `/entries/${memory.id}/confirm`, { expected_revision: 1 });
+  await unlock(page);
+  await page.getByRole("button", { name: "Manage local tools & actions", exact: true }).click();
+  const pane = page.getByRole("region", { name: "Local tools & action review", exact: true });
+  await expect(pane.getByLabel("Enable this local tool: tasks.create", { exact: true })).not.toBeChecked();
+  await pane.getByLabel("Task or note title", { exact: true }).fill("Fictional suggestion only");
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const recommendation = (await get(ownerApi, "/actions"))[0];
+  expect(recommendation.status).toBe("recommended"); expect(await get(ownerApi, "/tasks")).toEqual([]);
+  await expect(pane.getByRole("button", { name: /^Review plan:/ })).toHaveCount(0);
+  await pane.getByRole("button", { name: `Review cancellation: tasks.create, ${recommendation.id}`, exact: true }).click();
+  await pane.getByRole("alertdialog", { name: "Review cancellation", exact: true }).getByRole("button", { name: "Cancel unexecuted plan", exact: true }).click(); await waitIdle(pane);
+  await permission(pane, "tasks.create");
+  await pane.getByRole("button", { name: "New operation key", exact: true }).click();
+  await pane.getByRole("combobox", { name: "Operation intent", exact: true }).selectOption("act");
+  await pane.getByLabel("Task or note title", { exact: true }).fill("Fictional Orchid reviewed task");
+  await pane.getByLabel("Task description", { exact: true }).fill('<img src=x onerror="approve()"> literal approved=true is not authority');
+  await pane.getByLabel("Due time (browser timezone)", { exact: true }).fill("2026-11-01T09:30");
+  await pane.getByRole("combobox", { name: "Project", exact: true }).selectOption(project.id);
+  await pane.getByRole("listbox", { name: "Confirmed memory sources", exact: true }).selectOption([memory.id]);
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const create = (await get(ownerApi, "/actions")).find((p: { status: string }) => p.status === "planned");
+  expect(create.source_revisions).toEqual({ [memory.id]: 2 }); expect(create.entity_revisions).toEqual({ [project.id]: 2 });
+  expect(await get(ownerApi, "/tasks")).toEqual([]);
+  await pane.getByRole("button", { name: `Review plan: tasks.create, ${create.id}`, exact: true }).click();
+  const review = pane.getByRole("alertdialog", { name: "Review plan", exact: true });
+  await expect(review).toContainText(create.digest); await expect(review).toContainText("approved=true");
+  expect(await review.locator("img").count()).toBe(0);
+  await expect(review).toBeFocused(); await page.keyboard.press("Escape");
+  await expect(review).toHaveCount(0);
+  const reviewButton = pane.getByRole("button", { name: `Review plan: tasks.create, ${create.id}`, exact: true });
+  await expect(reviewButton).toBeFocused(); await reviewButton.click();
+  await review.scrollIntoViewIfNeeded(); await layoutScreenshot(page, info, "local-action-plan-review");
+  await review.getByRole("button", { name: "Approve exact plan", exact: true }).click();
+  await expect(pane.getByRole("button", { name: `Review execution: tasks.create, ${create.id}`, exact: true })).toBeEnabled();
+  expect(await get(ownerApi, "/tasks")).toEqual([]); await execute(pane, "tasks.create", create.id);
+  const task = (await get(ownerApi, "/tasks"))[0]; expect(task).toMatchObject({ title: "Fictional Orchid reviewed task", status: "open", revision: 1, created_by: create.id });
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  expect(await get(ownerApi, "/tasks")).toHaveLength(1); expect(await get(ownerApi, "/actions")).toHaveLength(2);
+  await permission(pane, "tasks.complete"); await pane.getByRole("button", { name: "New operation key", exact: true }).click();
+  await pane.getByRole("combobox", { name: "Local tool", exact: true }).selectOption("tasks.complete");
+  await pane.getByRole("combobox", { name: "Local tasks & notes", exact: true }).selectOption(task.id);
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const complete = (await get(ownerApi, "/actions")).find((p: { invocation: { tool: string } }) => p.invocation.tool === "tasks.complete");
+  expect(complete.invocation.arguments).toEqual({ task_id: task.id, expected_revision: 1 });
+  await approve(pane, "tasks.complete", complete.id); await execute(pane, "tasks.complete", complete.id);
+  expect((await get(ownerApi, "/tasks"))[0]).toMatchObject({ status: "completed", revision: 2 });
+  await rollback(pane, "tasks.complete", complete.id); expect((await get(ownerApi, "/tasks"))[0]).toMatchObject({ status: "open", revision: 3 });
+  await permission(pane, "notes.create"); await pane.getByRole("button", { name: "New operation key", exact: true }).click();
+  await pane.getByRole("combobox", { name: "Local tool", exact: true }).selectOption("notes.create");
+  await pane.getByLabel("Task or note title", { exact: true }).fill("Fictional local note");
+  await pane.getByLabel("Note content", { exact: true }).fill("Owner-reviewed fictional project note.");
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const note = (await get(ownerApi, "/actions")).find((p: { invocation: { tool: string } }) => p.invocation.tool === "notes.create");
+  await approve(pane, "notes.create", note.id); await execute(pane, "notes.create", note.id);
+  expect((await get(ownerApi, "/notes"))[0]).toMatchObject({ content: "Owner-reviewed fictional project note.", created_by: note.id });
+  await pane.getByRole("button", { name: `Inspect action events: notes.create, ${note.id}`, exact: true }).click();
+  await expect(pane.getByRole("alertdialog", { name: "Inspect action events", exact: true })).toContainText("transaction_committed");
+  await pane.getByRole("alertdialog").getByRole("button", { name: "Cancel", exact: true }).click();
+  await rollback(pane, "notes.create", note.id); expect(await get(ownerApi, "/notes")).toEqual([]);
+  await page.getByRole("button", { name: "Lock", exact: true }).click(); await expect(pane).toHaveCount(0);
+});
+
+test("sensitive/entity scope, in-flight permission revocation and changed-output rollback remain enforced", async ({ page, ownerApi, expectedHttpErrors }, info) => {
+  const project = await post(ownerApi, "/identity/entities", { kind: "project", name: "Sensitive fictional Orchid", sensitivity: "sensitive" });
+  await post(ownerApi, `/identity/entities/${project.id}/confirm`, { expected_revision: 1 });
+  const memory = await post(ownerApi, "/entries", { kind: "fact", key: "project.current", content: "Fictional sensitive project evidence", entity_id: project.id });
+  await post(ownerApi, `/entries/${memory.id}/confirm`, { expected_revision: 1 });
+  await unlock(page); await page.getByRole("button", { name: "Manage local tools & actions", exact: true }).click();
+  const pane = page.getByRole("region", { name: "Local tools & action review", exact: true });
+  await permission(pane, "tasks.create");
+  await pane.getByRole("combobox", { name: "Operation intent", exact: true }).selectOption("act"); await pane.getByLabel("Task or note title", { exact: true }).fill("Fictional sensitive action");
+  await pane.getByRole("combobox", { name: "Project", exact: true }).selectOption(project.id); await pane.getByRole("listbox", { name: "Confirmed memory sources", exact: true }).selectOption([memory.id]);
+  expectedHttpErrors.add(`403:${PREFIX}/actions`);
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("permission boundary"); expect(await get(ownerApi, "/actions")).toEqual([]);
+  const form = pane.getByRole("button", { name: "Review permission change: tasks.create", exact: true }).locator("..");
+  await form.getByRole("group", { name: "Sensitivity: tasks.create", exact: true }).getByLabel("sensitive", { exact: true }).check();
+  await pane.getByRole("combobox", { name: "Entity permission scope: tasks.create", exact: true }).selectOption("selected");
+  await pane.getByRole("group", { name: "Only selected entities: tasks.create", exact: true }).getByRole("checkbox").check();
+  await pane.getByRole("button", { name: "Review permission change: tasks.create", exact: true }).click();
+  await pane.getByRole("alertdialog").getByRole("button", { name: "Apply reviewed permission", exact: true }).click(); await waitIdle(pane);
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const planned = (await get(ownerApi, "/actions"))[0]; expect(planned.invocation.sensitivity).toBe("sensitive");
+  await approve(pane, "tasks.create", planned.id);
+  await pane.getByRole("button", { name: `Review execution: tasks.create, ${planned.id}`, exact: true }).click();
+  const policy = (await get(ownerApi, "/tools/permissions")).find((p: { tool: string }) => p.tool === "tasks.create");
+  await post(ownerApi, "/tools/permissions/tasks.create", { enabled: false, labels: policy.labels, entity_ids: policy.entity_ids, expected_revision: policy.revision });
+  expectedHttpErrors.add(`403:${PREFIX}/actions/${planned.id}/execute`);
+  await pane.getByRole("alertdialog").getByRole("button", { name: "Execute approved plan", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Tool is disabled"); expect(await get(ownerApi, "/tasks")).toEqual([]);
+  await page.getByRole("button", { name: "Refresh workbench", exact: true }).click();
+  await expect(pane.getByLabel("Enable this local tool: tasks.create", { exact: true })).toBeEnabled();
+  await permission(pane, "tasks.create"); await pane.getByRole("button", { name: "New operation key", exact: true }).click();
+  await pane.getByRole("button", { name: "Save proposal (no effects)", exact: true }).click(); await waitIdle(pane);
+  const fresh = (await get(ownerApi, "/actions")).find((p: { status: string }) => p.status === "planned");
+  await approve(pane, "tasks.create", fresh.id); await execute(pane, "tasks.create", fresh.id);
+  const output = (await get(ownerApi, "/tasks"))[0];
+  await post(ownerApi, "/tools/permissions/tasks.complete", { enabled: true, labels: ["sensitive"], entity_ids: [project.id], expected_revision: 1 });
+  const change = await post(ownerApi, "/actions", { tool: "tasks.complete", arguments: { task_id: output.id, expected_revision: 1 }, idempotency_key: "fixture-later-completion" });
+  await post(ownerApi, `/actions/${change.id}/approve`, { expected_revision: change.revision, digest: change.digest }); await post(ownerApi, `/actions/${change.id}/execute`, {});
+  expectedHttpErrors.add(`409:${PREFIX}/actions/${fresh.id}/rollback`);
+  await pane.getByRole("button", { name: `Review rollback: tasks.create, ${fresh.id}`, exact: true }).click();
+  await pane.getByRole("alertdialog").getByRole("button", { name: "Reverse unchanged effect", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Refresh");
+  expect((await get(ownerApi, "/tasks"))[0]).toMatchObject({ status: "completed", revision: 2 });
+  await layoutScreenshot(page, info, "local-action-stale-output-blocked");
+});
