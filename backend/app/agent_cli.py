@@ -208,6 +208,7 @@ def parser() -> argparse.ArgumentParser:
     configure = retention.add_parser("configure")
     configure.add_argument("--policy-json", required=True)
     configure.add_argument("--expected-revision", type=int, required=True)
+    configure.add_argument("--expected-owner-id")
     retention.add_parser("preview").add_argument("--as-of")
     apply = retention.add_parser("apply")
     apply.add_argument("id")
@@ -217,6 +218,15 @@ def parser() -> argparse.ArgumentParser:
     configure = learning.add_parser("configure")
     configure.add_argument("--policy-json", required=True)
     configure.add_argument("--expected-revision", type=int, required=True)
+    configure.add_argument("--expected-owner-id")
+    governance = commands.add_parser("governance").add_subparsers(dest="action", required=True)
+    governance.add_parser("state")
+    governance.add_parser("retention-review").add_argument("id")
+    review_apply = governance.add_parser("retention-apply")
+    review_apply.add_argument("id")
+    review_apply.add_argument("--digest", required=True)
+    review_apply.add_argument("--scope-digest", required=True)
+    review_apply.add_argument("--yes", action="store_true")
     consolidate = commands.add_parser("consolidate").add_subparsers(dest="action", required=True)
     preview = consolidate.add_parser("preview")
     preview.add_argument("--entity-id")
@@ -447,7 +457,24 @@ def _execute(args):
         if args.action == "policy":
             return policy.settings()
         return policy.configure(
-            LearningPolicy.model_validate_json(args.policy_json), args.expected_revision
+            LearningPolicy.model_validate_json(args.policy_json),
+            args.expected_revision,
+            expected_owner_id=args.expected_owner_id,
+        )
+    if args.command == "governance":
+        from .governance import LearningGovernance, RetentionApproval
+
+        manager = LearningGovernance(store)
+        if args.action == "state":
+            return manager.state().model_dump(mode="json")
+        if args.action == "retention-review":
+            return manager.review_retention(args.id).model_dump(mode="json")
+        if not args.yes:
+            raise MemoryInputError(
+                "Retention application requires --yes and reviewed plan/scope digests"
+            )
+        return manager.apply_retention(
+            args.id, RetentionApproval(digest=args.digest, scope_digest=args.scope_digest)
         )
     if args.command == "consolidate":
         manager = ConsolidationManager(store)
@@ -552,7 +579,9 @@ def _execute(args):
             return manager.settings()
         if args.action == "configure":
             return manager.configure(
-                RetentionPolicy.model_validate_json(args.policy_json), args.expected_revision
+                RetentionPolicy.model_validate_json(args.policy_json),
+                args.expected_revision,
+                expected_owner_id=args.expected_owner_id,
             )
         if args.action == "preview":
             return manager.preview(as_of=args.as_of)

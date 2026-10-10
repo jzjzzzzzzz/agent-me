@@ -5,6 +5,8 @@ import type { AgencyData } from "./agencyApi";
 import { ErasureReview } from "./ErasureReview";
 import type { ErasureCatalogue } from "./erasureApi";
 import { MigrationReview, type MigrationData } from "./MigrationReview";
+import { LearningGovernance } from "./LearningGovernance";
+import type { GovernanceData } from "./governanceApi";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
   createPersonalClient, ingestionWithinLimits, PersonalApiError,
@@ -35,6 +37,8 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
   const [erasure, setErasure] = useState<ErasureCatalogue | null>(null);
   const [migrationOpen, setMigrationOpen] = useState(false);
   const [migration, setMigration] = useState<MigrationData | null>(null);
+  const [governanceOpen, setGovernanceOpen] = useState(false);
+  const [governance, setGovernance] = useState<GovernanceData | null>(null);
   const [epoch, setEpoch] = useState(0);
   const [askEntityId, setAskEntityId] = useState("");
   const [data, setData] = useState<WorkbenchData | null>(null);
@@ -103,6 +107,7 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
     const actions = agencyOpen ? await client.loadAgency() : null;
     const copies = erasureOpen ? await client.loadErasure() : null;
     const moving = migrationOpen ? await client.loadMigration() : null;
+    const controls = governanceOpen ? await client.loadGovernance() : null;
     if (identities && loaded.entities.some(item => item.owner_id !== identities.owner.owner_id)) throw new PersonalApiError(502, "invalid");
     if (actions && [...loaded.entities, ...loaded.memories, ...loaded.sources].some(item => item.owner_id !== actions.owner_id) ||
       actions && identities && actions.owner_id !== identities.owner.owner_id) throw new PersonalApiError(502, "invalid");
@@ -111,10 +116,12 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
     if (moving && [...loaded.entities, ...loaded.memories, ...loaded.sources].some(item => item.owner_id !== moving.destination.owner_id) ||
       moving && identities && moving.destination.owner_id !== identities.owner.owner_id || moving && actions && moving.destination.owner_id !== actions.owner_id ||
       moving && copies && moving.destination.owner_id !== copies.owner_id) throw new PersonalApiError(502, "invalid");
+    if (controls && [...loaded.entities, ...loaded.memories, ...loaded.sources].some(item => item.owner_id !== controls.owner_id) ||
+      controls && [identities?.owner.owner_id, actions?.owner_id, copies?.owner_id, moving?.destination.owner_id].some(owner => owner !== undefined && owner !== controls.owner_id)) throw new PersonalApiError(502, "invalid");
     const source = loaded.sources.find(item => item.id === sourceId && item.approved);
     const review = mode === "semantic" && source ? await client.semanticReview(source) : null;
     if (!signal.aborted) {
-      setData(loaded); setIdentity(identities); setAgency(actions); setErasure(copies); setMigration(moving); setSemantic(review); setEpoch(value => value + 1);
+      setData(loaded); setIdentity(identities); setAgency(actions); setErasure(copies); setMigration(moving); setGovernance(controls); setSemantic(review); setEpoch(value => value + 1);
       if (sourceId && !loaded.sources.some(item => item.id === sourceId)) { setSourceId(""); setContent(""); }
       if (editing && !loaded.memories.some(item => item.id === editing.id)) { setEditing(null); setEditContent(""); }
       if (deleting && !loaded.memories.some(item => item.id === deleting.id)) setDeleting(null);
@@ -258,6 +265,18 @@ function WorkbenchSession({ token, text, maxQuestionChars, onLock }: {
         }
       }}>{migrationOpen ? text.migration.close : text.migration.open}</button>
       {migrationOpen && migration && <MigrationReview data={migration} text={text} busy={busy} epoch={epoch} perform={performIdentity} />}
+      <button disabled={busy} aria-expanded={governanceOpen} onClick={() => {
+        if (governanceOpen) { setGovernanceOpen(false); setGovernance(null); }
+        else {
+          setGovernanceOpen(true);
+          void run(async (client, signal) => {
+            const value = await client.loadGovernance();
+            if ([...data.entities, ...data.memories, ...data.sources].some(row => row.owner_id !== value.owner_id)) throw new PersonalApiError(502, "invalid");
+            if (!signal.aborted) setGovernance(value);
+          });
+        }
+      }}>{governanceOpen ? text.governance.close : text.governance.open}</button>
+      {governanceOpen && governance && <LearningGovernance data={data} state={governance} text={text} epoch={epoch} busy={busy} perform={performIdentity} />}
       <section aria-label={t.sources}>
         <h4>{t.sources}</h4>
         <form onSubmit={register} className="review-form">

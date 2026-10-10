@@ -33,13 +33,15 @@ class ConsolidationManager:
     def __init__(self, store: Store):
         self.store = store
 
-    def preview(self, selection: ConsolidationFilter | None = None):
+    def preview(self, selection: ConsolidationFilter | None = None, *, expected_owner_id=None):
         from .learning_policy import matches_prefix
 
         selection = selection or ConsolidationFilter()
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            if expected_owner_id is not None and expected_owner_id != owner:
+                raise MemoryConflict("Consolidation preview owner changed; review it again")
             groups = {}
             # Prefer an already confirmed keeper, then the earliest record.
             for raw in db.execute(

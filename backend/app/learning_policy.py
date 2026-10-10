@@ -36,10 +36,13 @@ class LearningPolicyManager:
             db.execute("BEGIN")
             return settings(db)
 
-    def configure(self, policy: LearningPolicy, expected_revision: int):
+    def configure(self, policy: LearningPolicy, expected_revision: int, *, expected_owner_id=None):
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             current = settings(db)
+            owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            if expected_owner_id is not None and expected_owner_id != owner:
+                raise MemoryConflict("Learning policy owner changed; review it again")
             if type(expected_revision) is not int or current["revision"] != expected_revision:
                 raise MemoryConflict("Learning policy changed; review it again")
             db.execute(

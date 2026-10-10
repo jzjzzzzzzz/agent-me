@@ -95,3 +95,6 @@ entity privacy, exact review/replacement, confirmed/pending keepers, copied orig
 concurrent replay, changed targets, all-group rollback and distinct qualifier exclusion.
 `make evaluate-learning` now runs 24 reproducible fictional checks, including policy and
 consolidation behavior; it never reads owner data or calls providers.
+
+Owner browser controls and two-digest retention review are documented in
+[reviewed learning governance](LEARNING_GOVERNANCE.md).

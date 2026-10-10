@@ -336,6 +336,7 @@ class RetentionCounts(BaseModel):
 class RetentionPreview(BaseModel):
     model_config = ConfigDict(extra="forbid")
     as_of: AwareDatetime | None = None
+    expected_owner_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class RetentionPlan(BaseModel):
