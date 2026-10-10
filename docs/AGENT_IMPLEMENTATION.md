@@ -3,7 +3,8 @@
 Tracking proposal: [#169](https://github.com/jzjzzzzzzz/agent-me/issues/169).
 Scope: implement the [full AI Twin roadmap](../ROADMAP.md) through the independent Python
 Agent core, authenticated adapters, and owner-facing CLI. No frontend changes are planned.
-This ledger is not a release promise or a claim that the roadmap is complete.
+This ledger records the implemented bounded contracts and their acceptance evidence,
+not a promise about future external integrations or semantic truth guarantees.
 The [final acceptance audit](AGENT_ACCEPTANCE.md) maps all six completion signals to
 implementation, direct tests/evaluations, runtime acceptance and explicit contract boundaries.
 
@@ -52,11 +53,21 @@ implementation, direct tests/evaluations, runtime acceptance and explicit contra
    [learning controls](LEARNING_CONTROL.md) and [owner control](OWNER_CONTROL.md).
    Provider/document disclosure policy and 20-stage longitudinal metrics are implemented; see
    [disclosure](DISCLOSURE.md) and [longitudinal evaluation](LONGITUDINAL_EVALUATION.md).
-   All six workstream contracts have implementation/test evidence. Final audit, push and hosted CI
-   verification remain; this ledger is not a claim that external truth or future integrations are solved.
+   All six workstream contracts have implementation/test and runtime acceptance evidence.
+   Delivery and hosted verification are recorded on [PR #170](https://github.com/jzjzzzzzzz/agent-me/pull/170);
+   this does not claim that external truth or future integrations are solved.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed
    branch, and verify the remote commit and CI. Only then consider the full objective achieved.
 
 Each implemented requirement needs direct tests or runnable evaluation evidence. A passing
 unit suite does not by itself prove the entire roadmap. Docker execution, external integrations,
 and hosted CI must be distinguished from local checks; unavailable checks are not marked passed.
+
+## Delivery record
+
+Branch `feat/personal-agent-roadmap` is pushed to the requested `jzjzzzzzzz/agent-me` repository.
+Local/remote capability commit `ebd0820` matched exactly. Its hosted
+[CI run](https://github.com/jzjzzzzzzz/agent-me/actions/runs/38032439586) passed backend,
+Python 3.11, Windows PowerShell, unchanged frontend, documentation/private-data and container gates;
+CodeQL also passed. Subsequent documentation-only delivery commits retain the same capability
+implementation; the pull request's current-head checks remain the authoritative final status.

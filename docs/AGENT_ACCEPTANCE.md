@@ -50,6 +50,12 @@ web reference, checks documentation/private data, and runs container acceptance.
 head equality and hosted CI are verified after push and recorded on the pull request;
 local success is not substituted for an unobserved hosted check.
 
+The capability commit `ebd0820` was pushed and its exact remote SHA verified. Hosted
+[CI](https://github.com/jzjzzzzzzz/agent-me/actions/runs/38032439586) and CodeQL passed.
+The current delivery head, review state and re-run gate results are available on
+[PR #170](https://github.com/jzjzzzzzzz/agent-me/pull/170); this records delivery, not an
+automatic merge into `main`.
+
 ## Accepted boundaries
 
 - Literal reviewed learning/consolidation and controlled semantic fields are implemented;
