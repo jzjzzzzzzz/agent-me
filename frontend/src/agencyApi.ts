@@ -1,6 +1,11 @@
 import type { Sensitivity } from "./personalApi";
 
 export const toolNames = ["tasks.create", "tasks.complete", "notes.create"] as const;
+/** Operation IDs are not credentials; use CSPRNG bytes without a secure-context-only UUID helper. */
+export function newOperationKey(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return "web-" + Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+}
 export type ToolName = (typeof toolNames)[number];
 export type Invocation = {
   tool: ToolName; arguments: TaskArgs | CompleteArgs | NoteArgs; idempotency_key: string;

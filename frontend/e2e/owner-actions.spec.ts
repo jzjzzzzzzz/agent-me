@@ -27,6 +27,7 @@ async function rollback(pane: Locator, tool: string, id: string) {
 }
 
 test("local actions separate recommendation, permission, immutable approval, real effects, completion, undo and notes", async ({ page, ownerApi }, info) => {
+  await page.addInitScript(() => Object.defineProperty(Crypto.prototype, "randomUUID", { value: undefined }));
   const project = await post(ownerApi, "/identity/entities", { kind: "project", name: "Fictional Orchid actions" });
   await post(ownerApi, `/identity/entities/${project.id}/confirm`, { expected_revision: 1 });
   const memory = await post(ownerApi, "/entries", { kind: "fact", key: "project.current", content: "Fictional Orchid project", entity_id: project.id });

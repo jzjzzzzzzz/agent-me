@@ -1,11 +1,19 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { agencyFixture as f } from "./__fixtures__/agency";
-import { isEvent, isInvocation, isNote, isPermission, isPlan, isTask, type ActionPlan } from "./agencyApi";
+import { isEvent, isInvocation, isNote, isPermission, isPlan, isTask, newOperationKey, type ActionPlan } from "./agencyApi";
 import { createPersonalClient } from "./personalApi";
 
 afterEach(() => vi.unstubAllGlobals());
 const response = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status });
 const client = () => createPersonalClient("fixture-owner-token", new AbortController().signal);
+it("generates bounded operation keys using random bytes when randomUUID is unavailable", () => {
+  let n = 0;
+  const getRandomValues = vi.fn((bytes: Uint8Array) => { expect(bytes.length).toBe(16); bytes.fill(++n); return bytes; });
+  vi.stubGlobal("crypto", { getRandomValues });
+  expect(newOperationKey()).toBe("web-" + "01".repeat(16));
+  expect(newOperationKey()).toBe("web-" + "02".repeat(16));
+  expect(getRandomValues).toHaveBeenCalledTimes(2);
+});
 it("parses actual independently generated backend plan states, tools and output contracts", () => {
   for (const plan of [f.planned, f.approved, f.completed, f.completionPlan, f.completion, f.rolledBack, f.recommended, f.cancelled, f.notePlan, f.noteCompleted, f.failed]) {
     expect(isPlan(plan)).toBe(true); expect(isInvocation(plan.invocation)).toBe(true);

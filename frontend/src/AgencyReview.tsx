@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ReviewDialog } from "./ReviewDialog";
-import { toolNames, type ActionEvent, type ActionPlan, type AgencyData, type Invocation, type PermissionInput, type ToolName, type ToolPermission } from "./agencyApi";
+import { newOperationKey, toolNames, type ActionEvent, type ActionPlan, type AgencyData, type Invocation, type PermissionInput, type ToolName, type ToolPermission } from "./agencyApi";
 import type { createPersonalClient, Sensitivity, WorkbenchData } from "./personalApi";
 import type { PersonalWorkspaceMessages } from "./personalMessages";
 
@@ -57,7 +57,7 @@ export function AgencyReview({ data, agency, text, busy, epoch, perform }: {
   const [taskId, setTaskId] = useState("");
   const [sensitivity, setSensitivity] = useState<Sensitivity>("private");
   const [sources, setSources] = useState<string[]>([]);
-  const [key, setKey] = useState<string>(() => crypto.randomUUID());
+  const [key, setKey] = useState<string>(newOperationKey);
   const [view, setView] = useState<View | null>(null);
   const current = view?.epoch === epoch ? view : null;
   const projects = data.entities.filter(item => item.kind === "project" && item.status === "confirmed");
@@ -144,7 +144,7 @@ export function AgencyReview({ data, agency, text, busy, epoch, perform }: {
       <p className="review-hint">{t.sources}: {sourceCount} / 20</p>
       {sources.map(id => <blockquote key={id}>{data.memories.find(item => item.id === id)?.content ?? id}</blockquote>)}
       <label>{t.idempotency}<input disabled={busy} value={key} maxLength={100} onChange={event => setKey(event.target.value)} /></label>
-      <p className="review-hint">{t.keyHint}</p><div className="memory-actions"><button type="button" disabled={busy} onClick={() => { setView(null); setKey(crypto.randomUUID()); }}>{t.newKey}</button><button disabled={busy || !validForm}>{t.propose}</button></div>
+      <p className="review-hint">{t.keyHint}</p><div className="memory-actions"><button type="button" disabled={busy} onClick={() => { setView(null); setKey(newOperationKey()); }}>{t.newKey}</button><button disabled={busy || !validForm}>{t.propose}</button></div>
     </form></section>
     {current && <ReviewDialog label={dialogLabel} returnFocus={current.trigger} onCancel={() => setView(null)}>
       <h5>{dialogLabel}</h5>
