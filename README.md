@@ -170,6 +170,7 @@ The checked-in fixtures cover supported, unsupported, adversarial, and boundary 
 ```bash
 make test
 make evaluate
+make evaluate-semantic # Validate authored semantic benchmark labels; no model call/score
 .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 ```
 

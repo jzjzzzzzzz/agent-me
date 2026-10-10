@@ -35,6 +35,8 @@ jobs:
         run: .venv/bin/python scripts/evaluate_memory.py
       - name: Evaluate controlled personal learning
         run: .venv/bin/python scripts/evaluate_learning.py
+      - name: Validate independent semantic benchmark annotations
+        run: .venv/bin/python scripts/evaluate_semantic_learning.py --check-fixture
       - name: Evaluate identity, temporal memory and retention
         run: .venv/bin/python scripts/evaluate_identity.py
       - name: Evaluate personal retrieval and live claims
@@ -76,6 +78,7 @@ jobs:
       - run: .venv/bin/pytest backend/tests
       - run: .venv/bin/python scripts/evaluate_memory.py
       - run: .venv/bin/python scripts/evaluate_learning.py
+      - run: .venv/bin/python scripts/evaluate_semantic_learning.py --check-fixture
       - run: .venv/bin/python scripts/evaluate_identity.py
       - run: .venv/bin/python scripts/evaluate_retrieval.py
       - run: .venv/bin/python scripts/evaluate_agency.py
@@ -168,6 +171,7 @@ jobs:
           .\.venv\Scripts\pytest.exe backend\tests
           .\.venv\Scripts\python.exe scripts\evaluate_memory.py
           .\.venv\Scripts\python.exe scripts\evaluate_learning.py
+          .\.venv\Scripts\python.exe scripts\evaluate_semantic_learning.py --check-fixture
           .\.venv\Scripts\python.exe scripts\evaluate_identity.py
           .\.venv\Scripts\python.exe scripts\evaluate_retrieval.py
           .\.venv\Scripts\python.exe scripts\evaluate_agency.py
