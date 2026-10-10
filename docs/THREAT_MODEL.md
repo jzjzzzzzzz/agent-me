@@ -21,7 +21,12 @@ rights, including explicit permission configuration, approval and deletion.
 Public chat/collaboration uses a separate fictional/versioned corpus and never reads the
 private database. Private API is disabled by default and requires a >=32-character owner
 token, constant-time comparison, bounded bodies and no-store responses. The independent
-Core/CLI does not load HTTP configuration or provider credentials.
+core and ordinary local CLI commands do not load HTTP configuration or provider credentials.
+The opt-in [semantic CLI adapter](SEMANTIC_LEARNING.md#explicit-file-local-cli) reads only a named,
+bounded private provider JSON file, never ambient `.env`/environment settings. Only `semantic ingest`
+can deliver the exact reviewed source with target/revision/content hashes and per-attempt consent.
+Local caller/configuration-file access is trusted owner authority, not delegated network permission;
+the workspace's enabled source-scoped disclosure policy remains separately required.
 
 ## Threats, controls and direct regression evidence
 

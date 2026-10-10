@@ -1,4 +1,4 @@
-"""Owner-operated local CLI. It never starts an HTTP server or calls a model provider."""
+"""Owner-operated CLI. Only explicit `semantic ingest` can call a configured model provider."""
 
 from __future__ import annotations
 
@@ -123,6 +123,32 @@ def parser() -> argparse.ArgumentParser:
     ingest.add_argument("--expected-source-revision", type=int)
     for name in ("valid-from", "valid-until", "occurred-at"):
         ingest.add_argument(f"--{name}")
+    semantic = commands.add_parser(
+        "semantic", help="Explicit-file, reviewed opt-in model-assisted literal learning"
+    ).add_subparsers(dest="action", required=True)
+    for action in ("review", "ingest"):
+        child = semantic.add_parser(action)
+        child.add_argument("source_id")
+        child.add_argument(
+            "file", type=Path, help="Exact UTF-8 source file; never silently truncated"
+        )
+        child.add_argument(
+            "--provider-config",
+            type=Path,
+            required=True,
+            help="Explicit private JSON provider configuration; no .env/environment fallback",
+        )
+        if action == "ingest":
+            for name in ("source", "disclosure"):
+                child.add_argument(f"--expected-{name}-revision", type=int, required=True)
+            child.add_argument("--reviewed-target-id", required=True)
+            child.add_argument("--reviewed-content-hash", required=True)
+            child.add_argument(
+                "--allow-provider", action="store_true", help="Consent to this source delivery"
+            )
+            child.add_argument("--allow-sensitive", action="store_true")
+            for name in ("valid-from", "valid-until", "occurred-at"):
+                child.add_argument(f"--{name}")
     commands.add_parser("runs")
     recall = commands.add_parser("recall")
     recall.add_argument("question")
@@ -322,6 +348,10 @@ def _execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
     identity = IdentityStore(store)
+    if args.command == "semantic":
+        from .semantic_cli import execute_semantic
+
+        return execute_semantic(store, args)
     if args.command == "disclosure":
         manager = DisclosureManager(store)
         if args.action == "policy":

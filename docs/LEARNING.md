@@ -91,7 +91,10 @@ label, but `known` results do not retroactively reclassify an independently conf
 
 Sensitive structured records are excluded from context unless the owner explicitly opts in. Editing
 without a sensitivity field preserves it; restoring a historical version cannot implicitly lower the
-current label. The CLI never calls a provider. On `/personal/chat`, sensitive transmission requires `allow_sensitive: true`, explicit
+current label. Deterministic CLI learning never calls a provider. The separate opt-in
+[`semantic ingest` adapter](SEMANTIC_LEARNING.md#explicit-file-local-cli) requires explicit-file
+provider configuration, exact scope/content/target/revision review and per-attempt consent.
+On `/personal/chat`, sensitive transmission requires `allow_sensitive: true`, explicit
 `allow_provider: true`, and an enabled matching [disclosure policy](DISCLOSURE.md) allowing that label. It does not create automatic PII
 classification, redact questions, or classify manually maintained private Markdown.
 
@@ -131,7 +134,9 @@ PYTHONPATH=backend .venv/bin/python -m app.agent_cli --help
 All operations accept `--data-dir <directory>` before the command; the default is the ignored
 `private/` directory. On PowerShell, set `$env:PYTHONPATH = "backend"` and use
 `.venv\Scripts\python.exe -m app.agent_cli`. The CLI relies on filesystem ownership, not the HTTP
-workspace token. It outputs JSON and never loads provider configuration.
+workspace token. The local operations below output JSON and never load provider configuration.
+Only the separately documented opt-in `semantic` subcommands read an explicitly named private
+configuration file; other commands still require neither provider configuration nor HTTP modules.
 
 | Command | Purpose |
 | --- | --- |

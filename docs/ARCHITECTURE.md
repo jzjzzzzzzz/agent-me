@@ -115,7 +115,11 @@ Candidate writes and provenance are atomic; normalized digests deduplicate exact
 prevent automatic resurrection after forgetting. Durable runs contain bounded stage outcomes,
 hashes, and record IDs, not original documents or private reasoning. Failure recovery reuses a run ID.
 
-`agent_cli.py` provides owner operations without loading configuration, HTTP modules, or providers.
+`agent_cli.py` provides local owner operations without loading configuration, HTTP modules, or providers.
+Its explicit opt-in `semantic` subcommands lazily load a separate adapter: review performs no delivery;
+ingestion alone can call a model after exact content/target/revision review and per-attempt consent.
+`semantic_cli.py` validates only an explicitly named private configuration file and constructs validated
+Settings defaults without any environment/dotenv source. See [semantic learning](SEMANTIC_LEARNING.md).
 Private API routes are adapters to the same core. Structured sensitive records are withheld from
 context by default; owner opt-in is explicit. This does not classify private Markdown automatically.
 See [learning contracts](LEARNING.md) and the [acceptance ledger](AGENT_IMPLEMENTATION.md).

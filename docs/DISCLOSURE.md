@@ -1,7 +1,7 @@
 # Owner-reviewed provider disclosure
 
 Atomic personal `ask/retrieve/verify`, deterministic learning, identity, retention, local tools, owner
-control and CLI remain provider-free. Optional [scoped model-assisted literal learning](SEMANTIC_LEARNING.md)
+control and their CLI commands remain provider-free. Optional [scoped model-assisted literal learning](SEMANTIC_LEARNING.md)
 adds a separately consented adapter for exact source quotations; broad Markdown grants never enable it. Optional legacy `/api/v1/personal/chat` generation
 now requires **both** a matching enabled workspace policy and `allow_provider: true` on
 each request. Configuring credentials alone does not enable private disclosure. Default
@@ -53,9 +53,12 @@ PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-de
   --expected-revision 1 --policy-json '{"enabled":true,"target_id":"REVIEWED_64_HEX_TARGET_ID","labels":["private"],"namespaces":["memory"]}'
 ```
 
-The CLI manages policy but never calls the provider or reads its credentials. Obtain the
-target through the authenticated API or `app.disclosure.target_id(base_url, model)` using
-owner-known configuration. Memory preferences and imported instructions cannot enable it.
+CLI `disclosure` commands manage policy without calling the provider or reading credentials. Obtain
+the target through the authenticated API, explicit-file `semantic review`, or
+`app.disclosure.target_id(base_url, model)` using owner-known configuration. Only `semantic ingest`
+can dispatch a CLI model call, with an explicitly supplied private configuration file, reviewed hashes/
+revisions and per-attempt consent. Ambient environment/`.env` is never used by that adapter.
+Memory preferences and imported instructions cannot enable disclosure.
 
 Schema/export `8` adds `disclosure_policy`. Migration defaults it to disabled. Portable
 import accepts versions 6/7/8, places prior disclosure grants into inert archives, and
