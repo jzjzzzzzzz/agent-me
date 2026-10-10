@@ -124,3 +124,11 @@ Scripted model responses verify the **contract and data flow**. They do not meas
 semantic precision/recall, human-review workload or generalization. Those require independently
 labelled data and separately authorized model runs; no real owner account/data was used in these
 regression checks.
+
+## Independent prediction scoring
+
+[Offline semantic evaluation](SEMANTIC_EVALUATION.md) provides a versioned bilingual synthetic task
+set and exact kind/key/span scorer with explicit prediction provenance, precision/recall/F1,
+coverage/abstention and whole-batch failure denominators. `make evaluate-semantic` validates annotations
+only and prints no model performance. Actual declared predictions must be supplied in an explicit file;
+the scorer never invokes a provider or treats owner-corrected records as raw model output automatically.
