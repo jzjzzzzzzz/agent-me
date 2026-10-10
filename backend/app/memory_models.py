@@ -279,6 +279,30 @@ class IdentityContext(BaseModel):
     relationships: list[RelationshipRecord]
 
 
+class IdentityDelete(DeleteMemory):
+    digest: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+
+    @model_validator(mode="after")
+    def reviewed_digest(self):
+        if self.digest is not None and self.expected_revision is None:
+            raise ValueError("A reviewed deletion digest requires the record revision")
+        return self
+
+
+class IdentityDeletePreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["entity", "relationship"]
+    record: EntityRecord | RelationshipRecord
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    memories: list[MemoryRecord]
+    sources: list[RegisteredSource]
+    runs: list[IngestionRun]
+    relationships: list[RelationshipRecord]
+    owner_binding: bool
+    origin_count: int = Field(ge=0)
+    history_count: int = Field(ge=0)
+
+
 class RetentionPolicy(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     pending_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)

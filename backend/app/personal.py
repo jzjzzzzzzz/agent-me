@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import secrets
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -44,6 +45,8 @@ from .memory_models import (
     EntityRevision,
     Entry,
     IdentityContext,
+    IdentityDelete,
+    IdentityDeletePreview,
     IngestionInput,
     IngestionRun,
     LearningPolicy,
@@ -117,6 +120,21 @@ class IdentityReview(BaseModel):
     expected_revision: int = Field(ge=1, strict=True)
 
 
+EndpointRevisions = dict[
+    Annotated[str, Field(min_length=1, max_length=100)],
+    Annotated[int, Field(ge=1, strict=True)],
+]
+
+
+class RelationshipReview(IdentityReview):
+    expected_entity_revisions: EndpointRevisions | None = Field(default=None, max_length=2)
+
+
+class CreateRelationship(RelationshipInput):
+    expected_evidence_revision: int | None = Field(default=None, ge=1, strict=True)
+    expected_entity_revisions: EndpointRevisions | None = Field(default=None, max_length=2)
+
+
 class CreateEntity(EntityInput):
     distinct: bool = Field(default=False, strict=True)
 
@@ -154,6 +172,8 @@ class ImportApproval(ImportPayload):
 class OwnerBinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
     entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+    expected_owner_entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+    expected_entity_revision: int | None = Field(default=None, ge=1, strict=True)
 
 
 def personal_retriever(db: Store, config: Settings):
@@ -412,7 +432,10 @@ def owner_identity(db: Store = Depends(store)):
 
 @router.post("/identity/owner")
 def bind_owner_identity(payload: OwnerBinding, db: Store = Depends(store)):
-    return IdentityStore(db).bind_owner(payload.entity_id)
+    return IdentityStore(db).bind_owner(
+        payload.entity_id,
+        **payload.model_dump(exclude={"entity_id"}, exclude_unset=True),
+    )
 
 
 @router.get("/entries", response_model=list[MemoryRecord])
@@ -476,8 +499,15 @@ def entity_history(entity_id: str, db: Store = Depends(store)):
 
 
 @router.post("/identity/entities/{entity_id}/delete")
-def delete_entity(entity_id: str, db: Store = Depends(store)):
-    return IdentityStore(db).delete(entity_id)
+def delete_entity(
+    entity_id: str, payload: IdentityDelete = IdentityDelete(), db: Store = Depends(store)
+):
+    return IdentityStore(db).delete(entity_id, **payload.model_dump())
+
+
+@router.get("/identity/entities/{entity_id}/delete-preview", response_model=IdentityDeletePreview)
+def preview_delete_entity(entity_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).preview_delete(entity_id)
 
 
 @router.post("/identity/resolve", response_model=EntityResolution)
@@ -498,13 +528,17 @@ def list_relationships(db: Store = Depends(store)):
 
 
 @router.post("/identity/relationships", response_model=RelationshipRecord)
-def create_relationship(payload: RelationshipInput, db: Store = Depends(store)):
-    return IdentityStore(db).relate(payload)
+def create_relationship(payload: CreateRelationship, db: Store = Depends(store)):
+    review_fields = {"expected_evidence_revision", "expected_entity_revisions"}
+    return IdentityStore(db).relate(
+        RelationshipInput.model_validate(payload.model_dump(exclude=review_fields)),
+        **payload.model_dump(include=review_fields),
+    )
 
 
 @router.post("/identity/relationships/{relation_id}/confirm", response_model=RelationshipRecord)
-def confirm_relationship(relation_id: str, payload: IdentityReview, db: Store = Depends(store)):
-    return IdentityStore(db).confirm(relation_id, payload.expected_revision, relationship=True)
+def confirm_relationship(relation_id: str, payload: RelationshipReview, db: Store = Depends(store)):
+    return IdentityStore(db).confirm(relation_id, relationship=True, **payload.model_dump())
 
 
 @router.get(
@@ -515,8 +549,17 @@ def relationship_history(relation_id: str, db: Store = Depends(store)):
 
 
 @router.post("/identity/relationships/{relation_id}/delete")
-def delete_relationship(relation_id: str, db: Store = Depends(store)):
-    return IdentityStore(db).delete(relation_id, relationship=True)
+def delete_relationship(
+    relation_id: str, payload: IdentityDelete = IdentityDelete(), db: Store = Depends(store)
+):
+    return IdentityStore(db).delete(relation_id, relationship=True, **payload.model_dump())
+
+
+@router.get(
+    "/identity/relationships/{relation_id}/delete-preview", response_model=IdentityDeletePreview
+)
+def preview_delete_relationship(relation_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).preview_delete(relation_id, relationship=True)
 
 
 @router.get("/retention/policy", response_model=RetentionSettings)

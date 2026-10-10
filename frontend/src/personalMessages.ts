@@ -1,8 +1,10 @@
+import { identityMessages, type IdentityMessages } from "./identityMessages";
 import type { Locale } from "./i18n";
 import { reviewMessages, type ReviewMessages } from "./reviewMessages";
 
 export type PersonalWorkspaceMessages = {
   review: ReviewMessages;
+  identity: IdentityMessages;
   workspaceLabel: string;
   title: string;
   intro: string;
@@ -47,6 +49,7 @@ export type PersonalWorkspaceMessages = {
 export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   en: {
     review: reviewMessages["en"],
+    identity: identityMessages["en"],
     workspaceLabel: "Private workspace",
     title: "My AI twin",
     intro: "Profiles, conversations, and memories are stored locally. Only confirmed memories ground answers.",
@@ -89,6 +92,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   "zh-CN": {
     review: reviewMessages["zh-CN"],
+    identity: identityMessages["zh-CN"],
     workspaceLabel: "私有工作区",
     title: "我的 AI 分身",
     intro: "档案、对话与记忆保存在本地。只有已确认的记忆会作为回答依据。",
@@ -131,6 +135,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   "zh-TW": {
     review: reviewMessages["zh-TW"],
+    identity: identityMessages["zh-TW"],
     workspaceLabel: "私人工作區",
     title: "我的 AI 分身",
     intro: "個人資料、對話與記憶會儲存在本機。只有已確認的記憶會作為回答依據。",
@@ -173,6 +178,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   ja: {
     review: reviewMessages["ja"],
+    identity: identityMessages["ja"],
     workspaceLabel: "プライベートワークスペース",
     title: "自分の AI ツイン",
     intro: "プロフィール、会話、記憶はローカルに保存されます。回答の根拠になるのは確認済みの記憶だけです。",
@@ -215,6 +221,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   ko: {
     review: reviewMessages["ko"],
+    identity: identityMessages["ko"],
     workspaceLabel: "비공개 작업 공간",
     title: "내 AI 트윈",
     intro: "프로필, 대화 및 기억은 로컬에 저장됩니다. 확인된 기억만 답변의 근거로 사용됩니다.",
@@ -257,6 +264,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   es: {
     review: reviewMessages["es"],
+    identity: identityMessages["es"],
     workspaceLabel: "Espacio de trabajo privado",
     title: "Mi gemelo de IA",
     intro: "Los perfiles, las conversaciones y los recuerdos se guardan localmente. Solo los recuerdos confirmados fundamentan las respuestas.",
@@ -299,6 +307,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   fr: {
     review: reviewMessages["fr"],
+    identity: identityMessages["fr"],
     workspaceLabel: "Espace de travail privé",
     title: "Mon jumeau IA",
     intro: "Les profils, conversations et souvenirs sont stockés localement. Seuls les souvenirs confirmés servent de base aux réponses.",
@@ -341,6 +350,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   de: {
     review: reviewMessages["de"],
+    identity: identityMessages["de"],
     workspaceLabel: "Privater Arbeitsbereich",
     title: "Mein KI-Zwilling",
     intro: "Profile, Unterhaltungen und Erinnerungen werden lokal gespeichert. Nur bestätigte Erinnerungen dienen als Grundlage für Antworten.",
@@ -383,6 +393,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   },
   "pt-BR": {
     review: reviewMessages["pt-BR"],
+    identity: identityMessages["pt-BR"],
     workspaceLabel: "Espaço de trabalho privado",
     title: "Meu gêmeo de IA",
     intro: "Perfis, conversas e memórias são armazenados localmente. Somente memórias confirmadas fundamentam as respostas.",

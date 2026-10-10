@@ -21,6 +21,25 @@ export type LearningSource = {
 export type Entity = {
   id: string; kind: "person" | "project" | "organization" | "event" | "idea" | "preference" | "decision";
   name: string; status: "pending" | "confirmed"; sensitivity: Sensitivity;
+  aliases: string[]; revision: number; owner_id: string; source: "manual";
+  created_at: string; updated_at: string;
+};
+export type EntityInput = Pick<Entity, "kind" | "name" | "aliases" | "sensitivity">;
+export type EntityRevision = Entity & { change: "created" | "edited" | "confirmed" };
+export type Relationship = {
+  id: string; owner_id: string; from_entity_id: string; to_entity_id: string; predicate: string;
+  evidence_id: string; evidence_revision: number; sensitivity: Sensitivity;
+  status: "pending" | "confirmed"; revision: number; created_at: string; updated_at: string;
+};
+export type RelationshipRevision = Relationship & { change: "created" | "confirmed" };
+export type OwnerIdentity = { owner_id: string; entity_id: string | null };
+export type IdentityData = { owner: OwnerIdentity; relationships: Relationship[] };
+export type EntityResolution = { status: "resolved" | "ambiguous" | "unknown"; matches: Entity[] };
+export type IdentityContext = { entities: Entity[]; relationships: Relationship[] };
+export type IdentityDeletePreview = {
+  kind: "entity" | "relationship"; record: Entity | Relationship; digest: string;
+  memories: MemoryRecord[]; sources: LearningSource[]; runs: IngestionRun[]; relationships: Relationship[];
+  owner_binding: boolean; origin_count: number; history_count: number;
 };
 export type IngestionRun = {
   id: string; source_id: string; source_revision: number; document_hash: string;
@@ -94,7 +113,27 @@ const isSource: Guard<LearningSource> = (value): value is LearningSource => obje
   date(value.created_at) && date(value.updated_at);
 const isEntity: Guard<Entity> = (value): value is Entity => object(value) && text(value.id) && text(value.name) &&
   oneOf("person", "project", "organization", "event", "idea", "preference", "decision")(value.kind) &&
-  oneOf("pending", "confirmed")(value.status) && sensitivity(value.sensitivity);
+  oneOf("pending", "confirmed")(value.status) && sensitivity(value.sensitivity) && array(text)(value.aliases) &&
+  revision(value.revision) && text(value.owner_id) && value.source === "manual" && date(value.created_at) && date(value.updated_at);
+const isEntityRevision: Guard<EntityRevision> = (value): value is EntityRevision => isEntity(value) &&
+  oneOf("created", "edited", "confirmed")((value as EntityRevision).change);
+const isRelationship: Guard<Relationship> = (value): value is Relationship => object(value) &&
+  ["id", "owner_id", "from_entity_id", "to_entity_id", "evidence_id"].every(key => text(value[key])) &&
+  text(value.predicate) && /^[a-z][a-z0-9_]{0,99}$/.test(value.predicate) && value.from_entity_id !== value.to_entity_id &&
+  revision(value.evidence_revision) && revision(value.revision) && sensitivity(value.sensitivity) &&
+  oneOf("pending", "confirmed")(value.status) && date(value.created_at) && date(value.updated_at);
+const isRelationshipRevision: Guard<RelationshipRevision> = (value): value is RelationshipRevision => isRelationship(value) &&
+  oneOf("created", "confirmed")((value as RelationshipRevision).change);
+const isOwner: Guard<OwnerIdentity> = (value): value is OwnerIdentity => object(value) && text(value.owner_id) && nullable(text)(value.entity_id);
+const isResolution: Guard<EntityResolution> = (value): value is EntityResolution => object(value) &&
+  array(isEntity)(value.matches) && value.matches.every(item => item.status === "confirmed") &&
+  (value.status === "unknown" && value.matches.length === 0 || value.status === "resolved" && value.matches.length === 1 ||
+    value.status === "ambiguous" && value.matches.length > 1);
+const isContext: Guard<IdentityContext> = (value): value is IdentityContext => object(value) &&
+  array(isEntity)(value.entities) && array(isRelationship)(value.relationships) &&
+  value.entities.every(item => item.status === "confirmed") && value.relationships.every(item => item.status === "confirmed" &&
+    (value.entities as Entity[]).some(entity => entity.id === item.from_entity_id) &&
+    (value.entities as Entity[]).some(entity => entity.id === item.to_entity_id));
 const isRun: Guard<IngestionRun> = (value): value is IngestionRun => object(value) &&
   ["id", "source_id", "extractor"].every(key => text(value[key])) && revision(value.source_revision) &&
   string(value.document_hash) && /^[0-9a-f]{64}$/.test(value.document_hash) &&
@@ -122,6 +161,12 @@ const isEvidence: Guard<Evidence> = (value): value is Evidence => object(value) 
 const isAnswer: Guard<PersonalAnswer> = (value): value is PersonalAnswer => object(value) && text(value.run_id) &&
   value.mode === "personal-grounded-local" && string(value.answer) &&
   oneOf("known", "partial", "unknown", "disputed", "inferred", "outdated", "ambiguous")(value.status) && array(isEvidence)(value.evidence);
+const isDeletePreview: Guard<IdentityDeletePreview> = (value): value is IdentityDeletePreview => object(value) &&
+  (value.kind === "entity" && isEntity(value.record) || value.kind === "relationship" && isRelationship(value.record)) &&
+  text(value.digest) && /^[0-9a-f]{64}$/.test(value.digest) && array(isMemory)(value.memories) && array(isSource)(value.sources) &&
+  array(isRun)(value.runs) && array(isRelationship)(value.relationships) && typeof value.owner_binding === "boolean" &&
+  integer(value.origin_count) && integer(value.history_count) && (value.kind !== "relationship" ||
+    !value.memories.length && !value.sources.length && !value.runs.length && !value.relationships.length && !value.owner_binding);
 const isMutation = (value: unknown): value is { status: "pending" | "confirmed"; revision: number } =>
   object(value) && oneOf("pending", "confirmed")(value.status) && revision(value.revision);
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
@@ -160,6 +205,75 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
       ]);
       return { sources, memories, runs, entities };
     },
+    async loadIdentity(): Promise<IdentityData> {
+      const [owner, relationships] = await Promise.all([
+        request("/identity/owner", isOwner), request("/identity/relationships", array(isRelationship)),
+      ]);
+      if (relationships.some(item => item.owner_id !== owner.owner_id)) throw new PersonalApiError(502, "invalid");
+      return { owner, relationships };
+    },
+    createEntity: (input: EntityInput, distinct: boolean) => request("/identity/entities", isEntity, { ...input, distinct }),
+    editEntity: (entity: Entity, input: EntityInput) => request(`/identity/entities/${idPath(entity.id)}/edit`, isEntity,
+      { ...input, expected_revision: entity.revision }),
+    confirmEntity: (entity: Entity) => request(`/identity/entities/${idPath(entity.id)}/confirm`, isEntity, { expected_revision: entity.revision }),
+    async entityHistory(entity: Entity) {
+      const rows = await request(`/identity/entities/${idPath(entity.id)}/history`, array(isEntityRevision));
+      if (rows.some(item => item.id !== entity.id)) throw new PersonalApiError(502, "invalid");
+      if (rows.at(-1)?.revision !== entity.revision) throw new PersonalApiError(409, "stale");
+      return rows;
+    },
+    async relationshipHistory(relationship: Relationship) {
+      const rows = await request(`/identity/relationships/${idPath(relationship.id)}/history`, array(isRelationshipRevision));
+      if (rows.some(item => item.id !== relationship.id)) throw new PersonalApiError(502, "invalid");
+      if (rows.at(-1)?.revision !== relationship.revision) throw new PersonalApiError(409, "stale");
+      return rows;
+    },
+    async bindOwner(owner: OwnerIdentity, target: Entity | null) {
+      const result = await request("/identity/owner", isOwner, {
+        entity_id: target?.id ?? null, expected_owner_entity_id: owner.entity_id,
+        ...(target ? { expected_entity_revision: target.revision } : {}),
+      });
+      if (result.owner_id !== owner.owner_id || result.entity_id !== (target?.id ?? null)) throw new PersonalApiError(502, "invalid");
+      return result;
+    },
+    async resolve(name: string, kind: Entity["kind"] | null, allowSensitive: boolean) {
+      const result = await request("/identity/resolve", isResolution, { name, kind, allow_sensitive: allowSensitive });
+      if (!allowSensitive && result.matches.some(item => item.sensitivity === "sensitive")) throw new PersonalApiError(502, "invalid");
+      return result;
+    },
+    async neighbours(entity: Entity, allowSensitive: boolean) {
+      const result = await request(`/identity/entities/${idPath(entity.id)}/neighbours?allow_sensitive=${allowSensitive}`, isContext);
+      if (result.entities.length && !result.entities.some(item => item.id === entity.id) ||
+        [...result.entities, ...result.relationships].some(item => item.owner_id !== entity.owner_id) ||
+        result.relationships.some(item => item.from_entity_id !== entity.id && item.to_entity_id !== entity.id)) {
+        throw new PersonalApiError(502, "invalid");
+      }
+      if (!allowSensitive && [...result.entities, ...result.relationships].some(item => item.sensitivity === "sensitive")) {
+        throw new PersonalApiError(502, "invalid");
+      }
+      return result;
+    },
+    createRelationship: (left: Entity, right: Entity, evidence: MemoryRecord, predicate: string, sensitivity: Sensitivity) =>
+      request("/identity/relationships", isRelationship, {
+        from_entity_id: left.id, to_entity_id: right.id, evidence_id: evidence.id, predicate, sensitivity,
+        expected_evidence_revision: evidence.revision, expected_entity_revisions: { [left.id]: left.revision, [right.id]: right.revision },
+      }),
+    confirmRelationship: (relationship: Relationship, left: Entity, right: Entity) => request(
+      `/identity/relationships/${idPath(relationship.id)}/confirm`, isRelationship,
+      { expected_revision: relationship.revision, expected_entity_revisions: { [left.id]: left.revision, [right.id]: right.revision } },
+    ),
+    async previewIdentityDelete(record: Entity | Relationship, kind: "entity" | "relationship") {
+      const plural = kind === "entity" ? "entities" : "relationships";
+      const preview = await request(`/identity/${plural}/${idPath(record.id)}/delete-preview`, isDeletePreview);
+      if (preview.kind !== kind || preview.record.id !== record.id) throw new PersonalApiError(502, "invalid");
+      if (preview.record.revision !== record.revision) throw new PersonalApiError(409, "stale");
+      return preview;
+    },
+    deleteIdentity: (preview: IdentityDeletePreview) => request(
+      `/identity/${preview.kind === "entity" ? "entities" : "relationships"}/${idPath(preview.record.id)}/delete`,
+      (value): value is { deleted: boolean } => object(value) && value.deleted === true,
+      { expected_revision: preview.record.revision, digest: preview.digest },
+    ),
     register: (body: Pick<LearningSource, "kind" | "name" | "sensitivity" | "entity_id">) => request("/learning/sources", isSource, body),
     reviewSource: (source: LearningSource) => request(`/learning/sources/${idPath(source.id)}/review`, isSource,
       { approved: !source.approved, expected_revision: source.revision }),
@@ -184,7 +298,7 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
       }
       return { memory, history, origins };
     },
-    ask: (question: string, allowSensitive: boolean) => request("/ask", isAnswer, { question, allow_sensitive: allowSensitive }),
+    ask: (question: string, allowSensitive: boolean, entityId?: string) => request("/ask", isAnswer, { question, allow_sensitive: allowSensitive, ...(entityId ? { entity_id: entityId } : {}) }),
   };
 }
 

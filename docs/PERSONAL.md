@@ -72,7 +72,19 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 密钥与所有草稿只保存在页面内存中。锁定或关闭工作台会取消在途请求并清除工作台状态；
 锁定同时清除工作区密钥。HTTP 请求取消不保证服务器已开始的事务也回滚；重新打开后应刷新核对。
 语言切换只改变界面，不重新请求数据、不丢失草稿。旧档案/聊天界面通过关闭工作台返回。
-身份创建/关系审核、保留策略、便携导入和工具审批仍由 API/CLI 提供，不属于本次工作台范围。
+工作台内“管理身份与关系”提供对象创建/编辑/确认、别名解析、主人绑定、关系审核和精确删除范围预览；
+保留策略、便携导入和工具审批仍由 API/CLI 提供。
+
+### 身份对象与关系审核
+
+- 在工作台内打开“管理身份与关系”，创建人物、项目等七类候选对象，显式填写别名；确认后才可被来源或问答引用。
+- 精确重复默认复用对象；“明确创建独立身份”是一次性的显式选择。别名有歧义时返回多个 ID，不自动合并。
+- 主人绑定先展示新旧对象，再提交当前绑定 ID 与目标人物修订版本；只有已确认人物可绑定。改变主人的对象类型前须先解除绑定。
+- 关系使用两个已确认对象、明确关系标识和已确认记忆的精确版本；创建与确认分开，任何已查看版本变化都会被拒绝。
+- 当前关系视图执行现有隐私、时间、认知状态和依据版本筛选。敏感别名/邻接检索需本次查询明确勾选；管理列表仍是主人级检查界面。
+- 对象/关系删除先显示范围和摘要，再单独确认。对象范围包含历史关联记忆及依赖这些记忆的关系；新依赖或任何范围变化使摘要过期，必须重新预览。
+- 删除关系不删除其依据或端点；删除对象不清除独立聊天、导出、备份和工具结果。详见[身份与时间契约](IDENTITY_TIME.md)。
+- 提问表单可选择已确认对象限定主体；未指定对象的主人问题由主人绑定决定。页面关闭/锁定清除草稿，语言切换保留草稿。
 
 ### 4. 聊天与确认
 
@@ -139,7 +151,9 @@ paragraphs into pending candidates, review explicit old/new conflicts and inspec
 history. Source review, ingestion, confirmation/replacement, edit and workbench deletion all bind to
 reviewed revisions. Failed runs retain the draft for an explicit same-content retry. Superseded records
 are read-only but remain inspectable and individually deletable. Existing confirmed entities can scope
-sources; entity creation/relationship review remains an API/CLI capability.
+sources; **Manage identities & relationships** now provides identity/alias/owner/relationship review,
+revision histories, current-neighbour context and digest-reviewed cascade deletion. Retention, import
+and tool approvals remain API/CLI capabilities.
 
 The workbench's **Ask with evidence** calls the provider-free atomic `/ask` route and shows current
 attributed evidence and uncertainty. Sensitive context requires a checkbox for that question; it resets

@@ -31,3 +31,21 @@ export const answerFixture: PersonalAnswer = {
     valid_from: null, valid_until: null, score: 1, reasons: ["field"], purpose: "answer",
   }],
 };
+
+export const entityFixture = {
+  id: "entity-one", kind: "person" as const, name: "Alex Example", aliases: ["Alex"],
+  status: "confirmed" as const, sensitivity: "private" as const, revision: 2,
+  owner_id: "synthetic-owner", source: "manual" as const, created_at: timestamp, updated_at: timestamp,
+};
+export const projectFixture = { ...entityFixture, id: "project-one", kind: "project" as const, name: "Orchid Demo", aliases: ["Orchid"] };
+export const relationshipFixture = {
+  id: "relationship-one", from_entity_id: "entity-one", to_entity_id: "project-one", predicate: "works_on",
+  evidence_id: "memory-one", evidence_revision: 2, sensitivity: "private" as const, status: "pending" as const,
+  revision: 1, owner_id: "synthetic-owner", created_at: timestamp, updated_at: timestamp,
+};
+export const identityDeleteFixture = {
+  kind: "entity" as const, record: entityFixture, digest: "b".repeat(64),
+  memories: [{ ...memoryFixture, revision: 2, status: "confirmed" as const, entity_id: "entity-one" }],
+  sources: [sourceFixture], runs: [runFixture], relationships: [relationshipFixture],
+  owner_binding: true, origin_count: 1, history_count: 5,
+};
