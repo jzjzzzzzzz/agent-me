@@ -82,6 +82,11 @@ class RestoreMemory(BaseModel):
     expected_revision: int | None = Field(default=None, ge=1, strict=True)
 
 
+class DeleteMemory(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int | None = Field(default=None, ge=1, strict=True)
+
+
 class MemoryMutation(BaseModel):
     status: Literal["pending", "confirmed"]
     revision: int = Field(ge=1)

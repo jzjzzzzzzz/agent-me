@@ -78,7 +78,7 @@ it("renders both private data destinations in the selected locale", () => {
   );
 
   expect(screen.getByRole("region", { name: "私有工作区" })).toHaveTextContent(
-    "私有和公开知识片段会发送给当前配置的模型服务",
+    "审核工作台不调用模型服务",
   );
 
   rerender(<PersonalWorkspace external={false} text={messages.ja.personalWorkspace} />);
@@ -150,4 +150,67 @@ it("identifies duplicate-key memory actions by accessible name and preserves the
   expect(screen.getByLabelText(/Content/)).toHaveValue("Sky Example");
   fireEvent.click(secondDelete);
   await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringContaining("/entries/opaque-b/delete"), expect.any(Object)));
+});
+
+it("binds compatibility confirmation and conflict replacement to displayed revisions", async () => {
+  const entries = [
+    { id: "new", revision: 2, key: "identity.name", kind: "fact", content: "Alex Example", status: "pending", source: "manual", updated_at: "2026-01-01" },
+    { id: "old", revision: 4, key: "identity.name", kind: "fact", content: "River Example", status: "confirmed", source: "manual", updated_at: "2026-01-01" },
+  ];
+  let confirmations = 0;
+  const fetcher = vi.fn(async (url: string) => {
+    if (url.endsWith("/entries/new/confirm") && ++confirmations === 1) {
+      return new Response(JSON.stringify({ detail: { conflict_ids: ["old"], conflict_revisions: { old: 4 } } }), { status: 409 });
+    }
+    return new Response(JSON.stringify(url.endsWith("/entries") ? entries : []), { status: 200 });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  render(<PersonalWorkspace external={false} text={english} />);
+  fireEvent.change(screen.getByLabelText("Workspace token"), { target: { value: "synthetic" } });
+  fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm: identity.name, memory 1" }));
+  const replace = await screen.findByRole("button", { name: "Replace" });
+  await waitFor(() => expect(replace).toBeEnabled());
+  fireEvent.click(replace);
+  await waitFor(() => expect(confirmations).toBe(2));
+  const bodies = (fetcher.mock.calls as unknown as [string, RequestInit][])
+    .filter(([url]) => url.endsWith("/confirm")).map(([, options]) => JSON.parse(options.body as string));
+  expect(bodies).toEqual([
+    { replace_ids: [], expected_revision: 2 },
+    { replace_ids: ["old"], expected_revision: 2, replace_revisions: { old: 4 } },
+  ]);
+});
+
+it("preserves the reviewed revision while editing and sends it on deletion", async () => {
+  const entries = [{ id: "one", revision: 3, key: "identity.name", kind: "fact", content: "Alex Example", status: "confirmed", source: "manual", updated_at: "2026-01-01" }];
+  const fetcher = vi.fn(async (url: string) => new Response(JSON.stringify(url.endsWith("/entries") ? entries : []), { status: 200 }));
+  vi.stubGlobal("fetch", fetcher);
+  render(<PersonalWorkspace external={false} text={english} />);
+  fireEvent.change(screen.getByLabelText("Workspace token"), { target: { value: "synthetic" } });
+  fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Edit: identity.name, memory 1" }));
+  fireEvent.change(screen.getByLabelText("Content"), { target: { value: "River Example" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save edit as pending" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Delete: identity.name, memory 1" })).toBeEnabled());
+  fireEvent.click(screen.getByRole("button", { name: "Delete: identity.name, memory 1" }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledWith(expect.stringMatching(/\/delete$/), expect.any(Object)));
+  const calls = fetcher.mock.calls as unknown as [string, RequestInit][];
+  expect(JSON.parse(calls.find(([url]) => url.endsWith("/edit"))![1].body as string)).toMatchObject({ expected_revision: 3 });
+  expect(JSON.parse(calls.find(([url]) => url.endsWith("/delete"))![1].body as string)).toEqual({ expected_revision: 3 });
+});
+
+it("does not approve an unseen newer conflict revision in the compatibility form", async () => {
+  const entries = [
+    { id: "new", revision: 1, key: "identity.name", kind: "fact", content: "Alex Example", status: "pending", source: "manual", updated_at: "2026-01-01" },
+    { id: "old", revision: 3, key: "identity.name", kind: "fact", content: "River Example", status: "confirmed", source: "manual", updated_at: "2026-01-01" },
+  ];
+  vi.stubGlobal("fetch", vi.fn(async (url: string) => url.endsWith("/confirm")
+    ? new Response(JSON.stringify({ detail: { conflict_ids: ["old"], conflict_revisions: { old: 4 } } }), { status: 409 })
+    : new Response(JSON.stringify(url.endsWith("/entries") ? entries : []), { status: 200 })));
+  render(<PersonalWorkspace external={false} text={english} />);
+  fireEvent.change(screen.getByLabelText("Workspace token"), { target: { value: "synthetic" } });
+  fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm: identity.name, memory 1" }));
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Data changed"));
+  expect(screen.queryByRole("button", { name: "Replace" })).not.toBeInTheDocument();
 });

@@ -68,7 +68,7 @@ Agent-Me does not claim to solve all of those problems today. It provides a conc
 
 ### Reviewable identity and memory
 
-The current memory substrate is version-controlled Markdown: small, explicit, and inspectable. It gives the twin a stable body of personal knowledge instead of treating every conversation as isolated. An optional private workspace adds SQLite-backed profile entries, persisted chat transcripts, and user-confirmed memories. Automatic temporal reasoning and richer identity models remain future work.
+The current memory substrate is version-controlled Markdown: small, explicit, and inspectable. It gives the twin a stable body of personal knowledge instead of treating every conversation as isolated. An optional private workspace adds SQLite-backed typed memory, reviewed identity/relationships, declared valid and event times, revision history, persisted chat transcripts, and owner-confirmed learning. A browser review workbench makes approved-source ingestion, conflict review, provenance and local evidence-grounded answers accessible without the CLI. Unconstrained semantic inference remains future work.
 
 ### Evidence-grounded responses
 
@@ -110,7 +110,7 @@ Before an answer is returned, implemented checks can validate citation paths, ev
 | Public trace | Makes execution inspectable | Safe stage summaries, outcomes, and metrics |
 | Evaluation | Measures behavior beyond a demo | Versioned fixtures and deterministic runner |
 
-Knowledge graphs, richer structured memory, typed intent routing, and broader tool calling are natural extensions of this model, but are not presented here as finished capabilities.
+The opt-in personal Agent additionally implements evidence-linked relationships, structured memory, typed know/recommend/act routing and three owner-approved local task/note tools. Arbitrary external tool integrations and unconstrained semantic inference remain future work; see the [implementation ledger](docs/AGENT_IMPLEMENTATION.md) and [private workspace guide](docs/PERSONAL.md).
 
 ## Architecture
 

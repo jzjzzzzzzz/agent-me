@@ -36,6 +36,7 @@ from .memory_models import (
     Confirm,
     ConsolidationFilter,
     ConsolidationPlan,
+    DeleteMemory,
     EditEntry,
     EntityInput,
     EntityRecord,
@@ -588,8 +589,8 @@ def confirm(entry_id: str, payload: Confirm, db: Store = Depends(store)):
 
 
 @router.post("/entries/{entry_id}/delete")
-def delete(entry_id: str, db: Store = Depends(store)):
-    return db.delete(entry_id)
+def delete(entry_id: str, payload: DeleteMemory = DeleteMemory(), db: Store = Depends(store)):
+    return db.delete(entry_id, payload.expected_revision)
 
 
 @router.get("/history", response_model=list[StoredTurn])

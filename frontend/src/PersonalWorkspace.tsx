@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
+import { ReviewWorkbench } from "./ReviewWorkbench";
 import type { PersonalWorkspaceMessages } from "./personalMessages";
 
-type Entry = { id: string; kind: string; key: string; content: string; status: string; source: string; updated_at: string };
+type Entry = { revision?: number; id: string; kind: string; key: string; content: string; status: string; source: string; updated_at: string };
 type Turn = { id: string; role: string; content: string };
-type WorkspaceError = { kind: "conflict" } | { kind: "request"; detail: string | null };
+type WorkspaceError = { kind: "conflict" } | { kind: "stale" } | { kind: "request"; detail: string | null };
 const base = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
 
 class WorkspaceRequestError extends Error {
@@ -47,6 +48,7 @@ export function PersonalWorkspace({
   maxQuestionChars?: number;
 }) {
   const questionLimit = Math.min(maxQuestionChars, 8000);
+  const [workbenchOpen, setWorkbenchOpen] = useState(false);
   const [token, setToken] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -55,10 +57,11 @@ export function PersonalWorkspace({
   const [key, setKey] = useState("identity.name");
   const [content, setContent] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
+  const [editingRevision, setEditingRevision] = useState<number | undefined>();
   const [question, setQuestion] = useState("");
   const [error, setError] = useState<WorkspaceError | null>(null);
   const [busy, setBusy] = useState(false);
-  const [conflict, setConflict] = useState<{ id: string; ids: string[] } | null>(null);
+  const [conflict, setConflict] = useState<{ id: string; ids: string[]; revision?: number; revisions?: Record<string, number> } | null>(null);
 
   async function request(path: string, body?: unknown) {
     const response = await fetch(`${base}/api/v1/personal${path}`, {
@@ -68,7 +71,15 @@ export function PersonalWorkspace({
     });
     const data = await response.json();
     if (response.status === 409 && Array.isArray(data.detail?.conflict_ids)) {
-      setConflict({ id: path.split("/")[2], ids: data.detail.conflict_ids });
+      const id = path.split("/")[2];
+      const reported = data.detail.conflict_revisions;
+      if (reported && data.detail.conflict_ids.some((conflictId: string) =>
+        entries.find(entry => entry.id === conflictId)?.revision !== reported[conflictId])) {
+        setConflict(null);
+        throw new WorkspaceRequestError({ kind: "stale" });
+      }
+      setConflict({ id, ids: data.detail.conflict_ids, revision: entries.find(entry => entry.id === id)?.revision,
+        revisions: reported });
       throw new WorkspaceRequestError({ kind: "conflict" });
     }
     if (!response.ok) {
@@ -96,18 +107,20 @@ export function PersonalWorkspace({
     }
   }
   function lock() {
-    setToken(""); setUnlocked(false); setEntries([]); setHistory([]);
-    setContent(""); setQuestion(""); setConflict(null); setError(null); setEditing(null);
+    setWorkbenchOpen(false); setToken(""); setUnlocked(false); setEntries([]); setHistory([]);
+    setContent(""); setQuestion(""); setConflict(null); setError(null); setEditing(null); setEditingRevision(undefined);
   }
   async function save(event: FormEvent) {
     event.preventDefault();
     await run(async () => {
-      await request(editing ? `/entries/${editing}/edit` : "/entries", { kind, key, content });
+      await request(editing ? `/entries/${editing}/edit` : "/entries", { kind, key, content, ...(editing ? { expected_revision: editingRevision } : {}) });
       setContent(""); setEditing(null); await refresh();
     });
   }
   const renderedError = error?.kind === "conflict"
     ? text.conflictError
+    : error?.kind === "stale"
+      ? text.review.stale
     : error?.detail
       ? `${text.requestFailed}: ${error.detail}`
       : text.requestFailed;
@@ -121,6 +134,9 @@ export function PersonalWorkspace({
       <button disabled={busy}>{text.unlock}</button>
     </form> : <>
       <button disabled={busy} onClick={lock}>{text.lock}</button>
+      <button disabled={busy} aria-expanded={workbenchOpen} onClick={() => { setWorkbenchOpen(!workbenchOpen); if (workbenchOpen) void run(refresh); }}>{workbenchOpen ? text.review.close : text.review.open}</button>
+      {workbenchOpen && <ReviewWorkbench token={token} text={text} maxQuestionChars={questionLimit} onLock={lock} />}
+      <div hidden={workbenchOpen}>
       <h3>{text.profileTitle}</h3>
       <form onSubmit={save}>
         <label>{text.typeLabel}<select value={kind} onChange={event => setKind(event.target.value)}>
@@ -138,14 +154,14 @@ export function PersonalWorkspace({
         <strong>{entry.key}</strong> · {displayKind(entry.kind, text)} · {entry.status === "confirmed" ? text.statusConfirmed : text.statusPending}
         <p>{entry.content}</p><small>{entry.source} · {entry.updated_at}</small>
         <div className="memory-actions">
-          {entry.status === "pending" && <button aria-label={memoryActionName(text.confirm, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => void run(async () => { setConflict(null); await request(`/entries/${entry.id}/confirm`, { replace_ids: [] }); await refresh(); })}>{text.confirm}</button>}
-          <button aria-label={memoryActionName(text.edit, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => { setEditing(entry.id); setKind(entry.kind); setKey(entry.key); setContent(entry.content); }}>{text.edit}</button>
-          <button aria-label={memoryActionName(text.delete, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => void run(async () => { await request(`/entries/${entry.id}/delete`, {}); setConflict(null); await refresh(); })}>{text.delete}</button>
+          {entry.status === "pending" && <button aria-label={memoryActionName(text.confirm, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => void run(async () => { setConflict(null); await request(`/entries/${entry.id}/confirm`, { replace_ids: [], expected_revision: entry.revision }); await refresh(); })}>{text.confirm}</button>}
+          <button aria-label={memoryActionName(text.edit, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => { setEditing(entry.id); setEditingRevision(entry.revision); setKind(entry.kind); setKey(entry.key); setContent(entry.content); }}>{text.edit}</button>
+          <button aria-label={memoryActionName(text.delete, entry.key, index + 1, text.memoryItem)} disabled={busy} onClick={() => void run(async () => { await request(`/entries/${entry.id}/delete`, { expected_revision: entry.revision }); setConflict(null); await refresh(); })}>{text.delete}</button>
         </div>
       </li>)}</ul>
       {conflict && <aside role="alert"><p>{text.replacePrompt}</p>
         {entries.filter(entry => conflict.ids.includes(entry.id)).map(entry => <p key={entry.id}>{entry.key}: {entry.content}</p>)}
-        <button disabled={busy} onClick={() => void run(async () => { await request(`/entries/${conflict.id}/confirm`, { replace_ids: conflict.ids }); setConflict(null); await refresh(); })}>{text.replace}</button>
+        <button disabled={busy} onClick={() => void run(async () => { await request(`/entries/${conflict.id}/confirm`, { replace_ids: conflict.ids, expected_revision: conflict.revision, replace_revisions: conflict.revisions }); setConflict(null); await refresh(); })}>{text.replace}</button>
         <button onClick={() => setConflict(null)}>{text.cancel}</button>
       </aside>}
       <h3>{text.privateChatTitle}</h3>
@@ -161,6 +177,7 @@ export function PersonalWorkspace({
         const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
         const link = document.createElement("a"); link.href = url; link.download = "private-twin-export.json"; link.click(); URL.revokeObjectURL(url);
       })}>{text.exportData}</button>
+      </div>
     </>}
     {busy && <p role="status">{text.working}</p>}
     {error && <p role="alert">{renderedError}</p>}
