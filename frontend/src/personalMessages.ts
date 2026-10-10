@@ -1,9 +1,11 @@
+import { agencyMessages, type AgencyMessages } from "./agencyMessages";
 import { semanticMessages, type SemanticMessages } from "./semanticMessages";
 import { identityMessages, type IdentityMessages } from "./identityMessages";
 import type { Locale } from "./i18n";
 import { reviewMessages, type ReviewMessages } from "./reviewMessages";
 
 export type PersonalWorkspaceMessages = {
+  agency: AgencyMessages;
   review: ReviewMessages;
   identity: IdentityMessages;
   semantic: SemanticMessages;
@@ -50,6 +52,7 @@ export type PersonalWorkspaceMessages = {
 
 export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   en: {
+    agency: agencyMessages["en"],
     review: reviewMessages["en"],
     identity: identityMessages["en"],
     semantic: semanticMessages["en"],
@@ -94,6 +97,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Request failed",
   },
   "zh-CN": {
+    agency: agencyMessages["zh-CN"],
     review: reviewMessages["zh-CN"],
     identity: identityMessages["zh-CN"],
     semantic: semanticMessages["zh-CN"],
@@ -138,6 +142,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "请求失败",
   },
   "zh-TW": {
+    agency: agencyMessages["zh-TW"],
     review: reviewMessages["zh-TW"],
     identity: identityMessages["zh-TW"],
     semantic: semanticMessages["zh-TW"],
@@ -182,6 +187,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "請求失敗",
   },
   ja: {
+    agency: agencyMessages["ja"],
     review: reviewMessages["ja"],
     identity: identityMessages["ja"],
     semantic: semanticMessages["ja"],
@@ -226,6 +232,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "リクエストに失敗しました",
   },
   ko: {
+    agency: agencyMessages["ko"],
     review: reviewMessages["ko"],
     identity: identityMessages["ko"],
     semantic: semanticMessages["ko"],
@@ -270,6 +277,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "요청 실패",
   },
   es: {
+    agency: agencyMessages["es"],
     review: reviewMessages["es"],
     identity: identityMessages["es"],
     semantic: semanticMessages["es"],
@@ -314,6 +322,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "La solicitud ha fallado",
   },
   fr: {
+    agency: agencyMessages["fr"],
     review: reviewMessages["fr"],
     identity: identityMessages["fr"],
     semantic: semanticMessages["fr"],
@@ -358,6 +367,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Échec de la requête",
   },
   de: {
+    agency: agencyMessages["de"],
     review: reviewMessages["de"],
     identity: identityMessages["de"],
     semantic: semanticMessages["de"],
@@ -402,6 +412,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Anfrage fehlgeschlagen",
   },
   "pt-BR": {
+    agency: agencyMessages["pt-BR"],
     review: reviewMessages["pt-BR"],
     identity: identityMessages["pt-BR"],
     semantic: semanticMessages["pt-BR"],

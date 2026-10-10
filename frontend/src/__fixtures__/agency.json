@@ -1,0 +1,557 @@
+{
+  "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+  "disabled": [
+    {
+      "tool": "tasks.create",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_tasks",
+      "enabled": false,
+      "labels": [
+        "public",
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 1
+    },
+    {
+      "tool": "tasks.complete",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_tasks",
+      "enabled": false,
+      "labels": [
+        "public",
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 1
+    },
+    {
+      "tool": "notes.create",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_notes",
+      "enabled": false,
+      "labels": [
+        "public",
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 1
+    }
+  ],
+  "permissions": [
+    {
+      "tool": "tasks.create",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_tasks",
+      "enabled": true,
+      "labels": [
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 2
+    },
+    {
+      "tool": "tasks.complete",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_tasks",
+      "enabled": true,
+      "labels": [
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 2
+    },
+    {
+      "tool": "notes.create",
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "scope": "workspace_notes",
+      "enabled": true,
+      "labels": [
+        "private"
+      ],
+      "entity_ids": null,
+      "revision": 2
+    }
+  ],
+  "planned": {
+    "id": "0368322deb3549c68db0dd3648ab04a3",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.create",
+      "arguments": {
+        "title": "Fictional Orchid review",
+        "description": "Literal <script>data</script> only",
+        "due_at": null,
+        "project_id": null
+      },
+      "idempotency_key": "contract-task",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "0845d822e970abeb7117cb10830f3d9cd5fd252bb63eff709916cbb152d15c72",
+    "request_digest": "decdc40f0083a945a5cbe2137280574dbef3593b32e7747fe738f1d413b3a7f0",
+    "revision": 1,
+    "status": "planned",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": null,
+    "created_at": "2026-10-10T18:11:09.784159+00:00",
+    "updated_at": "2026-10-10T18:11:09.784159+00:00"
+  },
+  "approved": {
+    "id": "0368322deb3549c68db0dd3648ab04a3",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.create",
+      "arguments": {
+        "title": "Fictional Orchid review",
+        "description": "Literal <script>data</script> only",
+        "due_at": null,
+        "project_id": null
+      },
+      "idempotency_key": "contract-task",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "0845d822e970abeb7117cb10830f3d9cd5fd252bb63eff709916cbb152d15c72",
+    "request_digest": "decdc40f0083a945a5cbe2137280574dbef3593b32e7747fe738f1d413b3a7f0",
+    "revision": 2,
+    "status": "approved",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": "0845d822e970abeb7117cb10830f3d9cd5fd252bb63eff709916cbb152d15c72",
+    "created_at": "2026-10-10T18:11:09.784159+00:00",
+    "updated_at": "2026-10-10T18:11:09.784583+00:00"
+  },
+  "completed": {
+    "id": "0368322deb3549c68db0dd3648ab04a3",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.create",
+      "arguments": {
+        "title": "Fictional Orchid review",
+        "description": "Literal <script>data</script> only",
+        "due_at": null,
+        "project_id": null
+      },
+      "idempotency_key": "contract-task",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "0845d822e970abeb7117cb10830f3d9cd5fd252bb63eff709916cbb152d15c72",
+    "request_digest": "decdc40f0083a945a5cbe2137280574dbef3593b32e7747fe738f1d413b3a7f0",
+    "revision": 3,
+    "status": "completed",
+    "attempts": 1,
+    "result": {
+      "table": "tasks",
+      "id": "97a2b9da48d8459d9f60ee0b3632a140",
+      "revision": 1,
+      "changed": true
+    },
+    "undo": {},
+    "approved_digest": "0845d822e970abeb7117cb10830f3d9cd5fd252bb63eff709916cbb152d15c72",
+    "created_at": "2026-10-10T18:11:09.784159+00:00",
+    "updated_at": "2026-10-10T18:11:09.785050+00:00"
+  },
+  "completionPlan": {
+    "id": "3de4965fd39c4c60bfb5eecf06d66226",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.complete",
+      "arguments": {
+        "task_id": "97a2b9da48d8459d9f60ee0b3632a140",
+        "expected_revision": 1
+      },
+      "idempotency_key": "contract-complete",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "a3dfcffdbf123a2a16070e7d48827a1afaa4969f514224e3d1db1f04620b381d",
+    "request_digest": "1ff5f5ed3cf7e98d76ad34cbe764041e24efedbbebbec9527a8267fb45f74c80",
+    "revision": 1,
+    "status": "planned",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": null,
+    "created_at": "2026-10-10T18:11:09.785483+00:00",
+    "updated_at": "2026-10-10T18:11:09.785483+00:00"
+  },
+  "completion": {
+    "id": "3de4965fd39c4c60bfb5eecf06d66226",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.complete",
+      "arguments": {
+        "task_id": "97a2b9da48d8459d9f60ee0b3632a140",
+        "expected_revision": 1
+      },
+      "idempotency_key": "contract-complete",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "a3dfcffdbf123a2a16070e7d48827a1afaa4969f514224e3d1db1f04620b381d",
+    "request_digest": "1ff5f5ed3cf7e98d76ad34cbe764041e24efedbbebbec9527a8267fb45f74c80",
+    "revision": 3,
+    "status": "completed",
+    "attempts": 1,
+    "result": {
+      "table": "tasks",
+      "id": "97a2b9da48d8459d9f60ee0b3632a140",
+      "revision": 2,
+      "changed": true
+    },
+    "undo": {
+      "before_status": "open"
+    },
+    "approved_digest": "a3dfcffdbf123a2a16070e7d48827a1afaa4969f514224e3d1db1f04620b381d",
+    "created_at": "2026-10-10T18:11:09.785483+00:00",
+    "updated_at": "2026-10-10T18:11:09.786242+00:00"
+  },
+  "rolledBack": {
+    "id": "3de4965fd39c4c60bfb5eecf06d66226",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.complete",
+      "arguments": {
+        "task_id": "97a2b9da48d8459d9f60ee0b3632a140",
+        "expected_revision": 1
+      },
+      "idempotency_key": "contract-complete",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "a3dfcffdbf123a2a16070e7d48827a1afaa4969f514224e3d1db1f04620b381d",
+    "request_digest": "1ff5f5ed3cf7e98d76ad34cbe764041e24efedbbebbec9527a8267fb45f74c80",
+    "revision": 4,
+    "status": "rolled_back",
+    "attempts": 1,
+    "result": {
+      "table": "tasks",
+      "id": "97a2b9da48d8459d9f60ee0b3632a140",
+      "revision": 2,
+      "changed": true
+    },
+    "undo": {
+      "before_status": "open"
+    },
+    "approved_digest": "a3dfcffdbf123a2a16070e7d48827a1afaa4969f514224e3d1db1f04620b381d",
+    "created_at": "2026-10-10T18:11:09.785483+00:00",
+    "updated_at": "2026-10-10T18:11:09.786582+00:00"
+  },
+  "recommended": {
+    "id": "9d7f4ff9fe924f35965cf15e5147ec9e",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "notes.create",
+      "arguments": {
+        "title": "Fictional note",
+        "content": "Source text cannot approve actions.",
+        "project_id": null
+      },
+      "idempotency_key": "contract-recommend",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "recommend"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "a67a7a3284cefa7152027dc380b727afc629c9cdbb4c3313954f9216f76f147c",
+    "request_digest": "233bad5ee26cc298d73a6b9f75a04b906fd17652d9f92d1ad28731936eb8113a",
+    "revision": 1,
+    "status": "recommended",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": null,
+    "created_at": "2026-10-10T18:11:09.786906+00:00",
+    "updated_at": "2026-10-10T18:11:09.786906+00:00"
+  },
+  "cancelled": {
+    "id": "9d7f4ff9fe924f35965cf15e5147ec9e",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "notes.create",
+      "arguments": {
+        "title": "Fictional note",
+        "content": "Source text cannot approve actions.",
+        "project_id": null
+      },
+      "idempotency_key": "contract-recommend",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "recommend"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "a67a7a3284cefa7152027dc380b727afc629c9cdbb4c3313954f9216f76f147c",
+    "request_digest": "233bad5ee26cc298d73a6b9f75a04b906fd17652d9f92d1ad28731936eb8113a",
+    "revision": 2,
+    "status": "cancelled",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": null,
+    "created_at": "2026-10-10T18:11:09.786906+00:00",
+    "updated_at": "2026-10-10T18:11:09.787242+00:00"
+  },
+  "notePlan": {
+    "id": "68087ac75f034be29359898787dfa32e",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "notes.create",
+      "arguments": {
+        "title": "Fictional note",
+        "content": "Source text cannot approve actions.",
+        "project_id": null
+      },
+      "idempotency_key": "contract-note",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "984a21f6f5bfc12cc459e3923a21d3a7c85a0a47be9316d3f44a2b23128f4d95",
+    "request_digest": "60c13e744b2dae205ac94233ec403de3a22e6932a036176e478c8c887076dba7",
+    "revision": 1,
+    "status": "planned",
+    "attempts": 0,
+    "result": null,
+    "undo": null,
+    "approved_digest": null,
+    "created_at": "2026-10-10T18:11:09.787568+00:00",
+    "updated_at": "2026-10-10T18:11:09.787568+00:00"
+  },
+  "noteCompleted": {
+    "id": "68087ac75f034be29359898787dfa32e",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "notes.create",
+      "arguments": {
+        "title": "Fictional note",
+        "content": "Source text cannot approve actions.",
+        "project_id": null
+      },
+      "idempotency_key": "contract-note",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "984a21f6f5bfc12cc459e3923a21d3a7c85a0a47be9316d3f44a2b23128f4d95",
+    "request_digest": "60c13e744b2dae205ac94233ec403de3a22e6932a036176e478c8c887076dba7",
+    "revision": 3,
+    "status": "completed",
+    "attempts": 1,
+    "result": {
+      "table": "notes",
+      "id": "a7bacebf042940b897c1b8f02e1fb606",
+      "revision": 1,
+      "changed": true
+    },
+    "undo": {},
+    "approved_digest": "984a21f6f5bfc12cc459e3923a21d3a7c85a0a47be9316d3f44a2b23128f4d95",
+    "created_at": "2026-10-10T18:11:09.787568+00:00",
+    "updated_at": "2026-10-10T18:11:09.788339+00:00"
+  },
+  "failed": {
+    "id": "dee3a1f94b864da2b556a90e4685aab7",
+    "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+    "invocation": {
+      "tool": "tasks.create",
+      "arguments": {
+        "title": "Explicit retry fixture",
+        "description": "",
+        "due_at": null,
+        "project_id": null
+      },
+      "idempotency_key": "contract-failed",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "intent": "act"
+    },
+    "permission_revision": 2,
+    "source_revisions": {
+      "3f9275aec56744819ae53b591f1fe8c8": 2
+    },
+    "entity_revisions": {},
+    "digest": "31bf4a49e21c48e2fc0ec4981ea0a3f0492ea09311c1cc4688272dd03e73672f",
+    "request_digest": "90584c589444e5ce63edb3dfff204edc8df5eed2b903de9b99b889201139be6a",
+    "revision": 3,
+    "status": "failed",
+    "attempts": 1,
+    "result": null,
+    "undo": null,
+    "approved_digest": "31bf4a49e21c48e2fc0ec4981ea0a3f0492ea09311c1cc4688272dd03e73672f",
+    "created_at": "2026-10-10T18:11:09.788730+00:00",
+    "updated_at": "2026-10-10T18:11:09.789639+00:00"
+  },
+  "tasks": [
+    {
+      "id": "97a2b9da48d8459d9f60ee0b3632a140",
+      "title": "Fictional Orchid review",
+      "description": "Literal <script>data</script> only",
+      "due_at": null,
+      "project_id": null,
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "created_by": "0368322deb3549c68db0dd3648ab04a3",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "revision": 3,
+      "created_at": "2026-10-10T18:11:09.784971+00:00",
+      "updated_at": "2026-10-10T18:11:09.786530+00:00",
+      "status": "open"
+    }
+  ],
+  "notes": [
+    {
+      "id": "a7bacebf042940b897c1b8f02e1fb606",
+      "title": "Fictional note",
+      "content": "Source text cannot approve actions.",
+      "project_id": null,
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "created_by": "68087ac75f034be29359898787dfa32e",
+      "sensitivity": "private",
+      "source_ids": [
+        "3f9275aec56744819ae53b591f1fe8c8"
+      ],
+      "revision": 1,
+      "created_at": "2026-10-10T18:11:09.788275+00:00",
+      "updated_at": "2026-10-10T18:11:09.788275+00:00"
+    }
+  ],
+  "events": [
+    {
+      "id": "fd70d816094f477e8c5478919e1f3dc1",
+      "plan_id": "0368322deb3549c68db0dd3648ab04a3",
+      "stage": "intent",
+      "outcome": "planned",
+      "code": "owner_request",
+      "created_at": "2026-10-10T18:11:09.784252+00:00"
+    },
+    {
+      "id": "1b649ee90e174e269146e86a284eeb9b",
+      "plan_id": "0368322deb3549c68db0dd3648ab04a3",
+      "stage": "plan",
+      "outcome": "planned",
+      "code": "no_effects_yet",
+      "created_at": "2026-10-10T18:11:09.784280+00:00"
+    },
+    {
+      "id": "2f58c10ba2b5451697eaba0aa4772819",
+      "plan_id": "0368322deb3549c68db0dd3648ab04a3",
+      "stage": "approval",
+      "outcome": "approved",
+      "code": "exact_plan_digest",
+      "created_at": "2026-10-10T18:11:09.784653+00:00"
+    },
+    {
+      "id": "8ba4ca0f126d441aa3181b37b91bf8bd",
+      "plan_id": "0368322deb3549c68db0dd3648ab04a3",
+      "stage": "execution",
+      "outcome": "completed",
+      "code": "transaction_committed",
+      "created_at": "2026-10-10T18:11:09.785070+00:00"
+    }
+  ],
+  "memories": [
+    {
+      "id": "3f9275aec56744819ae53b591f1fe8c8",
+      "kind": "fact",
+      "key": "project.current",
+      "content": "Fictional Orchid project",
+      "source": "manual",
+      "status": "confirmed",
+      "created_at": "2026-10-10T18:11:09.782626+00:00",
+      "updated_at": "2026-10-10T18:11:09.783754+00:00",
+      "revision": 2,
+      "superseded_by": null,
+      "sensitivity": "private",
+      "entity_id": null,
+      "confidence": null,
+      "belief": "known",
+      "valid_from": null,
+      "valid_until": null,
+      "occurred_at": null,
+      "owner_id": "0400af4481c5436ab2b6a9784f869fdd",
+      "category": "semantic"
+    }
+  ]
+}

@@ -27,6 +27,9 @@ describe("localization", () => {
     for (const { code } of supportedLocales) {
       expect(Object.keys(messages[code]).sort()).toEqual(canonicalKeys);
       expect(leafStrings(messages[code]).every((value) => value.trim().length > 0)).toBe(true);
+      expect(Object.keys(messages[code].personalWorkspace.agency).sort()).toEqual(
+        Object.keys(messages.en.personalWorkspace.agency).sort(),
+      );
       expect(Object.keys(messages[code].personalWorkspace.semantic).sort()).toEqual(
         Object.keys(messages.en.personalWorkspace.semantic).sort(),
       );

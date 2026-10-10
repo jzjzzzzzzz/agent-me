@@ -110,7 +110,7 @@ Before an answer is returned, implemented checks can validate citation paths, ev
 | Public trace | Makes execution inspectable | Safe stage summaries, outcomes, and metrics |
 | Evaluation | Measures behavior beyond a demo | Versioned fixtures and deterministic runner |
 
-The opt-in personal Agent additionally implements evidence-linked relationships, structured memory, typed know/recommend/act routing and three owner-approved local task/note tools. Arbitrary external tool integrations and unconstrained semantic inference remain future work; see the [implementation ledger](docs/AGENT_IMPLEMENTATION.md) and [private workspace guide](docs/PERSONAL.md).
+The opt-in personal Agent additionally implements evidence-linked relationships, structured memory, typed know/recommend/act routing and three owner-approved local task/note tools. The [action workbench](docs/AGENCY_WORKBENCH.md) exposes their default-off permissions, independently reviewed plans/approval/execution, local outputs and exact-effect undo. Arbitrary external tool integrations and unconstrained semantic inference remain future work; see the [implementation ledger](docs/AGENT_IMPLEMENTATION.md) and [private workspace guide](docs/PERSONAL.md).
 
 ## Architecture
 
