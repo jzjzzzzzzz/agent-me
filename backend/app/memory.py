@@ -17,7 +17,7 @@ from .agency_schema import extend_agency
 from .control_schema import extend_control
 from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
-from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQuery
+from .memory_models import Confirm, DeleteMemory, EditEntry, Entry, RestoreMemory, TemporalQuery
 from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
@@ -575,9 +575,16 @@ class Store:
             self._snapshot(db, entry_id, "confirmed")
         return {"status": "confirmed", "revision": item["revision"] + 1}
 
-    def delete(self, entry_id: str):
+    def delete(self, entry_id: str, expected_revision: int | None = None):
+        DeleteMemory(expected_revision=expected_revision)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if expected_revision is not None:
+                item = db.execute("SELECT revision FROM entries WHERE id=?", (entry_id,)).fetchone()
+                if not item:
+                    raise MemoryNotFound("Memory not found")
+                if item["revision"] != expected_revision:
+                    raise MemoryConflict("Memory changed; refresh before deleting")
             self._delete(db, entry_id)
         return {"deleted": True}
 

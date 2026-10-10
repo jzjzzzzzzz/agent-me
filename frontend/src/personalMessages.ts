@@ -1,6 +1,8 @@
 import type { Locale } from "./i18n";
+import { reviewMessages, type ReviewMessages } from "./reviewMessages";
 
 export type PersonalWorkspaceMessages = {
+  review: ReviewMessages;
   workspaceLabel: string;
   title: string;
   intro: string;
@@ -44,10 +46,11 @@ export type PersonalWorkspaceMessages = {
 
 export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   en: {
+    review: reviewMessages["en"],
     workspaceLabel: "Private workspace",
     title: "My AI twin",
     intro: "Profiles, conversations, and memories are stored locally. Only confirmed memories ground answers.",
-    externalDisclosure: "A model provider is connected. Private questions, retrieved confirmed memories, and private and public knowledge excerpts are sent to the configured model provider.",
+    externalDisclosure: "A model provider is configured, but this workspace stays local by default. The review workbench never calls it. Provider disclosure requires a reviewed policy and explicit opt-in on each API request.",
     localDisclosure: "Local extractive mode: private questions and context stay in this deployment and are not sent to an external model provider. Answers are source excerpts rather than personalized generation.",
     tokenLabel: "Workspace token",
     unlock: "Unlock",
@@ -85,10 +88,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Request failed",
   },
   "zh-CN": {
+    review: reviewMessages["zh-CN"],
     workspaceLabel: "私有工作区",
     title: "我的 AI 分身",
     intro: "档案、对话与记忆保存在本地。只有已确认的记忆会作为回答依据。",
-    externalDisclosure: "模型服务已连接。私有问题、检索到的已确认记忆，以及私有和公开知识片段会发送给当前配置的模型服务。",
+    externalDisclosure: "模型服务已配置，但此工作区默认在本地处理。审核工作台不调用模型服务；向模型披露需要已审核策略和每次 API 请求的明确授权。",
     localDisclosure: "本地摘录模式：私有问题和上下文留在当前部署中，不会发送给外部模型服务；回答为来源摘录，而非个性化生成。",
     tokenLabel: "工作区密钥",
     unlock: "解锁",
@@ -126,10 +130,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "请求失败",
   },
   "zh-TW": {
+    review: reviewMessages["zh-TW"],
     workspaceLabel: "私人工作區",
     title: "我的 AI 分身",
     intro: "個人資料、對話與記憶會儲存在本機。只有已確認的記憶會作為回答依據。",
-    externalDisclosure: "模型服務已連線。私人問題、擷取到的已確認記憶，以及私人與公開知識片段會傳送給目前設定的模型服務。",
+    externalDisclosure: "模型服務已設定，但此工作區預設在本機處理。審核工作臺不呼叫模型服務；向模型揭露需要已審核策略與每次 API 請求的明確授權。",
     localDisclosure: "本機擷取模式：私人問題與內容留在目前部署中，不會傳送給外部模型服務；回答是來源摘錄，而非個人化生成。",
     tokenLabel: "工作區權杖",
     unlock: "解鎖",
@@ -167,10 +172,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "請求失敗",
   },
   ja: {
+    review: reviewMessages["ja"],
     workspaceLabel: "プライベートワークスペース",
     title: "自分の AI ツイン",
     intro: "プロフィール、会話、記憶はローカルに保存されます。回答の根拠になるのは確認済みの記憶だけです。",
-    externalDisclosure: "モデルプロバイダーに接続しています。非公開の質問、取得した確認済み記憶、非公開および公開の知識抜粋が、設定済みのモデルプロバイダーへ送信されます。",
+    externalDisclosure: "モデルは設定されていますが、この画面は既定でローカル処理です。レビュー画面はモデルを呼び出しません。外部送信には承認済みポリシーとAPI要求ごとの明示的な同意が必要です。",
     localDisclosure: "ローカル抽出モード：非公開の質問とコンテキストはこのデプロイ内に留まり、外部モデルプロバイダーへ送信されません。回答は出典の抜粋であり、個人向けの生成文ではありません。",
     tokenLabel: "ワークスペーストークン",
     unlock: "ロック解除",
@@ -208,10 +214,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "リクエストに失敗しました",
   },
   ko: {
+    review: reviewMessages["ko"],
     workspaceLabel: "비공개 작업 공간",
     title: "내 AI 트윈",
     intro: "프로필, 대화 및 기억은 로컬에 저장됩니다. 확인된 기억만 답변의 근거로 사용됩니다.",
-    externalDisclosure: "모델 제공업체가 연결되었습니다. 비공개 질문, 검색된 확인 완료 기억, 비공개 및 공개 지식 발췌문이 구성된 모델 제공업체로 전송됩니다.",
+    externalDisclosure: "모델은 설정되었지만 이 작업 공간은 기본적으로 로컬에서 처리합니다. 검토 작업대는 모델을 호출하지 않습니다. 외부 전송에는 검토된 정책과 각 API 요청의 명시적 동의가 필요합니다.",
     localDisclosure: "로컬 추출 모드: 비공개 질문과 컨텍스트는 이 배포 환경에만 남으며 외부 모델 제공업체로 전송되지 않습니다. 답변은 개인화된 생성문이 아닌 출처 발췌문입니다.",
     tokenLabel: "작업 공간 토큰",
     unlock: "잠금 해제",
@@ -249,10 +256,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "요청 실패",
   },
   es: {
+    review: reviewMessages["es"],
     workspaceLabel: "Espacio de trabajo privado",
     title: "Mi gemelo de IA",
     intro: "Los perfiles, las conversaciones y los recuerdos se guardan localmente. Solo los recuerdos confirmados fundamentan las respuestas.",
-    externalDisclosure: "Hay un proveedor de modelos conectado. Las preguntas privadas, los recuerdos confirmados recuperados y los fragmentos de conocimiento privado y público se envían al proveedor configurado.",
+    externalDisclosure: "Hay un modelo configurado, pero este espacio trabaja localmente por defecto. La revisión no llama al modelo. El envío exige una política revisada y consentimiento explícito en cada solicitud API.",
     localDisclosure: "Modo extractivo local: las preguntas privadas y el contexto permanecen en este despliegue y no se envían a un proveedor de modelos externo. Las respuestas son fragmentos de las fuentes, no texto personalizado generado.",
     tokenLabel: "Token del espacio de trabajo",
     unlock: "Desbloquear",
@@ -290,10 +298,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "La solicitud ha fallado",
   },
   fr: {
+    review: reviewMessages["fr"],
     workspaceLabel: "Espace de travail privé",
     title: "Mon jumeau IA",
     intro: "Les profils, conversations et souvenirs sont stockés localement. Seuls les souvenirs confirmés servent de base aux réponses.",
-    externalDisclosure: "Un fournisseur de modèles est connecté. Les questions privées, les souvenirs confirmés récupérés et les extraits de connaissances privées et publiques sont envoyés au fournisseur configuré.",
+    externalDisclosure: "Un modèle est configuré, mais cet espace reste local par défaut. La revue ne l’appelle pas. Tout envoi exige une politique validée et un accord explicite pour chaque requête API.",
     localDisclosure: "Mode d’extraction local : les questions privées et le contexte restent dans ce déploiement et ne sont pas envoyés à un fournisseur de modèles externe. Les réponses sont des extraits de sources, et non du texte personnalisé généré.",
     tokenLabel: "Jeton de l’espace de travail",
     unlock: "Déverrouiller",
@@ -331,10 +340,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Échec de la requête",
   },
   de: {
+    review: reviewMessages["de"],
     workspaceLabel: "Privater Arbeitsbereich",
     title: "Mein KI-Zwilling",
     intro: "Profile, Unterhaltungen und Erinnerungen werden lokal gespeichert. Nur bestätigte Erinnerungen dienen als Grundlage für Antworten.",
-    externalDisclosure: "Ein Modellanbieter ist verbunden. Private Fragen, abgerufene bestätigte Erinnerungen sowie private und öffentliche Wissensauszüge werden an den konfigurierten Modellanbieter gesendet.",
+    externalDisclosure: "Ein Modell ist konfiguriert, dieser Arbeitsbereich bleibt standardmäßig lokal. Der Prüfbereich ruft es nicht auf. Jede Übermittlung erfordert eine geprüfte Richtlinie und ausdrückliche Zustimmung pro API-Anfrage.",
     localDisclosure: "Lokaler Extraktionsmodus: Private Fragen und Kontext bleiben in dieser Bereitstellung und werden nicht an einen externen Modellanbieter gesendet. Antworten sind Quellenauszüge statt personalisierter generierter Texte.",
     tokenLabel: "Arbeitsbereich-Token",
     unlock: "Entsperren",
@@ -372,10 +382,11 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Anfrage fehlgeschlagen",
   },
   "pt-BR": {
+    review: reviewMessages["pt-BR"],
     workspaceLabel: "Espaço de trabalho privado",
     title: "Meu gêmeo de IA",
     intro: "Perfis, conversas e memórias são armazenados localmente. Somente memórias confirmadas fundamentam as respostas.",
-    externalDisclosure: "Um provedor de modelos está conectado. Perguntas privadas, memórias confirmadas recuperadas e trechos de conhecimento privado e público são enviados ao provedor configurado.",
+    externalDisclosure: "Há um modelo configurado, mas este espaço funciona localmente por padrão. A revisão não chama o modelo. O envio exige uma política revisada e consentimento explícito em cada solicitação API.",
     localDisclosure: "Modo extrativo local: perguntas privadas e contexto permanecem nesta implantação e não são enviados a um provedor de modelos externo. As respostas são trechos das fontes, não texto personalizado gerado.",
     tokenLabel: "Token do espaço de trabalho",
     unlock: "Desbloquear",

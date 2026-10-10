@@ -49,7 +49,32 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 需要更多资料时，将 Markdown 文件放入 `private/knowledge/`，它们只用于私有聊天。
 这里的文件由你手工维护，被视为已授权知识，不经过候选记忆确认。
 
-### 3. 聊天与确认
+### 3. 来源审核工作台
+
+解锁后点击“打开审核工作台”，完成受控学习与有据问答：
+
+1. 登记 document/project/conversation/event 来源，选择敏感级别；可绑定已确认的对象。
+2. 核对来源后单独授权。登记不会自动授权；来源撤销只阻止后续提取，不删除已有记忆。
+3. 粘贴原文或读取本地 UTF-8 `.txt`/`.md` 文件。文件读取只填入草稿，点击提取才提交到本地 API。
+   `fields` 接受 `fact identity.name: Alex Example` 这样的精确字段；`notes` 保留字面段落。
+   提取内容最多 80,000 Unicode 字符且 UTF-8 编码不超过 200,000 字节。
+4. 提取产生待确认候选，不自动接受。失败记录保留输入，可使用同一来源、内容和模式重试；
+   提取记录展示去重、冲突和分阶段结果。
+5. 在待确认/已确认/已替代筛选中逐条审核。冲突时显示新旧内容，明确替换后才提交；
+   来源授权、提取、确认、替换、编辑与工作台删除均绑定已查看的修订版本。
+6. “查看来源与历史”展示精确原文、来源/记忆版本、内容哈希、码点区间和修订快照。
+   来源原文对应提取时的版本，不代表之后人工编辑的内容仍与原文完全一致。
+7. 在“依据个人记忆提问”中调用本地 `/ask`，查看当前依据与不确定状态。该路径不调用模型、
+   不保存聊天历史；敏感依据需要每次提问明确勾选，成功后勾选自动清除。
+8. 修改已确认记忆使其重新待确认，并移除页面上已有的回答。删除需再次核对内容和修订版本，清除所选记忆及其快照/原文；
+   已独立保存的聊天、导出或其他记录不随之消失。外部修改需要显式刷新工作台。
+
+密钥与所有草稿只保存在页面内存中。锁定或关闭工作台会取消在途请求并清除工作台状态；
+锁定同时清除工作区密钥。HTTP 请求取消不保证服务器已开始的事务也回滚；重新打开后应刷新核对。
+语言切换只改变界面，不重新请求数据、不丢失草稿。旧档案/聊天界面通过关闭工作台返回。
+身份创建/关系审核、保留策略、便携导入和工具审批仍由 API/CLI 提供，不属于本次工作台范围。
+
+### 4. 聊天与确认
 
 在**私有聊天**输入 `记住：先给结论，再给细节` 或 `Remember: Keep answers concise`。
 系统保存对话，并将指令后的文本作为待确认偏好；点击确认后才用于后续回答。
@@ -64,18 +89,18 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 如需私有模型生成，配置三个 `LLM_*` 值后，还须通过 API/CLI 授权披露策略，并在每次请求显式设置 `allow_provider: true`；参见[披露契约](DISCLOSURE.md)。
 普通问答与协作模式保持原有行为，**不会读取私有工作区**。
 
-### 4. 更新、冲突与删除
+### 5. 更新、冲突与删除
 
 - 修改已确认条目后，它重新变为待确认状态，旧内容立即退出记忆检索，但保留为只读版本快照。
 - 相同 `kind + key` 的已确认条目视为冲突，必须明确确认替换；替换在数据库事务内完成，旧条目变为 `superseded`，不会再用于回答。
-- 记忆历史与恢复通过 API 或独立记忆核心操作；现有界面只显示活跃条目，不提供版本浏览。恢复旧版本会创建新的待确认候选，不会直接复活旧记忆。
+- 工作台提供修订历史和已替代条目的只读浏览；历史恢复仍通过 API/CLI 操作，会创建新的待确认候选，不直接复活旧记忆。
 - 不同字段之间的语义矛盾尚不自动识别；请使用一致的字段命名。
 - 删除记忆会同时删除该条目的全部版本快照。被替代条目和恢复产生的候选是独立记录，需要分别删除；删除新条目不会重新激活旧条目。聊天记录中已有的原文仍在，可另行清空全部聊天。
 - 历史聊天持久化用于显示（最近 100 条），本版不自动重新发送历史聊天给模型，避免删除的记忆通过旧对话重新进入上下文。因此不是完整的多轮指代对话。
-- 导出版本 `4` 包含所有活跃与已替代记忆、版本历史及完整聊天；通过同一数据库快照读取。当前不提供导入接口，旧导出不会被后续删除追溯清除。
+- 导出版本 `8` 包含所有活跃与已替代记忆、版本历史、完整聊天和学习来源等状态；通过同一数据库快照读取。便携导入可通过 API/CLI 审核摘要后执行，旧导出不会被后续删除追溯清除。
 - 清空聊天不会删除记忆；删除所有本地数据时，先停止后端，再删除 `private/`，重新初始化会生成新密钥。
 
-### 5. 隐私与发布
+### 6. 隐私与发布
 
 默认路径：`private/twin.sqlite3`、`private/knowledge/`、`private/personal.env`。
 Git 和 Docker 构建上下文都排除 `private/`、环境文件和数据库文件。
@@ -108,13 +133,29 @@ Private-workspace controls and data-destination disclosures follow the selected 
 Changing locale does not relock or refetch the workspace, and it preserves the in-memory token and
 drafts. Memory/chat content, keys, and API type values remain verbatim.
 
+Open the **review workbench** after unlocking to register and independently approve a source,
+read a local UTF-8 text file into a draft (no upload until ingestion), extract exact fields or literal
+paragraphs into pending candidates, review explicit old/new conflicts and inspect exact origins/revision
+history. Source review, ingestion, confirmation/replacement, edit and workbench deletion all bind to
+reviewed revisions. Failed runs retain the draft for an explicit same-content retry. Superseded records
+are read-only but remain inspectable and individually deletable. Existing confirmed entities can scope
+sources; entity creation/relationship review remains an API/CLI capability.
+
+The workbench's **Ask with evidence** calls the provider-free atomic `/ask` route and shows current
+attributed evidence and uncertainty. Sensitive context requires a checkbox for that question; it resets
+after success. These answers do not persist a chat transcript. Any workbench mutation clears its prior
+answer/provenance. External edits require explicit refresh. Closing the workbench or locking unmounts
+it, discards its drafts and aborts its requests; locking also clears the token. Aborting HTTP delivery is
+not a guarantee that an already-started server transaction was undone; refresh after reopening.
+Close the workbench to return to the compatibility memory/chat form. No credentials or private
+content are written to browser storage. All nine supported interface locales cover the workbench.
+
 Add profile fields as typed entries (`fact`, `preference`, `event`, `decision`). All new or edited
 entries are pending until confirmed. Use `Remember: ...` in private chat to propose a preference,
 then review it in the memory list. The default extracted key is `conversation.preference`; edit it
 to a specific key before confirmation when needed. Matching kind/key conflicts require explicit
 replacement. Replaced records become read-only `superseded` archives, excluded from answer context.
-Edits preserve prior revision snapshots. Version browsing and restoration are API/core capabilities,
-not new reference-UI features. Cross-key semantic contradiction detection is not implemented.
+Edits preserve prior revision snapshots. The review workbench browses versions and superseded records; restoration remains an API/CLI capability. Cross-key semantic contradiction detection is not implemented.
 
 Confirmed preferences are eligible without lexical overlap; a reserved floor (5 of the 20
 total slots) keeps them from being evicted by a flood of matching facts, and any unused
@@ -159,7 +200,7 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | GET | `/entries/{id}/history` | Read ordered revision snapshots |
 | POST | `/entries/{id}/restore` | Propose a historical `{revision, expected_revision?}` as a new pending entry |
 | POST | `/entries/{id}/confirm` | Confirm with `{replace_ids: []}`; 409 reports conflicts |
-| POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
+| POST | `/entries/{id}/delete` | Delete a record and its snapshots; optional `{expected_revision}` rejects stale deletion |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
 | GET | `/export` | Version-8 snapshot including learning provenance and forgetting digests |
@@ -194,7 +235,7 @@ Confirmation rejects unknown fields, duplicate or blank replacement IDs, non-str
 IDs longer than 100 characters, and lists longer than 100 IDs with HTTP 422.
 Valid but mismatched conflict sets return HTTP 409 with `conflict_ids` and `conflict_revisions`.
 
-For race-safe review, clients should send `expected_revision` on edit, confirmation, and restore.
+For race-safe review, clients should send `expected_revision` on edit, confirmation, restore and deletion.
 Confirmation can also send `replace_revisions: {"<conflict-id>": <reviewed-revision>}`.
 The server compares these preconditions inside the write transaction; stale requests return 409
 without changing any entries or snapshots. These fields are optional for compatibility with
@@ -208,6 +249,8 @@ The [portable import contract](OWNER_CONTROL.md) accepts supported snapshots int
 workspace through exact digest review; execution permissions/plans are inert archives, not restored grants.
 
 Deletion removes the selected record, all of its snapshots, and its ingestion excerpts in one transaction.
+With an optional `expected_revision`, deletion rejects a changed or missing record before any effect;
+legacy no-body/unconditioned deletes retain their idempotent behavior.
 Opaque digests of current and historical kind/key/content are retained to block automatic re-ingestion. It does not
 cascade to separate archived/restored records, transcript text, previous exports, or provider data.
 A deliberate manual re-add remains possible; replay of an earlier ingestion cannot recreate the record.
@@ -233,7 +276,8 @@ lowers the current classification. Label lowering requires a separate explicit o
 
 Labels do not automatically classify PII, redact the owner's question, or classify manually maintained
 private Markdown. The [disclosure policy](DISCLOSURE.md) additionally bounds document namespaces/paths and provider targets.
-The reference UI does not provide sensitive-memory opt-in; use the API or CLI for that operation.
+The review workbench offers per-question sensitive-evidence opt-in for the local `/ask` route.
+It never enables provider disclosure. The older private chat form remains local and does not opt in to sensitive context.
 
 ### Pure Agent verification / 纯 Agent 验证
 
@@ -254,7 +298,8 @@ These deterministic checks do not measure semantic entailment, embedding quality
 
 Approved-source registration, candidate extraction, exact provenance, deduplication, replay,
 failed-run recovery, revocation, CLI use, and forgetting semantics are described in
-[Controlled Agent learning](LEARNING.md). These are core/API/CLI capabilities, not frontend additions.
+[Controlled Agent learning](LEARNING.md). The review workbench exposes source registration/review, ingestion, candidate confirmation and provenance;
+advanced learning-policy configuration remains a Core/API/CLI capability.
 
 
 Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
