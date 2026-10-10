@@ -45,7 +45,8 @@ conversations are persisted for display but not re-injected as evidence. The kno
 pre-migration revision history cannot be reconstructed,
 controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
 semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
-Unified retrieval, contextual tools, portable import and full audit/metrics coverage remain unfinished; the Verifier does not prove factual truth or semantic entailment.
+Unified hybrid retrieval and live atomic source-value verification now exist; contextual tools,
+portable import and full audit/metrics coverage remain unfinished; the Verifier does not prove factual truth or semantic entailment.
 
 
 Approved document, project, conversation, and event sources can additionally propose pending
@@ -61,6 +62,12 @@ workspace ownership, memory categories, optional declared confidence, and explic
 Valid time is distinct from recorded knowledge time; context excludes expired, future and disputed
 claims by default. Retention is opt-in, previewed, stale-safe and atomic. See
 [identity/time contracts](docs/IDENTITY_TIME.md) for evidence and limits.
+
+
+The local personal Agent now answers through typed owner-scoped hybrid retrieval, explicit uncertainty,
+whole-record budgets and live atomic evidence checks. Public fictional examples cannot establish
+owner identity, preferences do not stand in for factual support, and temporal queries do not invent
+episode dates. See [personal retrieval contracts](docs/PERSONAL_RETRIEVAL.md).
 
 ## Workstreams
 

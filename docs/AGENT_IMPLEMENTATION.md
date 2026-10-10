@@ -18,15 +18,15 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | Learning | Retention, forgetting and consolidation | Record/snapshot/origin deletion and replay-aware digest forgetting exist; `retention.py` preview/apply policy exists; explicit cross-record consolidation remains |
 | Learning | Sensitive/identity-defining review policies | Every extracted candidate needs owner confirmation; sensitivity floor is enforced; richer policy configuration remains |
 | Learning | Replayable traces and recoverable failure | `learning.py` atomic batches, durable failed/completed runs, stable retry IDs; concurrency/failure tests |
-| Retrieval | Hybrid documents/memory and relationship-aware context | Public/private documents and memory coexist; unified retrieval contracts remain |
+| Retrieval | Hybrid documents/memory and relationship-aware context | `retrieval.py` lexical/field/alias/relationship hybrid, namespaced bounded documents and temporal selection; retrieval tests |
 | Retrieval | Temporal selection and stale/disputed knowledge | Valid-time and knowledge-time selection, expiry/future exclusion and effective belief states; `evaluate_identity.py` |
-| Retrieval | Sensitivity-aware assembly and evidence sufficiency | Provider context is bounded; explicit sensitive-record disclosure exists; unified evidence policy remains |
-| Retrieval | Factual, temporal, preference, project and relationship evaluation | Memory and collaboration suites exist; broader retrieval fixtures remain |
+| Retrieval | Sensitivity-aware assembly and evidence sufficiency | Typed bounded evidence assembly, live privacy/confidence checks, sufficiency states and presentation-vs-fact separation |
+| Retrieval | Factual, temporal, preference, project and relationship evaluation | `evaluate_retrieval.py` covers factual/temporal/preference/project/relationship, unsupported/privacy/adversarial cases |
 | Agency | Typed routing and explicit tool/data permissions | Not yet implemented |
 | Agency | Plan/approval gates and inspectable calls/results | Not yet implemented |
 | Agency | Idempotency, retry, rollback and clear know/recommend/act boundaries | Memory transactions exist; actual bounded tools remain |
-| Verification | Atomic claim/evidence mapping and temporal consistency | Source/citation checks exist; structured personal claims remain |
-| Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle and preference cases exist; broader adversarial/longitudinal suite remains |
+| Verification | Atomic claim/evidence mapping and temporal consistency | `personal_agent.py` constrained atomic values and live authoritative verification; arbitrary paraphrase entailment remains unproven |
+| Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle, relationship, temporal, privacy, injection-as-data, forged-claim and in-flight deletion suites exist; full metrics remain |
 | Verification | Calibration, coverage, provenance and correction-effort metrics | Boolean memory evaluation exists; longitudinal metrics remain |
 | Owner control | Local/provider boundaries, labels, selective disclosure | Local core, structured sensitivity labels and explicit opt-in exist; document/provider policy expansion remains |
 | Owner control | Review/correct/export/delete interfaces and portable formats | Core/API/CLI review, correction, export, deletion and restore exist; portable import remains |
@@ -40,7 +40,8 @@ This ledger is not a release promise or a claim that the roadmap is complete.
    `test_learning.py`, `test_learning_api.py`, `test_agent_cli.py`, `evaluate_learning.py`).
 3. Structured identity/relationships, declared confidence, ownership and temporal retention semantics
    (implemented; `identity.py`, `memory_time.py`, `retention.py`, Core/API/CLI tests and identity evaluation).
-4. Unified personal retrieval, disputed/stale evidence and atomic grounded answers.
+4. Unified personal retrieval, disputed/stale evidence and atomic grounded answers (implemented;
+   Core/API/CLI ask/retrieve/verify, `test_personal_retrieval.py`, `evaluate_retrieval.py`).
 5. Typed contextual agency and real bounded tools with permissions and approval gates.
 6. Portability/import, audit/threat-model coverage, longitudinal metrics, complete acceptance audit.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed

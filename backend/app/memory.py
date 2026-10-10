@@ -266,6 +266,9 @@ class Store:
             origins = [dict(r) for r in db.execute("SELECT * FROM origins ORDER BY rowid")]
             forgotten = [dict(r) for r in db.execute("SELECT * FROM forgotten ORDER BY rowid")]
             owner_id = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            owner_entity = db.execute(
+                "SELECT value FROM workspace WHERE key='owner_entity_id'"
+            ).fetchone()
             entities = records(db, "entities")
             entity_revisions = records(db, "entities_revisions")
             relationships = records(db, "relationships")
@@ -286,6 +289,7 @@ class Store:
         return {
             "version": 4,
             "owner_id": owner_id,
+            "owner_entity_id": owner_entity[0] if owner_entity else None,
             "entries": entries,
             "history": turns,
             "revisions": revisions,

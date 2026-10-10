@@ -339,6 +339,7 @@ class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
     version: Literal[4] = 4
     owner_id: str
+    owner_entity_id: str | None = None
     entries: list[MemoryRecord]
     history: list[StoredTurn]
     revisions: list[MemoryRevision]

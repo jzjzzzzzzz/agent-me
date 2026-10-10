@@ -129,3 +129,13 @@ to exact memory revisions. `memory_time.py` separates UTC validity/occurrence fr
 deleted snapshots. `retention.py` performs policy-based forgetting only through previewed, stale-safe,
 explicit atomic plans. All have native Core/API/CLI paths with no frontend addition.
 See [identity/time contracts](IDENTITY_TIME.md) and `scripts/evaluate_identity.py`.
+
+
+## Hybrid personal retrieval and literal atomic answers
+
+`retrieval_models.py` defines request/evidence/claim/result contracts. `retrieval.py` combines
+lexical overlap with controlled field synonyms, approved aliases, typed relationships and temporal
+selection. Privacy/sufficiency/conflict/budget checks precede output. `personal_agent.py` re-reads
+current authority, verifies exact atomic values, and composes local attributed answers without a
+provider. The Core/API/CLI paths share these components. See
+[personal retrieval](PERSONAL_RETRIEVAL.md) and `scripts/evaluate_retrieval.py`.

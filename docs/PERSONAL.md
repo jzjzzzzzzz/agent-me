@@ -256,3 +256,8 @@ failed-run recovery, revocation, CLI use, and forgetting semantics are described
 
 Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
 are documented in [Structured identity and time](IDENTITY_TIME.md).
+
+
+The grounded-local `ask`/`retrieve`/`verify` Agent contracts, owner binding, source-value verification,
+and bilingual/temporal retrieval are described in [Personal retrieval](PERSONAL_RETRIEVAL.md).
+The older private chat endpoint remains a separate compatibility contract.

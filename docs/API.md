@@ -189,3 +189,11 @@ No public endpoint reads the private database.
 
 Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
 are documented in [Structured identity and time](IDENTITY_TIME.md).
+
+
+## Grounded personal Agent
+
+Authenticated `/api/v1/personal/ask`, `/retrieve`, `/verify`, and `/identity/owner` contracts are
+documented in [Personal retrieval](PERSONAL_RETRIEVAL.md). This local path emits exact atomic
+source values and performs live verification; it does not automatically certify legacy provider prose.
+Public chat/collaboration remain separate and never access this private workspace.

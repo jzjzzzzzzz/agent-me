@@ -43,6 +43,32 @@ class IdentityStore:
         with self.store.connect() as db:
             return records(db, "entities")
 
+    def owner(self):
+        with self.store.connect() as db:
+            row = db.execute("SELECT value FROM workspace WHERE key='owner_entity_id'").fetchone()
+            return {
+                "owner_id": db.execute(
+                    "SELECT value FROM workspace WHERE key='owner_id'"
+                ).fetchone()[0],
+                "entity_id": row[0] if row else None,
+            }
+
+    def bind_owner(self, entity_id: str | None):
+        with self.store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if entity_id is None:
+                db.execute("DELETE FROM workspace WHERE key='owner_entity_id'")
+            else:
+                item = self.store._entity(db, entity_id)
+                if item["kind"] != "person":
+                    raise MemoryInputError("Owner identity must be a confirmed person")
+                db.execute(
+                    "INSERT INTO workspace VALUES ('owner_entity_id',?) "
+                    "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    (entity_id,),
+                )
+        return self.owner()
+
     def add(self, payload: EntityInput, *, distinct: bool = False):
         if type(distinct) is not bool:
             raise MemoryInputError("Distinct identity requires an explicit boolean")
@@ -234,6 +260,9 @@ class IdentityStore:
             db.execute("BEGIN IMMEDIATE")
             table = "relationships" if relationship else "entities"
             if not relationship:
+                db.execute(
+                    "DELETE FROM workspace WHERE key='owner_entity_id' AND value=?", (item_id,)
+                )
                 for row in db.execute(
                     "SELECT DISTINCT e.id FROM entries e LEFT JOIN revisions r ON r.id=e.id "
                     "WHERE e.entity_id=? OR r.entity_id=?",

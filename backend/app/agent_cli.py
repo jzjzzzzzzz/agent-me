@@ -11,6 +11,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from .identity import IdentityStore
+from .knowledge import KnowledgeBase
 from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
 from .memory import MemoryError, MemoryInputError, MemoryNotFound, Store
 from .memory_models import (
@@ -22,7 +23,10 @@ from .memory_models import (
     SourceInput,
     TemporalQuery,
 )
+from .personal_agent import ClaimVerifier, PersonalAgent
 from .retention import RetentionManager
+from .retrieval import PersonalRetriever
+from .retrieval_models import AskRequest, VerifyRequest
 
 
 def _metadata_flags(parser):
@@ -122,6 +126,9 @@ def parser() -> argparse.ArgumentParser:
     kinds = ("person", "project", "organization", "event", "idea", "preference", "decision")
     entity = commands.add_parser("entity").add_subparsers(dest="action", required=True)
     entity.add_parser("list")
+    owner = entity.add_parser("owner")
+    owner.add_argument("id", nargs="?")
+    owner.add_argument("--clear", action="store_true")
     resolve = entity.add_parser("resolve")
     resolve.add_argument("name")
     resolve.add_argument("--allow-sensitive", action="store_true")
@@ -167,6 +174,38 @@ def parser() -> argparse.ArgumentParser:
     apply = retention.add_parser("apply")
     apply.add_argument("id")
     apply.add_argument("--yes", action="store_true")
+    for command in ("ask", "retrieve"):
+        child = commands.add_parser(command)
+        child.add_argument("question")
+        child.add_argument(
+            "--intent",
+            default="auto",
+            choices=(
+                "auto",
+                "recall",
+                "profile",
+                "preferences",
+                "projects",
+                "timeline",
+                "relationships",
+            ),
+        )
+        child.add_argument("--entity-id")
+        child.add_argument("--entity-alias")
+        for name in ("as-of", "known-at", "since", "until"):
+            child.add_argument(f"--{name}")
+        child.add_argument("--allow-sensitive", action="store_true")
+        child.add_argument("--no-documents", action="store_true")
+        child.add_argument("--public-knowledge", type=Path)
+        child.add_argument("--minimum-confidence", type=float)
+        child.add_argument("--limit", type=int, default=12)
+        child.add_argument("--max-context-chars", type=int, default=12000)
+        child.add_argument("--locale", default="auto", choices=("auto", "en", "zh"))
+    verify = commands.add_parser("verify")
+    verify.add_argument(
+        "file", type=Path, help="JSON VerifyRequest containing original request and claims"
+    )
+    verify.add_argument("--public-knowledge", type=Path)
     export = commands.add_parser("export")
     export.add_argument("file", help="Private JSON destination, or '-' for stdout")
     export.add_argument("--force", action="store_true", help="Overwrite an existing regular file")
@@ -200,6 +239,10 @@ def execute(args):
         relationship = args.command == "relationship"
         if args.action == "list":
             return identity.relationships() if relationship else identity.entities()
+        if args.action == "owner":
+            if args.clear or args.id is not None:
+                return identity.bind_owner(None if args.clear else args.id)
+            return identity.owner()
         if args.action == "confirm":
             return identity.confirm(args.id, args.expected_revision, relationship=relationship)
         if args.action == "history":
@@ -261,6 +304,45 @@ def execute(args):
                 include_uncertain=args.include_uncertain,
             )
         )
+    if args.command in {"ask", "retrieve", "verify"}:
+        documents = {"private": KnowledgeBase(str(store.root / "knowledge"))}
+        if args.public_knowledge is not None:
+            documents["public"] = KnowledgeBase(str(args.public_knowledge))
+        retriever = PersonalRetriever(store, documents=documents)
+        if args.command == "verify":
+            with args.file.open("rb") as handle:
+                data = handle.read(262145)
+            if len(data) > 262144:
+                raise MemoryInputError("Verification request exceeds the byte limit")
+            payload = VerifyRequest.model_validate_json(data)
+            return [
+                item.model_dump(mode="json")
+                for item in ClaimVerifier(retriever).verify(payload.request, payload.claims)
+            ]
+        fields = (
+            "question",
+            "intent",
+            "entity_id",
+            "entity_alias",
+            "as_of",
+            "known_at",
+            "since",
+            "until",
+            "allow_sensitive",
+            "minimum_confidence",
+            "limit",
+            "max_context_chars",
+            "locale",
+        )
+        request = AskRequest(
+            **{field: getattr(args, field) for field in fields},
+            include_documents=not args.no_documents,
+        )
+        return (
+            PersonalAgent(retriever).ask(request)
+            if args.command == "ask"
+            else retriever.retrieve(request)
+        ).model_dump(mode="json")
     if args.command == "memory":
         if args.action == "list":
             return store.entries(include_superseded=args.include_superseded)

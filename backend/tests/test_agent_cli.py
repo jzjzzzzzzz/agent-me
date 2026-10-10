@@ -291,3 +291,51 @@ def test_cli_retention_is_previewed_and_requires_explicit_apply(tmp_path, capsys
         ]
         == 1
     )
+
+
+def test_cli_grounded_ask_retrieve_and_verify_without_server(tmp_path, capsys):
+    _, item = call(
+        tmp_path, capsys, "memory", "add", "--key", "identity.name", "--content", "Alex Example"
+    )
+    call(tmp_path, capsys, "memory", "confirm", item["id"], "--expected-revision", "1")
+    status, answer = call(tmp_path, capsys, "ask", "我的名字是什么")
+    assert (
+        status == 0 and answer["status"] == "known" and answer["mode"] == "personal-grounded-local"
+    )
+    assert call(tmp_path, capsys, "ask", "What drug should I take?")[1]["status"] == "unknown"
+    request = tmp_path / "verify.json"
+    request.write_text(
+        json.dumps(
+            {"request": {"question": "我的名字是什么"}, "claims": [answer["claims"][0]["claim"]]}
+        ),
+        encoding="utf-8",
+    )
+    assert call(tmp_path, capsys, "verify", str(request))[1][0]["verdict"] == "verified"
+    call(tmp_path, capsys, "memory", "delete", item["id"], "--yes")
+    assert call(tmp_path, capsys, "verify", str(request))[1][0]["verdict"] == "unsupported"
+
+
+def test_cli_owner_binding_and_temporal_project_question(tmp_path, capsys):
+    _, owner = call(tmp_path, capsys, "entity", "add", "--kind", "person", "--name", "Alex Example")
+    call(tmp_path, capsys, "entity", "confirm", owner["id"], "--expected-revision", "1")
+    assert call(tmp_path, capsys, "entity", "owner", owner["id"])[1]["entity_id"] == owner["id"]
+    _, memory = call(
+        tmp_path,
+        capsys,
+        "memory",
+        "add",
+        "--key",
+        "projects.current",
+        "--content",
+        "OldOrchid",
+        "--entity-id",
+        owner["id"],
+        "--valid-from",
+        "2019-01-01T00:00:00Z",
+        "--valid-until",
+        "2021-01-01T00:00:00Z",
+    )
+    call(tmp_path, capsys, "memory", "confirm", memory["id"], "--expected-revision", "1")
+    answer = call(tmp_path, capsys, "ask", "我的项目在 2020年是什么？")[1]
+    assert answer["status"] == "known" and "OldOrchid" in answer["answer"]
+    assert call(tmp_path, capsys, "entity", "owner", "--clear")[1]["entity_id"] is None

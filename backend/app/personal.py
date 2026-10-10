@@ -45,8 +45,17 @@ from .memory_models import (
     TemporalQuery,
     valid_unicode,
 )
+from .personal_agent import ClaimVerifier, PersonalAgent
 from .provider import context_matches, generate_answer
 from .retention import RetentionManager
+from .retrieval import PersonalRetriever
+from .retrieval_models import (
+    AskRequest,
+    PersonalAnswer,
+    RetrievalResult,
+    VerifiedClaim,
+    VerifyRequest,
+)
 from .schemas import ChatTurn
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
@@ -82,6 +91,34 @@ class ConfigureRetention(IdentityReview):
     policy: RetentionPolicy
 
 
+class OwnerBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+def personal_retriever(db: Store, config: Settings):
+    options = dict(
+        max_document_bytes=config.max_document_bytes,
+        max_documents=config.max_knowledge_documents,
+        max_corpus_bytes=config.max_knowledge_bytes,
+    )
+    return PersonalRetriever(
+        db,
+        documents={
+            "public": KnowledgeBase(config.knowledge_dir, **options),
+            "private": KnowledgeBase(str(db.root / "knowledge"), **options),
+        },
+    )
+
+
+def bounded_request(payload: AskRequest, config: Settings):
+    if len(payload.question) > config.max_question_chars:
+        raise HTTPException(413, "Question exceeds configured limit")
+    return payload.model_copy(
+        update={"max_context_chars": min(payload.max_context_chars, config.max_context_chars)}
+    )
+
+
 def authorize(
     config: Settings = Depends(get_settings), authorization: str = Header(default="")
 ) -> Settings:
@@ -97,6 +134,39 @@ def authorize(
 
 def store(config: Settings = Depends(authorize)) -> Store:
     return Store(config.personal_data_dir)
+
+
+@router.post("/ask", response_model=PersonalAnswer)
+def ask_personal(
+    payload: AskRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return PersonalAgent(personal_retriever(db, config)).ask(bounded_request(payload, config))
+
+
+@router.post("/retrieve", response_model=RetrievalResult)
+def retrieve_personal(
+    payload: AskRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return personal_retriever(db, config).retrieve(bounded_request(payload, config))
+
+
+@router.post("/verify", response_model=list[VerifiedClaim])
+def verify_personal(
+    payload: VerifyRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return ClaimVerifier(personal_retriever(db, config)).verify(
+        bounded_request(payload.request, config), payload.claims
+    )
+
+
+@router.get("/identity/owner")
+def owner_identity(db: Store = Depends(store)):
+    return IdentityStore(db).owner()
+
+
+@router.post("/identity/owner")
+def bind_owner_identity(payload: OwnerBinding, db: Store = Depends(store)):
+    return IdentityStore(db).bind_owner(payload.entity_id)
 
 
 @router.get("/entries", response_model=list[MemoryRecord])
