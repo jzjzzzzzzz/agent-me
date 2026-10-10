@@ -67,3 +67,18 @@ def test_fixture_helper_rejects_knowledge_symlinks(tmp_path):
             pytest.skip("Symlinks are unavailable on this platform")
         with pytest.raises(ValueError, match="symlink"):
             module.fixture_settings(root, nonce)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://provider.fixture.invalid/v1",
+        "http://localhost:4193/__mock_semantic",
+        "http://127.0.0.1:4193/other",
+        "http://token@127.0.0.1:4193/__mock_semantic",
+        "http://127.0.0.1:4193/__mock_semantic?redirect=outside",
+    ],
+)
+def test_fixture_model_cannot_use_an_external_or_caller_chosen_target(url):
+    with pytest.raises(ValueError):
+        module.fixture_model_url(url)

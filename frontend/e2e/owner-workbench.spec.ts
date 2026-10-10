@@ -33,7 +33,7 @@ test("owner source → memory → relationship → scoped answer → deletion �
   await sources.getByRole("combobox", { name: "Subject", exact: true }).selectOption(person.id);
   await sources.getByRole("button", { name: "Register source", exact: true }).click();
   await sources.getByRole("button", { name: /^Approve source: Fictional profile,/ }).click();
-  await sources.getByLabel("Source content", { exact: true }).fill("fact identity.name: Alex Example\nfact projects.current: Orchid Demo");
+  await sources.getByRole("textbox", { name: "Source content", exact: true }).fill("fact identity.name: Alex Example\nfact projects.current: Orchid Demo");
   await sources.getByRole("button", { name: "Propose memories", exact: true }).click();
   const review = page.getByRole("region", { name: "Review memories", exact: true });
   await review.getByRole("button", { name: /^Inspect provenance: identity.name,/ }).click();
@@ -178,4 +178,49 @@ test("literal rendering, locale-preserved drafts and lock while request is pendi
   await expect(page.getByRole("region", { name: "Identity & relationship review", exact: true })).toHaveCount(0);
   await expect(page.getByText("Private fictional draft", { exact: true })).toHaveCount(0);
   expect((await get(ownerApi, "/identity/entities")).some((item: { name: string }) => item.name === literal)).toBe(true);
+});
+
+test("model classification stays off until exact scoped consent, then creates only reviewable literal candidates", async ({ page, ownerApi }, info) => {
+  const enabled = await ownerApi.post("/__e2e/model", { data: { enabled: true } }); expect(enabled.ok()).toBe(true);
+  await post(ownerApi, "/entries", { key: "unrelated.secret", content: "OtherMemoryMustStayLocal" });
+  const source = await post(ownerApi, "/learning/sources", { kind: "document", name: "RegistryNameMustStayLocal" });
+  const approved = await post(ownerApi, `/learning/sources/${source.id}/review`, { approved: true, expected_revision: source.revision });
+  const review = await get(ownerApi, `/learning/sources/${source.id}/semantic-review`);
+  expect(review.configured).toBe(true); expect(review.permitted).toBe(false);
+  await unlock(page);
+  const sources = page.getByRole("region", { name: "Learning sources", exact: true });
+  await sources.getByRole("combobox", { name: "Source", exact: true }).selectOption(source.id);
+  await sources.getByRole("combobox", { name: "Extraction mode", exact: true }).selectOption("semantic");
+  await expect(sources.getByText(review.selector, { exact: true })).toBeVisible();
+  const consent = sources.getByRole("checkbox", { name: "Send this exact source text to the reviewed provider for this attempt", exact: true });
+  await expect(consent).toBeDisabled();
+  expect(await (await ownerApi.get("/__e2e/provider-calls")).json()).toEqual([]);
+  await post(ownerApi, "/disclosure/policy", { expected_revision: review.disclosure_revision,
+    policy: { enabled: true, target_id: review.target_id, namespaces: ["private"], labels: ["private"], document_paths: [review.selector] } });
+  await page.getByRole("button", { name: "Refresh workbench", exact: true }).click();
+  await expect(consent).toBeEnabled();
+  const content = "My name is Alex Example. I prefer concise answers.";
+  await sources.getByRole("textbox", { name: "Source content", exact: true }).fill(content);
+  await expect(sources.getByRole("button", { name: "Propose memories", exact: true })).toBeDisabled();
+  await consent.check();
+  await sources.getByRole("button", { name: "Propose memories", exact: true }).click();
+  const memories = page.getByRole("region", { name: "Review memories", exact: true });
+  await expect(memories.getByRole("button", { name: /^Confirm: identity\.name,/ })).toBeVisible();
+  await expect(sources.getByRole("textbox", { name: "Source content", exact: true })).toHaveValue(content);
+  await expect(consent).not.toBeChecked();
+  const indicator = await consent.boundingBox();
+  expect(indicator?.width).toBeGreaterThanOrEqual(18);
+  expect(indicator?.height).toBeGreaterThanOrEqual(18);
+  const calls = await (await ownerApi.get("/__e2e/provider-calls")).json();
+  expect(calls).toHaveLength(1); expect(calls[0].messages[1].content).toBe(content);
+  expect(JSON.stringify(calls)).not.toContain("RegistryNameMustStayLocal");
+  expect(JSON.stringify(calls)).not.toContain("OtherMemoryMustStayLocal");
+  const entries = await get(ownerApi, "/entries");
+  const candidate = entries.find((item: { key: string }) => item.key === "identity.name");
+  expect(candidate.status).toBe("pending"); expect(candidate.confidence).toBeNull();
+  const origin = (await get(ownerApi, `/entries/${candidate.id}/origins`))[0];
+  expect(content.slice(origin.start, origin.end)).toBe(candidate.content);
+  const run = (await get(ownerApi, "/learning/runs"))[0];
+  expect(run.extractor).toMatch(/^model-literal-spans-v1\//); expect(run.source_revision).toBe(approved.revision);
+  await sources.scrollIntoViewIfNeeded(); await layoutScreenshot(page, info, "semantic-disclosure");
 });

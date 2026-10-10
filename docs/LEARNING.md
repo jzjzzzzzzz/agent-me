@@ -1,7 +1,7 @@
 # Controlled Agent learning
 
-This pipeline is an independent Python capability, not a frontend feature or an autonomous
-background collector. Tracking: [proposal #169](https://github.com/jzjzzzzzzz/agent-me/issues/169).
+The learning core is an independent Python capability, not an autonomous background collector.
+The owner workbench exposes its review flow and an optional [scoped model-assisted literal adapter](SEMANTIC_LEARNING.md). Tracking: [proposal #169](https://github.com/jzjzzzzzzz/agent-me/issues/169).
 The remaining full-roadmap work is tracked in the [acceptance ledger](AGENT_IMPLEMENTATION.md).
 
 ## Trust boundary
@@ -12,7 +12,8 @@ The remaining full-roadmap work is tracked in the [acceptance ledger](AGENT_IMPL
 - Extraction proposes **pending** records. Identity-defining and sensitive data are never
   automatically confirmed. Approval of a source is not approval of every claim in it.
 - Source instructions are data, not tool instructions. This pipeline never executes commands,
-  calls a model provider, or grants permissions based on memory content.
+  calls a model provider, or grants permissions based on memory content. The optional HTTP semantic
+  adapter has separate source/target/content-bound disclosure consent; source approval alone is insufficient.
 - Revocation stops future ingestion **including replay**. It does not delete independently
   owner-confirmed memories; inspect and forget those records separately.
 
@@ -194,3 +195,12 @@ Export version `8` adds `learning_policy` and `consolidation_plans`. The
 [learning control contracts](LEARNING_CONTROL.md) document narrow source/label/size/key policies,
 stronger revision-bound sensitive/identity review, and explicit exact cross-record consolidation.
 No configuration bypasses candidate acceptance; no consolidation invents semantic equivalence.
+
+## Model-assisted classifications over literal spans
+
+[Scoped semantic learning](SEMANTIC_LEARNING.md) documents the optional source-specific, default-off
+provider adapter. It produces pending kind/key hypotheses over exact source quotes, not paraphrases
+or accepted facts. Server-owned origins point into the original document. Runs retain source format
+`notes` and distinguish the extractor as `model-literal-spans-v1/<target>`. Source/learning/disclosure/
+subject state is checked before replay/delivery and again atomically before storage. The core, local
+fields/paragraph paths and CLI remain network-free; current version-8 import/export remains compatible.

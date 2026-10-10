@@ -3,7 +3,7 @@ import { IdentityReview, type IdentityAction } from "./IdentityReview";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
   createPersonalClient, ingestionWithinLimits, PersonalApiError,
-  type IdentityData, type IngestionRun, type LearningSource, type MemoryRecord, type PersonalAnswer, type WorkbenchData,
+  type SemanticReview, type IdentityData, type IngestionRun, type LearningSource, type MemoryRecord, type PersonalAnswer, type WorkbenchData,
 } from "./personalApi";
 import type { PersonalWorkspaceMessages } from "./personalMessages";
 
@@ -33,7 +33,10 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
   const [entityId, setEntityId] = useState("");
   const [sourceId, setSourceId] = useState("");
   const [content, setContent] = useState("");
-  const [mode, setMode] = useState<"fields" | "notes">("fields");
+  const [mode, setMode] = useState<"fields" | "notes" | "semantic">("fields");
+  const [semantic, setSemantic] = useState<SemanticReview | null>(null);
+  const [allowProvider, setAllowProvider] = useState(false);
+  const [allowSourceSensitive, setAllowSourceSensitive] = useState(false);
   const [filter, setFilter] = useState<"all" | MemoryRecord["status"]>("pending");
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -80,9 +83,11 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
     const loaded = await client.load();
     const identities = identityOpen ? await client.loadIdentity() : null;
     if (identities && loaded.entities.some(item => item.owner_id !== identities.owner.owner_id)) throw new PersonalApiError(502, "invalid");
-    if (!signal.aborted) { setData(loaded); setIdentity(identities); setEpoch(value => value + 1); }
+    const source = loaded.sources.find(item => item.id === sourceId && item.approved);
+    const review = mode === "semantic" && source ? await client.semanticReview(source) : null;
+    if (!signal.aborted) { setData(loaded); setIdentity(identities); setSemantic(review); setEpoch(value => value + 1); }
   }
-  function invalidate() { setAnswer(null); setInspection(null); setConflict(null); }
+  function invalidate() { setAllowProvider(false); setAnswer(null); setInspection(null); setConflict(null); }
   async function mutation(action: (client: Client) => Promise<unknown>) {
     await run(async (client, signal) => { invalidate(); await action(client); await refresh(client, signal); });
   }
@@ -128,7 +133,14 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
       try { value = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer()); }
       catch { throw "invalid"; }
       if (!ingestionWithinLimits(value)) throw "tooLarge";
-      if (!signal.aborted) setContent(value);
+      if (!signal.aborted) { setContent(value); setAllowProvider(false); }
+    });
+  }
+  async function reviewSemantic(source: LearningSource | undefined) {
+    setSemantic(null); setAllowProvider(false); setAllowSourceSensitive(false);
+    if (!source?.approved) return;
+    await run(async (client, signal) => {
+      const value = await client.semanticReview(source); if (!signal.aborted) setSemantic(value);
     });
   }
   const selectedSource = data?.sources.find(item => item.id === sourceId);
@@ -210,26 +222,56 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
           void run(async (client, signal) => {
             if (!ingestionWithinLimits(content)) throw "tooLarge";
             invalidate();
-            const result = await client.ingest(selectedSource, content, mode);
+            let result: IngestionRun;
+            if (mode === "semantic") {
+              if (!semantic || !allowProvider || !semantic.permitted || !semantic.configured ||
+                semantic.sensitivity === "sensitive" && !allowSourceSensitive || [...content].length > semantic.max_source_chars) {
+                throw new PersonalApiError(403, "request");
+              }
+              try { result = await client.ingestSemantic(selectedSource, content, semantic, allowSourceSensitive); }
+              finally { if (!signal.aborted) { setAllowProvider(false); setAllowSourceSensitive(false); } }
+            } else result = await client.ingest(selectedSource, content, mode);
             if (signal.aborted) return;
             setLatestRun(result); setFilter("pending");
-            if (result.status === "completed") setContent("");
+            // Model-selected quotations can omit negation/context. Keep the
+            // owner's original draft available during human review, not in SQL.
+            if (result.status === "completed" && mode !== "semantic") setContent("");
             await refresh(client, signal);
           });
         }}>
           <label>{t.source}<select value={sourceId} disabled={busy} required onChange={event => {
-            setSourceId(event.target.value); setContent(""); setLatestRun(null);
+            const id = event.target.value;
+            setSourceId(id); setContent(""); setLatestRun(null); setAllowProvider(false);
+            if (mode === "semantic") void reviewSemantic(data.sources.find(item => item.id === id));
           }}><option value="">—</option>{data.sources.map(source => <option key={source.id} value={source.id}>
             {source.name} · {source.approved ? t.approved : t.unapproved}
           </option>)}</select></label>
-          <label>{t.mode}<select value={mode} disabled={busy} onChange={event => setMode(event.target.value as "fields" | "notes")}>
-            <option value="fields">{t.fields}</option><option value="notes">{t.notes}</option>
+          <label>{t.mode}<select value={mode} disabled={busy} onChange={event => {
+            const next = event.target.value as "fields" | "notes" | "semantic";
+            setMode(next); setAllowProvider(false); setSemantic(null); setAllowSourceSensitive(false);
+            if (next === "semantic") void reviewSemantic(selectedSource);
+          }}>
+            <option value="fields">{t.fields}</option><option value="notes">{t.notes}</option><option value="semantic">{text.semantic.mode}</option>
           </select></label>
-          <p className="review-hint" id="review-input-hint">{t.inputHint}</p>
+          <p className="review-hint" id="review-input-hint">{mode === "semantic" ? text.semantic.hint : t.inputHint}</p>
+          {mode === "semantic" && semantic && <aside>
+            <p>{text.semantic.selector}: <code>{semantic.selector}</code></p>
+            <p>{text.semantic.target}: <code>{semantic.target_id ?? "—"}</code></p>
+            <p>{text.semantic.sourceLimit}: {semantic.max_source_chars}</p>
+            {!semantic.configured && <p>{text.semantic.notConfigured}</p>}
+            {semantic.configured && !semantic.permitted && <p>{text.semantic.notPermitted}</p>}
+            <label className="review-checkbox"><input type="checkbox" disabled={busy || !semantic.configured || !semantic.permitted}
+              checked={allowProvider} onChange={event => setAllowProvider(event.target.checked)} />{text.semantic.consent}</label>
+            {semantic.sensitivity === "sensitive" && <label className="review-checkbox"><input type="checkbox" disabled={busy}
+              checked={allowSourceSensitive} onChange={event => { setAllowSourceSensitive(event.target.checked); setAllowProvider(false); }} />{text.semantic.sensitive}</label>}
+          </aside>}
           <label>{t.importFile}<input type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" disabled={busy || !selectedSource?.approved} onChange={event => void readFile(event)} /></label>
           <label>{t.input}<textarea value={content} required disabled={busy || !selectedSource?.approved} rows={6}
-            aria-describedby="review-input-hint" onChange={event => setContent(event.target.value)} /></label>
-          <button disabled={busy || !selectedSource?.approved || !content.trim()}>{t.ingest}</button>
+            aria-describedby="review-input-hint" onChange={event => { setContent(event.target.value); setAllowProvider(false); }} /></label>
+          <button disabled={busy || !selectedSource?.approved || !content.trim() || mode === "semantic" && (
+            !semantic?.configured || !semantic?.permitted || !allowProvider || semantic.sensitivity === "sensitive" && !allowSourceSensitive ||
+            [...content].length > semantic.max_source_chars
+          )}>{t.ingest}</button>
         </form>
         {latestRun && <p role="status">{runStatus(latestRun)} · {latestRun.id}{latestRun.replayed ? ` · ${t.replayed}` : ""}{latestRun.error_code ? ` · ${latestRun.error_code}` : ""}</p>}
         <details><summary>{t.runs} ({data.runs.length})</summary>
@@ -237,7 +279,7 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
           {!data.runs.length && <p>{t.noRuns}</p>}
           <ul className="review-list">{data.runs.map(item => <li key={item.id}>
             <strong>{sourceName(item.source_id)}</strong> · {runStatus(item)}
-            <p><code>{item.id} · {item.mode} · {item.attempts} · {item.document_hash}</code></p>
+            <p><code>{item.id} · {item.mode} · {item.extractor} · {item.attempts} · {item.document_hash}</code></p>
             <p>{t.revision}: {item.source_revision} · {item.updated_at}{item.error_code && ` · ${item.error_code}`}</p>
             <ul>{item.items.map(entry => <li key={entry.index}><code>{entry.outcome} · {entry.memory_id ?? "—"}</code>
               {entry.conflict_ids.length > 0 && <p>{text.conflictError} <code>{entry.conflict_ids.join(", ")}</code></p>}

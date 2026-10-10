@@ -219,3 +219,17 @@ def test_existing_file_owner_traversal_and_merge_marker_checks_remain(
         f"{source_name}: link leaves repository: ../../outside.md",
         f"{source_name}: unexpected GitHub owner in https://github.com/not-the-owner/agent-me",
     ]
+
+
+def test_repository_docs_do_not_walk_owner_workspace_or_browser_artifacts(tmp_path, monkeypatch):
+    (tmp_path / "docs").mkdir()
+    public = tmp_path / "docs" / "public.md"
+    public.write_text("# Public documentation\n", encoding="utf-8")
+    for name in ("private", "test-results", "playwright-report", "node_modules", ".hidden"):
+        folder = tmp_path / name
+        folder.mkdir()
+        (folder / "unrelated.md").write_text(
+            "[not repository documentation](missing.md)", encoding="utf-8"
+        )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    assert check_docs.markdown_files() == [public]

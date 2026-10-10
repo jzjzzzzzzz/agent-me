@@ -74,6 +74,8 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 语言切换只改变界面，不重新请求数据、不丢失草稿。旧档案/聊天界面通过关闭工作台返回。
 工作台内“管理身份与关系”提供对象创建/编辑/确认、别名解析、主人绑定、关系审核和精确删除范围预览；
 保留策略、便携导入和工具审批仍由 API/CLI 提供。
+可选“模型辅助原文候选”须授权精确来源选择器、模型目标与本次原文，并单独允许敏感数据；候选仍须审核。
+成功后保留页面中的完整原文，供核对否定、他人信息及字段含义，不把原文全文新增到数据库。详见[受控模型提取](SEMANTIC_LEARNING.md)。
 
 ### 身份对象与关系审核
 
@@ -156,6 +158,10 @@ are read-only but remain inspectable and individually deletable. Existing confir
 sources; **Manage identities & relationships** now provides identity/alias/owner/relationship review,
 revision histories, current-neighbour context and digest-reviewed cascade deletion. Retention, import
 and tool approvals remain API/CLI capabilities.
+
+Optional **Model-assisted quotations** uses a separate exact-source/target/content disclosure gate;
+local fields/paragraphs never call a provider. Model candidates stay pending and the full source draft
+remains locally available for meaning review; see [semantic learning](SEMANTIC_LEARNING.md).
 
 The workbench's **Ask with evidence** calls the provider-free atomic `/ask` route and shows current
 attributed evidence and uncertainty. Sensitive context requires a checkbox for that question; it resets

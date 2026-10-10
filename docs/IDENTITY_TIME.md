@@ -250,7 +250,7 @@ one worker so tests never erase each other's workspace. `AGENT_ME_E2E_PYTHON` ca
 alternate installed project Python interpreter. Shutdown terminates only the owned backend and
 removes its workspace after that process exits.
 
-Six scenarios cover source/identity/memory/relationship review, exact provenance, scoped answers,
+Eight browser runs cover source/identity/memory/relationship review, exact provenance, scoped answers,
 evidence deletion, ambiguous and sensitivity-filtered aliases, stale owner approval, historical
 cascade scope, changed-digest rejection, literal rendering, locale-preserved drafts and lock during
 an in-flight request. Page requests stay on the fixture origin; unexpected HTTP/JavaScript/console
@@ -264,3 +264,10 @@ Screenshots and traces contain only fictional test data, under ignored `frontend
 checks also reject horizontal viewport overflow. CI retains these fixture-only artifacts for seven
 days and gates container acceptance on the browser job. This is Chromium viewport acceptance,
 not a claim about every browser, mobile device, assistive technology or provider integration.
+
+The semantic-learning extension adds an owned loopback scripted-model endpoint, toggled only by a
+fixture-token-protected helper route that is never registered in the normal app. Its target is fixed
+at harness startup and cannot be supplied by a browser request or point to an external/owner model.
+Each test resets it to disabled; the additional desktop/mobile scenario explicitly enables it and
+reviews source-specific disclosure before exercising real browser hash binding and pending quotes.
+These scripted responses are not a real-model quality measurement.

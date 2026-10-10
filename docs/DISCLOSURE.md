@@ -1,7 +1,8 @@
 # Owner-reviewed provider disclosure
 
-Atomic personal `ask/retrieve/verify`, learning, identity, retention, local tools, owner
-control and CLI remain provider-free. Optional legacy `/api/v1/personal/chat` generation
+Atomic personal `ask/retrieve/verify`, deterministic learning, identity, retention, local tools, owner
+control and CLI remain provider-free. Optional [scoped model-assisted literal learning](SEMANTIC_LEARNING.md)
+adds a separately consented adapter for exact source quotations; broad Markdown grants never enable it. Optional legacy `/api/v1/personal/chat` generation
 now requires **both** a matching enabled workspace policy and `allow_provider: true` on
 each request. Configuring credentials alone does not enable private disclosure. Default
 private chat is extractive/local, including when the public provider is configured.
@@ -61,3 +62,14 @@ import accepts versions 6/7/8, places prior disclosure grants into inert archive
 leaves the live provider policy disabled. SQLite purge resets it as well. Tests inspect
 real HTTP request bodies through `httpx.MockTransport`, including dual opt-in, target
 change, sensitive/entity privacy, record/document selection, revocation and import.
+
+## Raw learning-source selectors
+
+The semantic adapter uses reserved `learning-source/<SHA256-source-ID>` selectors in the existing
+`document_paths` allowlist, together with private namespace/labels. They are not filesystem paths and
+cannot match the public/private Markdown selection prefixes. Each delivery additionally carries an
+explicit reviewed target and exact UTF-8 content digest plus source/policy revisions. Source/subject/
+learning/disclosure state is revalidated after network I/O before candidate storage; completed replay
+also needs current authority. See [semantic learning](SEMANTIC_LEARNING.md) for the full boundary.
+The legacy private-question opt-in contract remains separate and unchanged; the shared policy does
+not automatically send questions or sources merely because credentials/labels are configured.

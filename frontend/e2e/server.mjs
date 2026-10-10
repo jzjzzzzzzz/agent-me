@@ -21,7 +21,7 @@ await mkdir(join(workspace, "public"));
 await writeFile(join(workspace, "public", "example.md"), "# Fictional corpus\n\nPublic fictional examples cannot establish the owner's identity.\n");
 const env = { ...process.env };
 for (const key of Object.keys(env)) if (["PYTHONPATH", "PYTHONHOME", "PYTHONSTARTUP"].includes(key.toUpperCase())) delete env[key];
-const backend = spawn(python, [join(root, "scripts", "serve_e2e.py"), "--workspace", workspace, "--nonce", nonce], {
+const backend = spawn(python, [join(root, "scripts", "serve_e2e.py"), "--workspace", workspace, "--nonce", nonce, "--model-url", `http://127.0.0.1:${port}/__mock_semantic`], {
   cwd: workspace, env, stdio: ["ignore", "pipe", "pipe"],
 });
 const exitPromise = once(backend, "exit");
@@ -29,6 +29,7 @@ let apiPort;
 let logs = "";
 let stopping = false;
 let gateway;
+let modelCalls = [];
 const delay = ms => new Promise(done => setTimeout(done, ms));
 
 async function cleanup(code = 0) {
@@ -76,8 +77,31 @@ try {
       outgoing.setHeader("Content-Type", "application/json");
       outgoing.end(JSON.stringify({ fixture: "agent-me-e2e-v1" })); return;
     }
+    if (path === "/__e2e/provider-calls" && incoming.method === "GET") {
+      outgoing.setHeader("Content-Type", "application/json"); outgoing.end(JSON.stringify(modelCalls)); return;
+    }
+    if (path === "/__mock_semantic/chat/completions" && incoming.method === "POST") {
+      let bytes = Buffer.alloc(0);
+      for await (const chunk of incoming) {
+        if (bytes.length + chunk.length > 32000) { outgoing.writeHead(413).end(); return; }
+        bytes = Buffer.concat([bytes, chunk]);
+      }
+      try {
+        const payload = JSON.parse(bytes.toString("utf-8"));
+        modelCalls.push(payload);
+        const text = payload.messages?.find(message => message.role === "user")?.content ?? "";
+        const candidates = [
+          { kind: "fact", key: "identity.name", quote: "Alex Example" },
+          { kind: "preference", key: "response.style", quote: "concise answers" },
+        ].filter(item => text.includes(item.quote));
+        outgoing.setHeader("Content-Type", "application/json");
+        outgoing.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ candidates }) } }] }));
+      } catch { outgoing.writeHead(400).end(); }
+      return;
+    }
     if (path === "/favicon.ico") { outgoing.writeHead(204).end(); return; }
-    if (path.startsWith("/api/")) {
+    if (path.startsWith("/api/") || path === "/__e2e/model") {
+      if (path === "/__e2e/model") modelCalls = [];
       const proxy = httpRequest({ hostname: "127.0.0.1", port: apiPort, path: incoming.url,
         method: incoming.method, headers: { ...incoming.headers, host: `127.0.0.1:${apiPort}` } }, response => {
         outgoing.writeHead(response.statusCode, { ...response.headers, "cache-control": "no-store", "x-content-type-options": "nosniff" });

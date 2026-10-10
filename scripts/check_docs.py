@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import html
+import os
 import re
 import sys
 import unicodedata
@@ -70,12 +71,22 @@ ESCAPED_MARKUP = re.compile(r"\\([\\`*{}\[\]()#+\-.!_>~|])")
 
 
 def markdown_files() -> list[Path]:
-    return sorted(
-        path
-        for path in ROOT.rglob("*.md")
-        if not any(part.startswith(".") for part in path.relative_to(ROOT).parts)
-        and "node_modules" not in path.parts
-    )
+    # Repository QA must not inspect owner knowledge or generated browser traces.
+    # Prune before traversal rather than filtering after walking private folders.
+    excluded = {"node_modules", "private", "test-results", "playwright-report"}
+    found = []
+    for directory, subdirectories, filenames in os.walk(ROOT):
+        subdirectories[:] = [
+            name
+            for name in subdirectories
+            if not name.startswith(".") and name not in excluded
+        ]
+        found.extend(
+            Path(directory) / name
+            for name in filenames
+            if name.endswith(".md") and not name.startswith(".")
+        )
+    return sorted(found)
 
 
 def destination_path(destination: str) -> str:
