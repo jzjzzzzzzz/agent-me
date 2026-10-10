@@ -664,7 +664,7 @@ it("exports only the validated collaboration response and revokes its object URL
   const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
   vi.stubGlobal(
     "Blob",
-    vi.fn((parts: BlobPart[]) => {
+    vi.fn(function (parts: BlobPart[]) {
       blobParts = parts;
       return {};
     }),
