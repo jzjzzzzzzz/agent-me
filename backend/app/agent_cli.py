@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from .agency import Agency
 from .agency_models import PermissionInput, ToolInvocation
 from .agent_runtime import AgentIntent, AgentRuntime
+from .audit import AuditLog
 from .consolidation import ConsolidationManager
 from .identity import IdentityStore
 from .knowledge import KnowledgeBase
@@ -20,6 +21,7 @@ from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
 from .learning_policy import LearningPolicyManager
 from .memory import MemoryError, MemoryInputError, MemoryNotFound, Store
 from .memory_models import (
+    ConsolidationFilter,
     EntityInput,
     Entry,
     IngestionInput,
@@ -29,7 +31,10 @@ from .memory_models import (
     SourceInput,
     TemporalQuery,
 )
+from .owner_control import OwnerControl
+from .owner_models import WorkspacePurge
 from .personal_agent import ClaimVerifier, PersonalAgent
+from .portability import MAX_IMPORT_BYTES, PortableMemory
 from .retention import RetentionManager
 from .retrieval import PersonalRetriever
 from .retrieval_models import AskRequest, VerifyRequest
@@ -186,7 +191,12 @@ def parser() -> argparse.ArgumentParser:
     configure.add_argument("--policy-json", required=True)
     configure.add_argument("--expected-revision", type=int, required=True)
     consolidate = commands.add_parser("consolidate").add_subparsers(dest="action", required=True)
-    consolidate.add_parser("preview")
+    preview = consolidate.add_parser("preview")
+    preview.add_argument("--entity-id")
+    preview.add_argument("--key-prefix")
+    preview.add_argument(
+        "--kind", action="append", choices=("fact", "preference", "event", "decision")
+    )
     consolidate.add_parser("plans")
     apply = consolidate.add_parser("apply")
     apply.add_argument("id")
@@ -250,6 +260,36 @@ def parser() -> argparse.ArgumentParser:
     export = commands.add_parser("export")
     export.add_argument("file", help="Private JSON destination, or '-' for stdout")
     export.add_argument("--force", action="store_true", help="Overwrite an existing regular file")
+    audit = commands.add_parser("audit").add_subparsers(dest="action", required=True)
+    audit.add_parser("events").add_argument("--limit", type=int, default=100)
+    audit.add_parser("clear").add_argument("--yes", action="store_true")
+    portability = commands.add_parser("portability").add_subparsers(dest="action", required=True)
+    for name in ("preview", "import"):
+        child = portability.add_parser(name)
+        child.add_argument("file", type=Path)
+        if name == "import":
+            child.add_argument("--digest", required=True)
+            child.add_argument("--yes", action="store_true")
+    portability.add_parser("archives")
+    child = portability.add_parser("delete-archive")
+    child.add_argument("id")
+    child.add_argument("--yes", action="store_true")
+    owner = commands.add_parser("owner").add_subparsers(dest="action", required=True)
+    child = owner.add_parser("purge")
+    child.add_argument("--expected-owner-id", required=True)
+    child.add_argument("--yes", action="store_true")
+    for name in ("delete-output", "delete-action", "delete-source"):
+        child = owner.add_parser(name)
+        if name == "delete-output":
+            child.add_argument("table", choices=("tasks", "notes"))
+        child.add_argument("id")
+        child.add_argument("--expected-revision", type=int, required=True)
+        child.add_argument("--yes", action="store_true")
+        if name == "delete-action":
+            child.add_argument("--purge-output", action="store_true")
+            child.add_argument("--expected-output-revision", type=int)
+        if name == "delete-source":
+            child.add_argument("--forget-memories", action="store_true")
     return root
 
 
@@ -272,10 +312,59 @@ def _replacement_versions(values, ids):
     return versions
 
 
-def execute(args):
+def _execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
     identity = IdentityStore(store)
+    if args.command == "audit":
+        if args.action == "events":
+            return AuditLog(store).events(args.limit)
+        if not args.yes:
+            raise MemoryInputError("Audit erasure requires --yes")
+        return AuditLog(store).clear()
+    if args.command == "portability":
+        if args.action == "archives":
+            return OwnerControl(store).archives()
+        if args.action == "delete-archive":
+            if not args.yes:
+                raise MemoryInputError("Archive erasure requires --yes")
+            return OwnerControl(store).delete_archive(args.id)
+        with args.file.open("rb") as handle:
+            content = handle.read(MAX_IMPORT_BYTES + 1)
+        if len(content) > MAX_IMPORT_BYTES:
+            raise MemoryInputError("Snapshot exceeds the 16 MiB import limit")
+        try:
+            payload = json.loads(content)
+        except (ValueError, UnicodeError, RecursionError):
+            raise MemoryInputError("Snapshot must be valid JSON") from None
+        if args.action == "preview":
+            return PortableMemory(store).preview(payload)
+        if not args.yes:
+            raise MemoryInputError("Import requires --yes and the reviewed snapshot digest")
+        return PortableMemory(store).apply(payload, args.digest)
+    if args.command == "owner":
+        if not args.yes:
+            raise MemoryInputError("Owner erasure requires --yes")
+        owner = OwnerControl(store)
+        if args.action == "purge":
+            return owner.purge(
+                WorkspacePurge(
+                    expected_owner_id=args.expected_owner_id,
+                    confirmation="erase-personal-workspace",
+                )
+            )
+        if args.action == "delete-output":
+            return owner.delete_output(args.table, args.id, args.expected_revision)
+        if args.action == "delete-source":
+            return owner.delete_source(
+                args.id, args.expected_revision, forget_memories=args.forget_memories
+            )
+        return owner.delete_action(
+            args.id,
+            args.expected_revision,
+            purge_output=args.purge_output,
+            expected_output_revision=args.expected_output_revision,
+        )
     if args.command == "learning":
         policy = LearningPolicyManager(store)
         if args.action == "policy":
@@ -286,7 +375,11 @@ def execute(args):
     if args.command == "consolidate":
         manager = ConsolidationManager(store)
         if args.action == "preview":
-            return manager.preview()
+            return manager.preview(
+                ConsolidationFilter(
+                    entity_id=args.entity_id, key_prefix=args.key_prefix, kinds=args.kind
+                )
+            )
         if args.action == "plans":
             return manager.plans()
         if not args.yes:
@@ -544,6 +637,24 @@ def execute(args):
             os.chmod(args.file, 0o600)
         json.dump(data, handle, ensure_ascii=False, indent=2)
     return {"exported": True, "version": data["version"]}
+
+
+def execute(args):
+    audit = AuditLog(Store(args.data_dir))
+    operation = "cli." + args.command.replace("-", "_")
+    if getattr(args, "action", None):
+        operation += "." + args.action.replace("-", "_")
+    try:
+        result = _execute(args)
+    except Exception:
+        audit.record(operation, "failed", actor="cli")
+        raise
+    audit.record(
+        operation,
+        "failed" if isinstance(result, dict) and result.get("status") == "failed" else "succeeded",
+        actor="cli",
+    )
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:

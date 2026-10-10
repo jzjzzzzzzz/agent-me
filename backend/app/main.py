@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from . import __version__
+from .audit import AuditLog
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
@@ -60,6 +61,18 @@ app.add_middleware(RequestIDMiddleware)
 async def private_no_cache(request: Request, call_next):
     """Prevent storage of responses that can contain personal knowledge."""
     response = await call_next(request)
+    db = getattr(request.state, "personal_store", None)
+    if db is not None:
+        route = request.scope.get("route")
+        operation = "api." + route.endpoint.__name__
+        outcome = (
+            "succeeded"
+            if response.status_code < 400
+            else "denied"
+            if response.status_code < 500
+            else "failed"
+        )
+        await run_in_threadpool(AuditLog(db).record, operation, outcome, actor="api")
     is_qa_response = request.method == "POST" and request.url.path in {
         "/api/v1/chat",
         "/api/v1/collaborate",

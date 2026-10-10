@@ -72,7 +72,7 @@ def test_exact_excerpts_types_review_and_export(learning):
     db.confirm(entries[0]["id"], [], 1)
     assert db.context("Alex Example")
     exported = MemoryExport.model_validate(db.export())
-    assert exported.version == 6
+    assert exported.version == 7
     assert len(exported.origins) == 2 and len(exported.ingestion_runs) == 1
 
 
@@ -84,7 +84,11 @@ def test_replay_and_cross_source_duplicates_preserve_provenance_without_acceptan
     before = db.export()
     replay = pipeline.ingest(source["id"], IngestionInput(content=text))
     assert replay == {**first, "replayed": True}
-    assert db.export() == before
+    after = db.export()
+    assert len(after["audit_events"]) == len(before["audit_events"]) + 1
+    assert {key: value for key, value in after.items() if key != "audit_events"} == {
+        key: value for key, value in before.items() if key != "audit_events"
+    }
     second_source = pipeline.register(
         SourceInput(kind="project", name="Synthetic project", sensitivity="sensitive")
     )

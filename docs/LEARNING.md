@@ -79,7 +79,8 @@ recreate it. Traces retain only IDs, counts, document hashes and timestamps. Dig
 private metadata, not encrypted or anonymous data. Deliberate manual re-addition is permitted and
 creates a pending record; independently restored/archived records and transcript text are separate.
 Previous exports and external providers are not retroactively erased. Erasing the entire stopped
-workspace also removes the forgetting registry. There is no portable import contract yet.
+workspace also removes the forgetting registry. The [portable import contract](OWNER_CONTROL.md)
+preserves forgetting digests and histories while keeping historical execution authority inert.
 
 ## Sensitivity and provider boundaries
 
@@ -148,7 +149,7 @@ workspace token. It outputs JSON and never loads provider configuration.
 | `memory restore ID --revision N` | Propose an old version as a new candidate |
 | `memory delete ID --yes` | Purge this record/versions/origins and register forgetting digests |
 | `recall QUESTION --allow-sensitive` | Local current-memory retrieval, with optional explicit disclosure |
-| `export FILE` | Export version-6 private snapshot; refuses overwrite unless `--force` |
+| `export FILE` | Export version-7 private snapshot; refuses overwrite unless `--force` |
 
 Export permissions are restricted to 0600 on POSIX; Windows access protection depends on filesystem
 ACLs rather than POSIX mode bits. Export is plaintext and is not an import, encryption, or backup-recovery
@@ -166,7 +167,7 @@ All paths use `/api/v1/personal` and the existing owner token:
 | GET | `/learning/runs` | Latest 100 durable run records |
 | GET | `/entries/{id}/origins` | Exact source excerpts and code-point spans |
 
-Private export is now version `6` and includes sources, ingestion runs, origins and forgetting digests
+Private export is now version `7` and includes sources, ingestion runs, origins and forgetting digests
 alongside entries/history/revisions, read in one database snapshot. Older export consumers must be
 updated. The repository release version is unchanged; the reference UI downloads JSON without parsing it.
 
@@ -189,7 +190,7 @@ are documented in [Structured identity and time](IDENTITY_TIME.md).
 
 ## Configurable owner learning and consolidation
 
-Export version `6` adds `learning_policy` and `consolidation_plans`. The
+Export version `7` adds `learning_policy` and `consolidation_plans`. The
 [learning control contracts](LEARNING_CONTROL.md) document narrow source/label/size/key policies,
 stronger revision-bound sensitive/identity review, and explicit exact cross-record consolidation.
 No configuration bypasses candidate acceptance; no consolidation invents semantic equivalence.

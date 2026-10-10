@@ -2,8 +2,9 @@
 
 Both components run independently of HTTP and providers. Every candidate still needs
 explicit owner acceptance. Policy never enables automatic confirmation or tool execution.
-Export/schema version `6` adds the typed policy and consolidation plans without changing
+Schema extension `6` introduced the typed policy and consolidation plans without changing
 existing records, reviewed sources, task/note permissions, or action approvals.
+Current export version `7` also includes portable owner-control and audit records.
 
 ## Learning policy
 
@@ -39,6 +40,8 @@ these stronger review rules.
 ## Exact cross-record consolidation
 
 `ConsolidationManager.preview()` persists a no-effects plan, at most 100 groups/1000 records.
+An optional `ConsolidationFilter` narrows by exact entity ID, case/NFC-aware key prefix and
+allowed memory kinds; `kinds=[]` selects nothing. Other groups are not silently included.
 It groups non-superseded records only when **every literal Entry field** matches: kind,
 key, content, entity, sensitivity, belief, confidence, valid interval and occurrence time.
 It does not merge paraphrases, infer equivalence, combine different periods, lower labels,
@@ -72,7 +75,7 @@ Private owner authentication, no-store responses and validation redaction apply 
 | --- | --- | --- |
 | GET | `/learning/policy` | Current settings |
 | POST | `/learning/policy` | `{policy: LearningPolicy, expected_revision: int}` |
-| POST | `/consolidation/preview` | No body; returns typed no-effects plan |
+| POST | `/consolidation/preview` | Optional `{entity_id, key_prefix, kinds}` filter; default all; no effects |
 | GET | `/consolidation/plans` | Latest 100 inspectable plans |
 | POST | `/consolidation/{id}/apply` | `{digest: reviewed_digest}` |
 
@@ -81,6 +84,7 @@ PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-de
 PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo learning configure \
   --expected-revision 1 --policy-json '{"require_revision_labels":["sensitive"],"require_revision_key_prefixes":["identity.","profile."]}'
 PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo consolidate preview
+# Optional narrow preview: consolidate preview --key-prefix project. --kind fact
 # Inspect exact member records/revisions and retain the returned digest.
 PYTHONPATH=backend .venv/bin/python -m app.agent_cli --data-dir /tmp/agent-me-demo consolidate apply PLAN_ID \
   --digest REVIEWED_DIGEST --yes

@@ -37,7 +37,7 @@ The opt-in single-owner private workspace additionally provides typed fact, pref
 event, and decision records; server-controlled source links and timestamps; pending/confirmed
 review; transactional revision snapshots and same-key supersession; restore-as-candidate;
 optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
-version-6 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+version-7 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
 deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
 
 Current boundaries are equally important: public conversations are not persisted; private
@@ -46,7 +46,7 @@ pre-migration revision history cannot be reconstructed,
 controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
 semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
 Unified hybrid retrieval, live atomic source-value verification and approved local tools now exist;
-portable import and full audit/metrics coverage remain unfinished; the Verifier does not prove factual truth or semantic entailment.
+portable import and operational audit now exist; longitudinal metrics and final acceptance remain in progress; the Verifier does not prove factual truth or semantic entailment.
 
 
 Approved document, project, conversation, and event sources can additionally propose pending
@@ -77,6 +77,11 @@ Learning policy now narrows source kinds, labels, candidate batches and keys, an
 revision-bound review for sensitive/identity keys. Exact cross-record consolidation is explicitly
 previewed, digest-approved and history-preserving; it never accepts pending memories. See
 [learning control contracts](docs/LEARNING_CONTROL.md).
+
+Digest-reviewed portable import now preserves personal state while moving historical grants/approvals
+into inert archives. Content-free ingestion/access audit, independent-copy erasure and explicit SQLite
+purge are owner-controlled. See [owner control](docs/OWNER_CONTROL.md) and the
+[connected-tool threat model](docs/THREAT_MODEL.md).
 
 ## Workstreams
 

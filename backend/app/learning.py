@@ -11,6 +11,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from .audit import AuditLog
+from .audit import record as audit_record
 from .learning_policy import matches_prefix
 from .learning_policy import settings as learning_settings
 from .memory import (
@@ -159,6 +161,7 @@ class LearningPipeline:
                 ":created_at,:updated_at,:entity_id,:owner_id)",
                 item,
             )
+            audit_record(db, "learning.source_register", counts={"sources": 1})
         return item
 
     def approve(
@@ -182,6 +185,7 @@ class LearningPipeline:
                     (approved, datetime.now(UTC).isoformat(), source_id),
                 )
             item = dict(db.execute("SELECT * FROM sources WHERE id=?", (source_id,)).fetchone())
+            audit_record(db, "learning.source_approve" if approved else "learning.source_revoke")
             return {**item, "approved": bool(item["approved"])}
 
     def origins(self, memory_id: str):
@@ -230,6 +234,12 @@ class LearningPipeline:
             "DO UPDATE SET run_json=excluded.run_json",
             (run["id"], replay_key, json.dumps(run, ensure_ascii=False)),
         )
+        audit_record(
+            db,
+            "learning.ingest",
+            "succeeded" if run["status"] == "completed" else "failed",
+            counts={"items": len(run["items"]), "attempts": run["attempts"]},
+        )
 
     def ingest(self, source_id: str, payload: IngestionInput):
         if len(payload.content.encode("utf-8")) > MAX_DOCUMENT_BYTES:
@@ -261,6 +271,7 @@ class LearningPipeline:
                 ).fetchone()
                 previous = json.loads(previous[0]) if previous else None
                 if previous and previous["status"] == "completed":
+                    audit_record(db, "learning.replay")
                     return {**previous, "replayed": True}
                 now = datetime.now(UTC).isoformat()
                 run = dict(
@@ -307,6 +318,7 @@ class LearningPipeline:
                 self._save(db, replay_key, run)
                 return run
         except (MemoryConflict, MemoryNotFound, MemoryPermissionDenied):
+            AuditLog(self.store).record("learning.ingest", "denied")
             raise
         except Exception:
             if run is None:
@@ -324,6 +336,7 @@ class LearningPipeline:
                     "SELECT run_json FROM ingestion_runs WHERE replay_key=?", (replay_key,)
                 ).fetchone()
                 if previous and json.loads(previous[0])["status"] == "completed":
+                    audit_record(db, "learning.replay")
                     return {**json.loads(previous[0]), "replayed": True}
                 if previous:
                     saved = json.loads(previous[0])

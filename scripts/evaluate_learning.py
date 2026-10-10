@@ -58,7 +58,13 @@ def evaluate() -> list[EvaluationResult]:
         replay = pipeline.ingest(source["id"], payload)
         check(
             "same-document-replay-is-idempotent",
-            replay["replayed"] and db.export() == before,
+            replay["replayed"]
+            and {
+                key: value
+                for key, value in db.export().items()
+                if key != "audit_events"
+            }
+            == {key: value for key, value in before.items() if key != "audit_events"},
         )
         secondary = pipeline.register(
             SourceInput(

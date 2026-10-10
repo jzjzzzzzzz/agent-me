@@ -41,6 +41,8 @@ jobs:
         run: .venv/bin/python scripts/evaluate_retrieval.py
       - name: Evaluate bounded local agency
         run: .venv/bin/python scripts/evaluate_agency.py
+      - name: Evaluate portable owner control and audit
+        run: .venv/bin/python scripts/evaluate_owner_control.py
       - name: Publish baseline evaluation summary
         run: |
           set -o pipefail
@@ -75,6 +77,7 @@ jobs:
       - run: .venv/bin/python scripts/evaluate_identity.py
       - run: .venv/bin/python scripts/evaluate_retrieval.py
       - run: .venv/bin/python scripts/evaluate_agency.py
+      - run: .venv/bin/python scripts/evaluate_owner_control.py
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
@@ -129,6 +132,7 @@ jobs:
           .\.venv\Scripts\python.exe scripts\evaluate_identity.py
           .\.venv\Scripts\python.exe scripts\evaluate_retrieval.py
           .\.venv\Scripts\python.exe scripts\evaluate_agency.py
+          .\.venv\Scripts\python.exe scripts\evaluate_owner_control.py
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
           .\.venv\Scripts\python.exe scripts\check_docs.py

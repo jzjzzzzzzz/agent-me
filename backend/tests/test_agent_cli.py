@@ -15,6 +15,73 @@ def call(tmp_path, capsys, *args):
     return status, json.loads(output.out if status != 2 else output.err)
 
 
+def test_cli_reviewed_portable_import_audit_and_workspace_erasure(tmp_path, capsys):
+    from app.memory import Entry, Store
+
+    original = Store(str(tmp_path / "original"))
+    item = original.add(Entry(key="project", content="UniqueFictionalPrivateMarker"))
+    original.confirm(item["id"], [], 1)
+    file = tmp_path / "snapshot.json"
+    file.write_text(json.dumps(original.export()), encoding="utf-8")
+    status, preview = call(tmp_path, capsys, "portability", "preview", str(file))
+    assert status == 0 and not preview["executable_plans_restored"]
+    assert (
+        call(tmp_path, capsys, "portability", "import", str(file), "--digest", preview["digest"])[0]
+        == 2
+    )
+    assert (
+        call(tmp_path, capsys, "portability", "import", str(file), "--digest", "0" * 64, "--yes")[0]
+        == 2
+    )
+    status, imported = call(
+        tmp_path, capsys, "portability", "import", str(file), "--digest", preview["digest"], "--yes"
+    )
+    assert status == 0 and imported["imported"]
+    assert (
+        call(tmp_path, capsys, "memory", "list")[1][0]["content"] == "UniqueFictionalPrivateMarker"
+    )
+    status, events = call(tmp_path, capsys, "audit", "events")
+    assert status == 0 and "UniqueFictionalPrivateMarker" not in json.dumps(events)
+    assert any(item["operation"] == "cli.memory.list" for item in events)
+    assert (
+        call(tmp_path, capsys, "owner", "purge", "--expected-owner-id", imported["owner_id"])[0]
+        == 2
+    )
+    assert (
+        call(
+            tmp_path, capsys, "owner", "purge", "--expected-owner-id", imported["owner_id"], "--yes"
+        )[0]
+        == 0
+    )
+    assert call(tmp_path, capsys, "memory", "list")[1] == []
+    assert call(tmp_path, capsys, "audit", "clear")[0] == 2
+    assert call(tmp_path, capsys, "audit", "clear", "--yes")[0] == 0
+
+
+def test_cli_owner_erasure_requires_exact_review_and_yes(tmp_path, capsys):
+    from app.agency import Agency
+    from app.agency_models import PermissionInput, ToolInvocation
+    from app.memory import Store
+
+    db = Store(str(tmp_path / "workspace"))
+    agency = Agency(db)
+    agency.configure("tasks.create", PermissionInput(enabled=True), 1)
+    plan = agency.plan(
+        ToolInvocation(
+            tool="tasks.create",
+            arguments={"title": "FictionalTaskCopy"},
+            idempotency_key="cli-erase",
+        )
+    )
+    agency.approve(plan["id"], 1, plan["digest"])
+    completed = agency.execute(plan["id"])
+    output_id = completed["result"]["id"]
+    args = ["owner", "delete-output", "tasks", output_id, "--expected-revision", "1"]
+    assert call(tmp_path, capsys, *args)[0] == 2
+    assert call(tmp_path, capsys, *args, "--yes")[0] == 0
+    assert not agency.tasks() and not agency.plans()
+
+
 def test_cli_learning_policy_and_digest_reviewed_consolidation(tmp_path, capsys):
     assert call(tmp_path, capsys, "learning", "policy")[1]["revision"] == 1
     status, result = call(
@@ -80,7 +147,7 @@ def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     )
     destination = tmp_path / "private-export.json"
     assert call(tmp_path, capsys, "export", str(destination))[0] == 0
-    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 6
+    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 7
     if os.name == "posix":
         assert destination.stat().st_mode & 0o777 == 0o600
     before = destination.read_bytes()

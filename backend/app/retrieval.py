@@ -195,6 +195,20 @@ class PersonalRetriever:
         return subjects, [], allowed, self_question or bool(subjects)
 
     def retrieve(self, request: AskRequest):
+        from .audit import AuditLog
+
+        try:
+            result = self._retrieve(request)
+        except Exception:
+            AuditLog(self.store).record("retrieval.retrieve", "failed")
+            raise
+        AuditLog(self.store).record(
+            "retrieval.retrieve",
+            counts={"evidence": len(result.evidence), "context_chars": result.context_chars},
+        )
+        return result
+
+    def _retrieve(self, request: AskRequest):
         intent = route_intent(request)
         temporal_blocked = False
         if not any((request.as_of, request.known_at, request.since, request.until)):

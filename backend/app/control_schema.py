@@ -8,3 +8,7 @@ def extend_control(db):
         "CREATE TABLE IF NOT EXISTS consolidation_plans "
         "(id TEXT PRIMARY KEY,data_json TEXT NOT NULL)"
     )
+    for table in ("audit_events", "import_archives"):
+        db.execute(
+            f"CREATE TABLE IF NOT EXISTS {table} (id TEXT PRIMARY KEY,data_json TEXT NOT NULL)"
+        )

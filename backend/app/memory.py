@@ -21,7 +21,7 @@ from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQue
 from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
-_SCHEMA_VERSION = 6
+_SCHEMA_VERSION = 7
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
 _RECORD_COLUMNS = (
@@ -302,8 +302,14 @@ class Store:
 
             learning_policy = learning_settings(db)
             consolidation_plans = records(db, "consolidation_plans")
+            audit_events = records(db, "audit_events")
+            import_archives = records(db, "import_archives")
+            replay_keys = [
+                dict(run_id=row[0], key=row[1])
+                for row in db.execute("SELECT id,replay_key FROM ingestion_runs ORDER BY rowid")
+            ]
         return {
-            "version": 6,
+            "version": 7,
             "owner_id": owner_id,
             "owner_entity_id": owner_entity[0] if owner_entity else None,
             "entries": entries,
@@ -326,6 +332,9 @@ class Store:
             "action_events": events,
             "learning_policy": learning_policy,
             "consolidation_plans": consolidation_plans,
+            "audit_events": audit_events,
+            "import_archives": import_archives,
+            "ingestion_replay_keys": replay_keys,
         }
 
     @staticmethod
@@ -597,7 +606,7 @@ class Store:
             db.execute("DELETE FROM turns")
         return {"deleted": True}
 
-    def save_chat(self, question: str, answer: str):
+    def save_chat(self, question: str, answer: str, *, expected_owner_id: str | None = None):
         turn_id = uuid4().hex
         candidate: Entry | None = None
         # Explicit syntax only: do not silently infer personal facts from casual conversation.
@@ -611,6 +620,13 @@ class Store:
                 break
         # The source turn, candidate, and its initial snapshot must succeed together.
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if (
+                expected_owner_id is not None
+                and db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+                != expected_owner_id
+            ):
+                raise MemoryConflict("Workspace changed during chat; discarded stale result")
             now = datetime.now(UTC).isoformat()
             db.executemany(
                 "INSERT INTO turns VALUES (?,?,?,?)",

@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from .identity_schema import records
 from .memory import MemoryConflict, MemoryInputError, MemoryNotFound, Store
-from .memory_models import ConsolidationPlan, Entry, MemoryRecord
+from .memory_models import ConsolidationFilter, ConsolidationPlan, Entry, MemoryRecord
 
 
 def fingerprint(value):
@@ -33,7 +33,10 @@ class ConsolidationManager:
     def __init__(self, store: Store):
         self.store = store
 
-    def preview(self):
+    def preview(self, selection: ConsolidationFilter | None = None):
+        from .learning_policy import matches_prefix
+
+        selection = selection or ConsolidationFilter()
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
@@ -45,6 +48,14 @@ class ConsolidationManager:
                 (owner,),
             ):
                 item = dict(raw)
+                if selection.entity_id is not None and item["entity_id"] != selection.entity_id:
+                    continue
+                if selection.kinds is not None and item["kind"] not in selection.kinds:
+                    continue
+                if selection.key_prefix is not None and not matches_prefix(
+                    item["key"], [selection.key_prefix]
+                ):
+                    continue
                 groups.setdefault(signature(item), []).append(item)
             targets = []
             for members in groups.values():

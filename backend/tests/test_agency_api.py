@@ -45,7 +45,7 @@ async def test_tool_api_owner_permissions_plan_approval_execution_and_rollback(p
     events = (await client.get(path + "/events", headers=H)).json()
     assert events[-1]["stage"] == "rollback"
     exported = MemoryExport.model_validate((await client.get(BASE + "/export", headers=H)).json())
-    assert exported.version == 6 and len(exported.action_plans) == 1
+    assert exported.version == 7 and len(exported.action_plans) == 1
 
 
 async def test_router_knowledge_recommendation_and_act_are_distinct(personal):

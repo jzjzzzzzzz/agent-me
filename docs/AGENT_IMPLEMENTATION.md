@@ -11,7 +11,7 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | --- | --- | --- |
 | Identity | Typed people, projects, organizations, events, ideas, preferences, decisions and relationships | `identity.py` typed entities, reviewed evidence-linked relationships; alias ambiguity and privacy tests |
 | Identity | Source, learned time, confidence, sensitivity and ownership | Source snapshots, labels, persistent workspace ownership, optional declared confidence, category and temporal fields; `test_identity_temporal.py` |
-| Identity | Correction, supersession, deletion and export | `memory.py`, lifecycle tests and memory evaluation; portable import remains |
+| Identity | Correction, supersession, deletion and export | `memory.py` lifecycle plus `portability.py` digest-reviewed transactional import; rich round-trip and malformed snapshot tests |
 | Learning | Explicitly approved document/project/conversation/event sources | `learning.py` registration/review; core/API/CLI approval tests |
 | Learning | Candidate extraction before owner acceptance | `learning.py` exact field/paragraph candidates; `test_learning.py`; semantic inference remains out of scope |
 | Learning | Deduplication, entity resolution, temporal conflict handling | Canonical exact deduplication, Unicode-equivalent key conflicts and same-kind/key review exist; confirmed alias resolution and interval/episode conflict handling exist; semantic inference remains unproven |
@@ -29,8 +29,8 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle, relationship, temporal, privacy, injection-as-data, forged-claim and in-flight deletion suites exist; full metrics remain |
 | Verification | Calibration, coverage, provenance and correction-effort metrics | Boolean memory evaluation exists; longitudinal metrics remain |
 | Owner control | Local/provider boundaries, labels, selective disclosure | Local core, structured sensitivity labels and explicit opt-in exist; document/provider policy expansion remains |
-| Owner control | Review/correct/export/delete interfaces and portable formats | Core/API/CLI review, correction, export, deletion and restore exist; portable import remains |
-| Owner control | Ingestion/access audit and connected-tool threat model | Not yet implemented |
+| Owner control | Review/correct/export/delete interfaces and portable formats | Core/API/CLI lifecycle, portable import with inert authority archives, revision-bound independent-copy erasure and SQLite purge; `test_portability.py`, `test_owner_control.py` and API/CLI tests |
+| Owner control | Ingestion/access audit and connected-tool threat model | Content-free core ingestion/retrieval and authenticated API/CLI operational audit, explicit rotation/clear; `docs/THREAT_MODEL.md`, owner-control evaluation 14 cases |
 
 ## Execution order
 
@@ -45,9 +45,10 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 5. Typed contextual agency and real bounded tools with permissions and approval gates
    (implemented; [contracts](AGENCY.md), Core/API/CLI tests and 17-case agency evaluation).
 6. Portability/import, audit/threat-model coverage, longitudinal metrics, complete acceptance audit.
-   Learning-policy configuration and exact consolidation are implemented; see
-   [learning controls](LEARNING_CONTROL.md). Portable import, broad owner-copy deletion,
-   ingestion/access audit, threat model and longitudinal metrics still remain.
+   Learning-policy configuration, selectively previewed exact consolidation, portable import,
+   independent-copy deletion, operational audit and threat model are implemented; see
+   [learning controls](LEARNING_CONTROL.md) and [owner control](OWNER_CONTROL.md).
+   Provider/document disclosure-policy refinements, longitudinal metrics and full acceptance remain.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed
    branch, and verify the remote commit and CI. Only then consider the full objective achieved.
 

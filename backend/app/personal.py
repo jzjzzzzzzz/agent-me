@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
@@ -22,6 +22,7 @@ from .agency_models import (
     ToolPermission,
 )
 from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
+from .audit import AuditLog
 from .config import Settings, get_settings
 from .consolidation import ConsolidationManager
 from .identity import IdentityStore
@@ -32,6 +33,7 @@ from .memory import Store
 from .memory_models import (
     CandidateOrigin,
     Confirm,
+    ConsolidationFilter,
     ConsolidationPlan,
     EditEntry,
     EntityInput,
@@ -64,7 +66,19 @@ from .memory_models import (
     TemporalQuery,
     valid_unicode,
 )
+from .owner_control import OwnerControl
+from .owner_models import (
+    ActionDelete,
+    AuditEvent,
+    ImportArchive,
+    ImportPreview,
+    ImportResult,
+    RevisionDelete,
+    SourceDelete,
+    WorkspacePurge,
+)
 from .personal_agent import ClaimVerifier, PersonalAgent
+from .portability import PortableMemory
 from .provider import context_matches, generate_answer
 from .retention import RetentionManager
 from .retrieval import PersonalRetriever
@@ -119,6 +133,15 @@ class ReviewedDigest(BaseModel):
     digest: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class ImportPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    snapshot: dict = Field(max_length=40)
+
+
+class ImportApproval(ImportPayload):
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
 class OwnerBinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
     entity_id: str | None = Field(default=None, min_length=1, max_length=100)
@@ -160,8 +183,65 @@ def authorize(
     return config
 
 
-def store(config: Settings = Depends(authorize)) -> Store:
-    return Store(config.personal_data_dir)
+def store(request: Request, config: Settings = Depends(authorize)) -> Store:
+    db = Store(config.personal_data_dir)
+    request.state.personal_store = db
+    return db
+
+
+@router.get("/audit", response_model=list[AuditEvent])
+def audit_events(limit: int = 100, db: Store = Depends(store)):
+    return AuditLog(db).events(limit)
+
+
+@router.post("/audit/clear")
+def clear_audit(db: Store = Depends(store)):
+    return AuditLog(db).clear()
+
+
+@router.post("/portability/preview", response_model=ImportPreview)
+def preview_import(payload: ImportPayload, db: Store = Depends(store)):
+    return PortableMemory(db).preview(payload.snapshot)
+
+
+@router.post("/portability/import", response_model=ImportResult)
+def import_snapshot(payload: ImportApproval, db: Store = Depends(store)):
+    return PortableMemory(db).apply(payload.snapshot, payload.digest)
+
+
+@router.get("/portability/archives", response_model=list[ImportArchive])
+def import_archives(db: Store = Depends(store)):
+    return OwnerControl(db).archives()
+
+
+@router.post("/portability/archives/{archive_id}/delete")
+def delete_import_archive(archive_id: str, db: Store = Depends(store)):
+    return OwnerControl(db).delete_archive(archive_id)
+
+
+@router.post("/tasks/{item_id}/delete")
+def delete_task(item_id: str, payload: RevisionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_output("tasks", item_id, payload.expected_revision)
+
+
+@router.post("/notes/{item_id}/delete")
+def delete_note(item_id: str, payload: RevisionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_output("notes", item_id, payload.expected_revision)
+
+
+@router.post("/actions/{item_id}/delete")
+def delete_action(item_id: str, payload: ActionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_action(item_id, **payload.model_dump())
+
+
+@router.post("/sources/{source_id}/delete")
+def delete_source(source_id: str, payload: SourceDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_source(source_id, **payload.model_dump())
+
+
+@router.post("/workspace/purge")
+def purge_workspace(payload: WorkspacePurge, db: Store = Depends(store)):
+    return OwnerControl(db).purge(payload)
 
 
 @router.get("/learning/policy", response_model=LearningSettings)
@@ -175,8 +255,10 @@ def configure_learning(payload: ConfigureLearning, db: Store = Depends(store)):
 
 
 @router.post("/consolidation/preview", response_model=ConsolidationPlan)
-def preview_consolidation(db: Store = Depends(store)):
-    return ConsolidationManager(db).preview()
+def preview_consolidation(
+    payload: ConsolidationFilter = ConsolidationFilter(), db: Store = Depends(store)
+):
+    return ConsolidationManager(db).preview(payload)
 
 
 @router.get("/consolidation/plans", response_model=list[ConsolidationPlan])
@@ -493,6 +575,7 @@ async def chat(
 ):
     if len(payload.question) > config.max_question_chars:
         raise HTTPException(413, "Question exceeds configured limit")
+    workspace_owner = await run_in_threadpool(lambda: db.owner_id)
     knowledge = KnowledgeBase(
         config.knowledge_dir,
         max_document_bytes=config.max_document_bytes,
@@ -526,7 +609,9 @@ async def chat(
     answer, mode = await generate_answer(
         question=payload.question, history=history, matches=matches, settings=config
     )
-    await run_in_threadpool(db.save_chat, payload.question, answer)
+    await run_in_threadpool(
+        db.save_chat, payload.question, answer, expected_owner_id=workspace_owner
+    )
     response_matches = (
         context_matches(matches, config.max_context_chars)
         if mode == "openai-compatible"

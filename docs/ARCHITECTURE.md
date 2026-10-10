@@ -156,3 +156,12 @@ revision-bound owner review for sensitive or identity-defining records. `consoli
 archives only fully equal records through fingerprinted, digest-reviewed atomic plans.
 History/origins remain attributable, pending records never become accepted implicitly,
 and live consumers reject stale revisions. See [learning controls](LEARNING_CONTROL.md).
+
+## Portability, operational audit and erasure
+
+`portability.py` validates typed snapshots and consistency/provenance, then atomically adopts
+data into an empty workspace only after exact digest review. Execution grants and plans
+become inert historical archives. `audit.py` stores bounded content-free operation metadata;
+core ingestion/retrieval and authenticated HTTP/CLI adapters use it. `owner_control.py`
+provides explicit revision-bound independent-copy erasure and all-SQLite purge. See
+[owner control](OWNER_CONTROL.md) and the [threat model](THREAT_MODEL.md).

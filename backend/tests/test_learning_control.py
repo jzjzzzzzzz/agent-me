@@ -11,7 +11,14 @@ from app.identity import IdentityStore
 from app.learning import LearningPipeline
 from app.learning_policy import LearningPolicyManager
 from app.memory import Entry, MemoryConflict, MemoryPermissionDenied, Store
-from app.memory_models import EntityInput, IngestionInput, LearningPolicy, MemoryExport, SourceInput
+from app.memory_models import (
+    ConsolidationFilter,
+    EntityInput,
+    IngestionInput,
+    LearningPolicy,
+    MemoryExport,
+    SourceInput,
+)
 
 
 def approved_source(db, **kwargs):
@@ -41,7 +48,7 @@ def test_version_five_upgrade_preserves_reviewed_memory_and_tool_authority(tmp_p
         connection.execute("PRAGMA user_version=5")
     reopened = Store(str(tmp_path))
     assert reopened.owner_id == db.owner_id and reopened.context("Orchid")
-    assert reopened.export()["version"] == 6
+    assert reopened.export()["version"] == 7
     assert LearningPolicyManager(reopened).settings()["revision"] == 1
     assert Agency(reopened).execute(plan["id"])["status"] == "completed"
     assert len(Agency(reopened).tasks()) == 1
@@ -149,7 +156,7 @@ def test_consolidation_is_reviewed_idempotent_and_preserves_origins_and_history(
     origins = pipeline.origins(keeper["id"])
     assert origins[0]["excerpt"] == "Fictional Orchid" and origins[0]["source_id"] == source_id
     assert origins[0]["memory_revision"] == 3
-    assert db.context("Orchid") and MemoryExport.model_validate(db.export()).version == 6
+    assert db.context("Orchid") and MemoryExport.model_validate(db.export()).version == 7
 
 
 def test_pending_consolidation_is_never_auto_confirmation(tmp_path):
@@ -216,3 +223,17 @@ def test_distinct_qualifiers_are_not_semantically_consolidated(tmp_path):
     ]:
         db.add(Entry(**{"key": "project", "content": "Fictional Orchid", **fields}))
     assert ConsolidationManager(db).preview()["groups"] == []
+
+
+def test_owner_can_narrow_consolidation_without_touching_other_groups(tmp_path):
+    db = Store(str(tmp_path))
+    for key in ["project.a", "project.b"]:
+        for _ in range(2):
+            db.add(Entry(key=key, content="Fictional Orchid"))
+    manager = ConsolidationManager(db)
+    plan = manager.preview(ConsolidationFilter(key_prefix="PROJECT.A", kinds=["fact"]))
+    assert len(plan["groups"]) == 1
+    manager.apply(plan["id"], plan["digest"])
+    assert len(db.entries()) == 3
+    assert manager.preview(ConsolidationFilter(kinds=[]))["groups"] == []
+    assert manager.preview(ConsolidationFilter(entity_id="unrelated-owner-entity"))["groups"] == []

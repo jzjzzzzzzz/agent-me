@@ -130,8 +130,10 @@ The database persists chat for display (latest 100 turns); it does not replay hi
 so deleted memory cannot leak back through old turns. This first version does not provide full
 multi-turn contextual conversation. Deleting memory does not erase its existing chat transcript:
 use Clear history separately. Deleting a record purges its own revision snapshots, not independently
-restored candidates or archived replacements. Export version `6` includes the full transcript,
-active and archived entries, and revision snapshots. Import is not implemented. Stop the backend before removing `private/` to erase the entire workspace and token.
+restored candidates or archived replacements. Export version `7` includes the full transcript,
+active and archived entries, and revision snapshots. [Portable import and explicit owner erasure](OWNER_CONTROL.md)
+are available through Core/API/CLI. Stop the backend before removing `private/` and its
+`personal.env` token to erase the initialized filesystem workspace.
 
 Without model credentials, answers are excerpts, not personalized generation. Configure the three
 `LLM_*` values in your ignored `.env` and restart for generated answers. When enabled, your question,
@@ -160,7 +162,7 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
-| GET | `/export` | Version-6 snapshot including learning provenance and forgetting digests |
+| GET | `/export` | Version-7 snapshot including learning provenance and forgetting digests |
 | POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
 
 ### Typed memory contract / 结构化记忆契约
@@ -198,11 +200,12 @@ The server compares these preconditions inside the write transaction; stale requ
 without changing any entries or snapshots. These fields are optional for compatibility with
 existing clients; callers omitting them do **not** receive stale-review protection.
 
-Export uses version `6` (separate from the repository release version) and includes `revisions`,
+Export uses version `7` (separate from the repository release version) and includes `revisions`,
 `sources`, `ingestion_runs`, `origins`, and `forgotten` digest records.
 Entries, full history, and snapshots are read in one database transaction. An older version-1 or version-2
 export consumer must be updated; the existing reference UI downloads the JSON without parsing it.
-There is still no import or backup-restoration contract.
+The [portable import contract](OWNER_CONTROL.md) accepts supported snapshots into an empty
+workspace through exact digest review; execution permissions/plans are inert archives, not restored grants.
 
 Deletion removes the selected record, all of its snapshots, and its ingestion excerpts in one transaction.
 Opaque digests of current and historical kind/key/content are retained to block automatic re-ingestion. It does not
@@ -265,7 +268,15 @@ The older private chat endpoint remains a separate compatibility contract.
 
 ## Local owner agency
 
-Snapshot version `6` additionally includes `tool_permissions`, `action_plans`, `tasks`, `notes`,
+Snapshot version `7` additionally includes `tool_permissions`, `action_plans`, `tasks`, `notes`,
 and `action_events`. Tool defaults remain disabled. These are independent private data copies;
 memory deletion does not delete task/note/plan arguments. The [agency contracts](AGENCY.md)
 document explicit approval, inspection, rollback and current deletion boundaries.
+
+
+## Portability, audit and independent-copy control
+
+Snapshot version `7` adds `audit_events`, `import_archives` and `ingestion_replay_keys`.
+The [owner-control contracts](OWNER_CONTROL.md) describe exact reviewed import into an empty
+workspace, non-restoration of execution authority, content-free operational audit and explicit
+source/action/output/archive/transcript/SQLite-state deletion boundaries.

@@ -8,6 +8,7 @@ from typing import Annotated, Literal
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .agency_models import ActionEvent, ActionPlan, NoteRecord, TaskRecord, ToolPermission
+from .owner_models import AuditEvent, ImportArchive, ReplayKey
 
 Sensitivity = Literal["public", "private", "sensitive"]
 Belief = Literal["known", "inferred", "disputed", "outdated", "unknown"]
@@ -379,6 +380,24 @@ class ConsolidationMember(BaseModel):
     fingerprint: str = Field(pattern=r"^[0-9a-f]{64}$")
 
 
+class ConsolidationFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+    key_prefix: str | None = Field(default=None, min_length=1, max_length=100)
+    kinds: list[Literal["fact", "preference", "event", "decision"]] | None = Field(
+        default=None, max_length=4
+    )
+
+    @field_validator("key_prefix")
+    @classmethod
+    def prefix(cls, value):
+        if value is not None:
+            valid_unicode(value)
+            if not value.strip():
+                raise ValueError("Selection prefix cannot be blank")
+        return value
+
+
 class ConsolidationGroup(BaseModel):
     model_config = ConfigDict(extra="forbid")
     keeper_id: str
@@ -398,7 +417,7 @@ class ConsolidationPlan(BaseModel):
 
 class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: Literal[6] = 6
+    version: Literal[7] = 7
     owner_id: str
     owner_entity_id: str | None = None
     entries: list[MemoryRecord]
@@ -421,3 +440,6 @@ class MemoryExport(BaseModel):
     action_events: list[ActionEvent]
     learning_policy: LearningSettings
     consolidation_plans: list[ConsolidationPlan]
+    audit_events: list[AuditEvent]
+    import_archives: list[ImportArchive]
+    ingestion_replay_keys: list[ReplayKey]
