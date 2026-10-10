@@ -13,6 +13,8 @@ export const test = base.extend<{ ownerApi: APIRequestContext; pageFence: void; 
     const api = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { Authorization: `Bearer ${FIXTURE_TOKEN}` } });
     const health = await api.get("/__e2e_health");
     expect(await health.json()).toEqual({ fixture: "agent-me-e2e-v1" });
+    const reset = await api.post("/__e2e/model", { data: { enabled: false } });
+    expect(reset.ok()).toBe(true);
     const profile = await api.get("/api/v1/profile");
     expect(await profile.json()).toMatchObject({ name: "Agent-Me E2E fixture", external_provider_enabled: false, personal_enabled: true });
     const owner = await api.get(`${PREFIX}/identity/owner`);

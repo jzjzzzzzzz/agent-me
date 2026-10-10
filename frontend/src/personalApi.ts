@@ -67,6 +67,11 @@ export type PersonalAnswer = {
   status: "known" | "partial" | "unknown" | "disputed" | "inferred" | "outdated" | "ambiguous";
   answer: string; evidence: Evidence[];
 };
+export type SemanticReview = {
+  source_id: string; source_revision: number; selector: string; target_id: string | null;
+  disclosure_revision: number; permitted: boolean; configured: boolean;
+  sensitivity: "private" | "sensitive"; max_source_chars: number;
+};
 export type WorkbenchData = {
   sources: LearningSource[]; memories: MemoryRecord[]; runs: IngestionRun[]; entities: Entity[];
 };
@@ -167,6 +172,11 @@ const isDeletePreview: Guard<IdentityDeletePreview> = (value): value is Identity
   array(isRun)(value.runs) && array(isRelationship)(value.relationships) && typeof value.owner_binding === "boolean" &&
   integer(value.origin_count) && integer(value.history_count) && (value.kind !== "relationship" ||
     !value.memories.length && !value.sources.length && !value.runs.length && !value.relationships.length && !value.owner_binding);
+const isSemanticReview: Guard<SemanticReview> = (value): value is SemanticReview => object(value) && text(value.source_id) &&
+  revision(value.source_revision) && text(value.selector) && /^learning-source\/[0-9a-f]{64}$/.test(value.selector) &&
+  revision(value.disclosure_revision) && typeof value.permitted === "boolean" && typeof value.configured === "boolean" &&
+  oneOf("private", "sensitive")(value.sensitivity) && integer(value.max_source_chars) &&
+  (value.configured ? text(value.target_id) && /^[0-9a-f]{64}$/.test(value.target_id) : value.target_id === null && !value.permitted);
 const isMutation = (value: unknown): value is { status: "pending" | "confirmed"; revision: number } =>
   object(value) && oneOf("pending", "confirmed")(value.status) && revision(value.revision);
 const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/+$/, "");
@@ -279,6 +289,24 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
       { approved: !source.approved, expected_revision: source.revision }),
     ingest: (source: LearningSource, content: string, mode: "fields" | "notes") => request(`/learning/sources/${idPath(source.id)}/ingest`, isRun,
       { content, mode, expected_source_revision: source.revision }),
+    async semanticReview(source: LearningSource) {
+      const value = await request(`/learning/sources/${idPath(source.id)}/semantic-review`, isSemanticReview);
+      if (value.source_id !== source.id) throw new PersonalApiError(502, "invalid");
+      if (value.source_revision !== source.revision) throw new PersonalApiError(409, "stale");
+      return value;
+    },
+    async ingestSemantic(source: LearningSource, content: string, review: SemanticReview, allowSensitive: boolean) {
+      if (!review.configured || !review.permitted || review.source_id !== source.id || review.source_revision !== source.revision) {
+        throw new PersonalApiError(409, "stale");
+      }
+      const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
+      const hash = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("");
+      return request(`/learning/sources/${idPath(source.id)}/ingest-semantic`, isRun, {
+        content, mode: "notes", expected_source_revision: source.revision,
+        expected_disclosure_revision: review.disclosure_revision, reviewed_target_id: review.target_id,
+        reviewed_content_hash: hash, allow_provider: true, allow_sensitive: allowSensitive,
+      });
+    },
     confirm: (memory: MemoryRecord, replacements: Record<string, number> = {}) => request(`/entries/${idPath(memory.id)}/confirm`, isMutation,
       { expected_revision: memory.revision, replace_ids: Object.keys(replacements), replace_revisions: replacements }),
     edit: (memory: MemoryRecord, content: string) => request(`/entries/${idPath(memory.id)}/edit`, isMutation,

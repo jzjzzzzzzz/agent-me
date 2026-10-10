@@ -97,6 +97,8 @@ from .retrieval_models import (
     VerifyRequest,
 )
 from .schemas import ChatTurn
+from .semantic_learning import INSTRUCTIONS, ingest_semantic
+from .semantic_models import SemanticIngestion
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
 
@@ -607,6 +609,29 @@ def review_source(source_id: str, payload: SourceReview, db: Store = Depends(sto
 @router.post("/learning/sources/{source_id}/ingest", response_model=IngestionRun)
 def ingest_source(source_id: str, payload: IngestionInput, db: Store = Depends(store)):
     return LearningPipeline(db).ingest(source_id, payload)
+
+
+@router.get("/learning/sources/{source_id}/semantic-review")
+def semantic_review(
+    source_id: str, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    configured = config.provider_state == "openai-compatible"
+    target = target_id(config.llm_base_url, config.llm_model) if configured else None
+    return {
+        **DisclosureManager(db).describe_learning(source_id, target),
+        "configured": configured,
+        "max_source_chars": max(0, config.max_context_chars - len(INSTRUCTIONS)),
+    }
+
+
+@router.post("/learning/sources/{source_id}/ingest-semantic", response_model=IngestionRun)
+async def semantic_ingestion(
+    source_id: str,
+    payload: SemanticIngestion,
+    config: Settings = Depends(authorize),
+    db: Store = Depends(store),
+):
+    return await ingest_semantic(db, source_id, payload, config)
 
 
 @router.get("/learning/runs", response_model=list[IngestionRun])

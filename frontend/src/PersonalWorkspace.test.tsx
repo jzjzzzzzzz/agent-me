@@ -78,7 +78,7 @@ it("renders both private data destinations in the selected locale", () => {
   );
 
   expect(screen.getByRole("region", { name: "私有工作区" })).toHaveTextContent(
-    "审核工作台不调用模型服务",
+    "本地提取和有据问答不调用模型",
   );
 
   rerender(<PersonalWorkspace external={false} text={messages.ja.personalWorkspace} />);

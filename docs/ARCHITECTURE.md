@@ -174,3 +174,15 @@ data before forwarding whole scoped records. Imports archive, rather than restor
 `evaluate_longitudinal.py` measures actual atomic answers through twenty state transitions with
 independent fictional labels and explicit metric denominators. See [disclosure](DISCLOSURE.md)
 and [longitudinal evaluation](LONGITUDINAL_EVALUATION.md).
+
+## Optional scoped model-assisted learning
+
+`semantic_learning.py` is a network adapter, not an import into the provider-free memory/learning core.
+It copies reviewed provider configuration, authorizes an exact reserved source selector plus per-request
+target/content/revision consent, sends only the source and fixed instructions, and validates literal
+quotes through a bounded schema. Trusted Python extractor/authority hooks let `LearningPipeline`
+reuse the existing transactional dedup/origin/forgetting/run machinery after network I/O; HTTP/model
+payloads cannot supply those hooks. A completed authorized replay avoids another provider call.
+The owner workbench keeps original source context available locally for review. See
+[semantic learning contracts](SEMANTIC_LEARNING.md); no arbitrary paraphrase entailment or unattended
+learning guarantee is added by quote equality.

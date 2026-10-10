@@ -271,7 +271,44 @@ class LearningPipeline:
             counts={"items": len(run["items"]), "attempts": run["attempts"]},
         )
 
-    def ingest(self, source_id: str, payload: IngestionInput):
+    @staticmethod
+    def _replay_key(source, payload, extractor):
+        if not isinstance(extractor, str) or not 1 <= len(extractor) <= 128:
+            raise MemoryInputError("Invalid extractor identity")
+        digest = hashlib.sha256(payload.content.encode("utf-8")).hexdigest()
+        identity = [source["id"], source["revision"], digest, payload.mode, extractor]
+        qualifier = [iso(payload.valid_from), iso(payload.valid_until), iso(payload.occurred_at)]
+        if any(value is not None for value in qualifier):
+            identity.append(qualifier)
+        return digest, hashlib.sha256(json.dumps(identity).encode()).hexdigest()
+
+    def completed_replay(self, source_id, payload, *, extractor=EXTRACTOR, authority_check=None):
+        """Read a completed result only after current source/policy/adapter authority checks."""
+        with self.store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            source = self._source(db, source_id, payload.expected_source_revision)
+            if authority_check:
+                authority_check(db)
+            _, key = self._replay_key(source, payload, extractor)
+            row = db.execute(
+                "SELECT run_json FROM ingestion_runs WHERE replay_key=?", (key,)
+            ).fetchone()
+            if row and json.loads(row[0])["status"] == "completed":
+                audit_record(db, "learning.replay")
+                return {**json.loads(row[0]), "replayed": True}
+        return None
+
+    def ingest(
+        self,
+        source_id: str,
+        payload: IngestionInput,
+        *,
+        extractor=EXTRACTOR,
+        extraction=None,
+        authority_check=None,
+    ):
+        # Adapter hooks are trusted Python code, never request/source/model-authored authority.
+        # They execute inside the write transaction; network I/O must already be complete.
         if len(payload.content.encode("utf-8")) > MAX_DOCUMENT_BYTES:
             raise MemoryInputError("Document exceeds the ingestion byte limit")
         digest = hashlib.sha256(payload.content.encode("utf-8")).hexdigest()
@@ -281,21 +318,9 @@ class LearningPipeline:
             with self.store.connect() as db:
                 db.execute("BEGIN IMMEDIATE")
                 source = self._source(db, source_id, payload.expected_source_revision)
-                identity = [
-                    source_id,
-                    source["revision"],
-                    digest,
-                    payload.mode,
-                    EXTRACTOR,
-                ]
-                qualifier = [
-                    iso(payload.valid_from),
-                    iso(payload.valid_until),
-                    iso(payload.occurred_at),
-                ]
-                if any(value is not None for value in qualifier):
-                    identity.append(qualifier)
-                replay_key = hashlib.sha256(json.dumps(identity).encode()).hexdigest()
+                if authority_check:
+                    authority_check(db)
+                digest, replay_key = self._replay_key(source, payload, extractor)
                 previous = db.execute(
                     "SELECT run_json FROM ingestion_runs WHERE replay_key=?", (replay_key,)
                 ).fetchone()
@@ -309,7 +334,7 @@ class LearningPipeline:
                     source_id=source_id,
                     source_revision=source["revision"],
                     document_hash=digest,
-                    extractor=EXTRACTOR,
+                    extractor=extractor,
                     mode=payload.mode,
                     status="completed",
                     attempts=previous["attempts"] + 1 if previous else 1,
@@ -321,7 +346,7 @@ class LearningPipeline:
                     trace=[dict(stage="source", outcome="completed", count=1)],
                 )
                 try:
-                    candidates = extract(
+                    candidates = (extraction or extract)(
                         payload.content,
                         source,
                         payload.mode,
@@ -360,8 +385,19 @@ class LearningPipeline:
             run["trace"].append(dict(stage="storage", outcome="failed", count=0))
             with self.store.connect() as db:
                 db.execute("BEGIN IMMEDIATE")
+                owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+                live_source = db.execute(
+                    "SELECT owner_id FROM sources WHERE id=?", (source_id,)
+                ).fetchone()
+                if owner != source["owner_id"] or not live_source or live_source[0] != owner:
+                    raise MemoryConflict(
+                        "Learning workspace/source was erased before the failure receipt"
+                    ) from None
+                if authority_check:
+                    authority_check(db)
                 # Revoking learning permission does not revoke the owner's ability to
                 # inspect an earlier authorized attempt's content-free failure trace.
+                # Network adapters may additionally require their live grant stamp.
                 previous = db.execute(
                     "SELECT run_json FROM ingestion_runs WHERE replay_key=?", (replay_key,)
                 ).fetchone()

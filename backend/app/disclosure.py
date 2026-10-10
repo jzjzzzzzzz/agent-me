@@ -2,10 +2,11 @@
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from .audit import record
-from .memory import MemoryConflict, MemoryInputError, MemoryPermissionDenied
+from .memory import MemoryConflict, MemoryError, MemoryInputError, MemoryPermissionDenied
 from .memory_models import TemporalQuery
 from .memory_time import active_at
 from .owner_models import DisclosurePolicy, DisclosureSettings
@@ -15,6 +16,25 @@ def target_id(base_url: str, model: str):
     if not base_url or not model:
         return None
     return hashlib.sha256(json.dumps([base_url.rstrip("/"), model]).encode()).hexdigest()
+
+
+def learning_selector(source_id: str):
+    # Reserved opaque selector, not a file path. It can never collide with the
+    # public/private Markdown selectors, even for an imported unusual source ID.
+    return "learning-source/" + hashlib.sha256(source_id.encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True)
+class LearningDisclosure:
+    source_id: str
+    source_revision: int
+    owner_id: str
+    entity_revision: int | None
+    sensitivity: str
+    learning_revision: int
+    disclosure_revision: int
+    target: str
+    document_hash: str
 
 
 def settings(db):
@@ -59,6 +79,154 @@ class DisclosureManager:
             )
             record(db, "disclosure.configure")
             return settings(db)
+
+    def _learning_grant(
+        self,
+        db,
+        target,
+        source_id,
+        source_revision,
+        disclosure_revision,
+        document_hash,
+        *,
+        allow_sensitive=False,
+    ):
+        from .learning import LearningPipeline
+        from .learning_policy import settings as learning_settings
+
+        if (
+            type(allow_sensitive) is not bool
+            or type(source_revision) is not int
+            or source_revision < 1
+            or type(disclosure_revision) is not int
+            or disclosure_revision < 1
+        ):
+            raise MemoryInputError("Invalid semantic disclosure review preconditions")
+        if (
+            not isinstance(target, str)
+            or len(target) != 64
+            or any(char not in "0123456789abcdef" for char in target)
+        ):
+            raise MemoryPermissionDenied("A configured reviewed semantic target is required")
+        if (
+            not isinstance(document_hash, str)
+            or len(document_hash) != 64
+            or any(char not in "0123456789abcdef" for char in document_hash)
+        ):
+            raise MemoryInputError("Semantic source digest must be SHA-256")
+
+        source = LearningPipeline(self.store)._source(db, source_id, source_revision)
+        current = settings(db)
+        if current["revision"] != disclosure_revision:
+            raise MemoryConflict("Disclosure policy changed; review it again")
+        policy = DisclosurePolicy.model_validate(current["policy"])
+        label = "sensitive" if source["sensitivity"] == "sensitive" else "private"
+        if (
+            not policy.enabled
+            or policy.target_id != target
+            or "private" not in policy.namespaces
+            or "private" not in policy.labels
+            or label not in policy.labels
+            or label == "sensitive"
+            and not allow_sensitive
+            or policy.document_paths is None
+            or learning_selector(source_id) not in policy.document_paths
+            or policy.entity_ids is not None
+            and source["entity_id"] not in policy.entity_ids
+        ):
+            raise MemoryPermissionDenied(
+                "Source is outside the reviewed semantic disclosure boundary"
+            )
+        owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+        if source["owner_id"] != owner:
+            raise MemoryPermissionDenied("Source belongs to another workspace owner")
+        entity = self.store._entity(db, source["entity_id"])
+        return LearningDisclosure(
+            source_id,
+            source["revision"],
+            owner,
+            entity["revision"] if entity else None,
+            label,
+            learning_settings(db)["revision"],
+            current["revision"],
+            target,
+            document_hash,
+        )
+
+    def authorize_learning(
+        self,
+        target,
+        source_id,
+        source_revision,
+        disclosure_revision,
+        document_hash,
+        *,
+        allow_sensitive=False,
+    ):
+        failure, stamp = None, None
+        with self.store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            try:
+                stamp = self._learning_grant(
+                    db,
+                    target,
+                    source_id,
+                    source_revision,
+                    disclosure_revision,
+                    document_hash,
+                    allow_sensitive=allow_sensitive,
+                )
+            except MemoryError as error:
+                failure = error
+                record(db, "disclosure.learning", "denied")
+            else:
+                record(db, "disclosure.learning", counts={"sources": 1})
+        if failure:
+            raise failure
+        return stamp
+
+    def check_learning(self, db, stamp: LearningDisclosure, *, allow_sensitive=False):
+        current = self._learning_grant(
+            db,
+            stamp.target,
+            stamp.source_id,
+            stamp.source_revision,
+            stamp.disclosure_revision,
+            stamp.document_hash,
+            allow_sensitive=allow_sensitive,
+        )
+        if current != stamp:
+            raise MemoryConflict("Semantic learning authority changed during delivery")
+
+    def describe_learning(self, source_id, target):
+        from .learning import LearningPipeline
+
+        with self.store.connect() as db:
+            db.execute("BEGIN")
+            source = LearningPipeline(self.store)._source(db, source_id, None)
+            current = settings(db)
+            permitted = True
+            try:
+                self._learning_grant(
+                    db,
+                    target,
+                    source_id,
+                    source["revision"],
+                    current["revision"],
+                    "0" * 64,
+                    allow_sensitive=True,
+                )
+            except MemoryError:
+                permitted = False
+            return {
+                "source_id": source_id,
+                "source_revision": source["revision"],
+                "selector": learning_selector(source_id),
+                "target_id": target,
+                "disclosure_revision": current["revision"],
+                "permitted": permitted,
+                "sensitivity": "sensitive" if source["sensitivity"] == "sensitive" else "private",
+            }
 
     def authorize(self, provider_target, matches, *, allow_sensitive=False):
         # Source-value/privacy revalidation precedes authorization; no stored transcript is input.
