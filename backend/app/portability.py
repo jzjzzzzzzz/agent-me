@@ -269,15 +269,36 @@ class PortableMemory:
             ):
                 raise MemoryConflict("Portable import cannot overwrite configured owner state")
 
-    def preview(self, payload):
+    @staticmethod
+    def _destination(db, expected_owner_id=None):
+        owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+        if expected_owner_id is not None and expected_owner_id != owner:
+            raise MemoryConflict("Import destination owner changed; review the destination again")
+        return owner
+
+    def destination(self):
+        with self.store.connect() as db:
+            db.execute("BEGIN")
+            owner = self._destination(db)
+            try:
+                self._empty(db)
+            except MemoryConflict:
+                empty = False
+            else:
+                empty = True
+            return {"owner_id": owner, "empty": empty}
+
+    def preview(self, payload, *, expected_destination_owner_id=None):
         data, version, digest = self._snapshot(payload)
         with self.store.connect() as db:
             db.execute("BEGIN")
+            destination = self._destination(db, expected_destination_owner_id)
             self._empty(db)
         return ImportPreview(
             digest=digest,
             source_version=version,
             owner_id=data["owner_id"],
+            destination_owner_id=destination,
             counts={key: len(value) for key, value in data.items() if isinstance(value, list)},
         ).model_dump(mode="json")
 
@@ -382,18 +403,20 @@ class PortableMemory:
         record(db, "portability.import", counts={"entries": len(data["entries"]), "archives": 1})
         return archive.id
 
-    def apply(self, payload, reviewed_digest):
+    def apply(self, payload, reviewed_digest, *, expected_destination_owner_id=None):
         data, version, digest = self._snapshot(payload)
         if digest != reviewed_digest:
             raise MemoryConflict("Import approval must match the exact reviewed snapshot")
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            destination = self._destination(db, expected_destination_owner_id)
             self._empty(db)
             archive_id = self._write(db, data, version, digest)
         return ImportResult(
             digest=digest,
             source_version=version,
             owner_id=data["owner_id"],
+            destination_owner_id=destination,
             archive_id=archive_id,
             counts={key: len(value) for key, value in data.items() if isinstance(value, list)},
         ).model_dump(mode="json")

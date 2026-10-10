@@ -299,6 +299,9 @@ def parser() -> argparse.ArgumentParser:
     for name in ("preview", "import"):
         child = portability.add_parser(name)
         child.add_argument("file", type=Path)
+        child.add_argument(
+            "--expected-destination-owner-id", help="Optional reviewed destination workspace UUID"
+        )
         if name == "import":
             child.add_argument("--digest", required=True)
             child.add_argument("--yes", action="store_true")
@@ -391,10 +394,14 @@ def _execute(args):
         except (ValueError, UnicodeError, RecursionError):
             raise MemoryInputError("Snapshot must be valid JSON") from None
         if args.action == "preview":
-            return PortableMemory(store).preview(payload)
+            return PortableMemory(store).preview(
+                payload, expected_destination_owner_id=args.expected_destination_owner_id
+            )
         if not args.yes:
             raise MemoryInputError("Import requires --yes and the reviewed snapshot digest")
-        return PortableMemory(store).apply(payload, args.digest)
+        return PortableMemory(store).apply(
+            payload, args.digest, expected_destination_owner_id=args.expected_destination_owner_id
+        )
     if args.command == "owner":
         if args.action in {"preview-erasure", "apply-erasure"}:
             from .erasure import ReviewedErasure

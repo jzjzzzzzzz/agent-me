@@ -1,0 +1,474 @@
+{
+  "snapshot": {
+    "version": 8,
+    "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+    "owner_entity_id": "dce5637fcb974e7d8475951d6c0e6fe8",
+    "entries": [
+      {
+        "id": "d5c62f8a096a419eb02b237f7c7dab72",
+        "kind": "fact",
+        "key": "identity.name",
+        "content": "Fictional migration owner",
+        "source": "source:931611d054a7469c9aaff1387e1727ca",
+        "status": "confirmed",
+        "created_at": "2026-10-10T19:43:11.314817+00:00",
+        "updated_at": "2026-10-10T19:43:11.315458+00:00",
+        "revision": 2,
+        "superseded_by": null,
+        "sensitivity": "private",
+        "entity_id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "confidence": null,
+        "belief": "known",
+        "valid_from": null,
+        "valid_until": null,
+        "occurred_at": null,
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "category": "semantic"
+      }
+    ],
+    "history": [],
+    "revisions": [
+      {
+        "id": "d5c62f8a096a419eb02b237f7c7dab72",
+        "kind": "fact",
+        "key": "identity.name",
+        "content": "Fictional migration owner",
+        "source": "source:931611d054a7469c9aaff1387e1727ca",
+        "status": "pending",
+        "created_at": "2026-10-10T19:43:11.314817+00:00",
+        "updated_at": "2026-10-10T19:43:11.314817+00:00",
+        "revision": 1,
+        "superseded_by": null,
+        "change": "created",
+        "sensitivity": "private",
+        "entity_id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "confidence": null,
+        "belief": "known",
+        "valid_from": null,
+        "valid_until": null,
+        "occurred_at": null,
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "category": "semantic"
+      },
+      {
+        "id": "d5c62f8a096a419eb02b237f7c7dab72",
+        "kind": "fact",
+        "key": "identity.name",
+        "content": "Fictional migration owner",
+        "source": "source:931611d054a7469c9aaff1387e1727ca",
+        "status": "confirmed",
+        "created_at": "2026-10-10T19:43:11.314817+00:00",
+        "updated_at": "2026-10-10T19:43:11.315458+00:00",
+        "revision": 2,
+        "superseded_by": null,
+        "change": "confirmed",
+        "sensitivity": "private",
+        "entity_id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "confidence": null,
+        "belief": "known",
+        "valid_from": null,
+        "valid_until": null,
+        "occurred_at": null,
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "category": "semantic"
+      }
+    ],
+    "sources": [
+      {
+        "id": "931611d054a7469c9aaff1387e1727ca",
+        "kind": "document",
+        "name": "Fictional migration source",
+        "sensitivity": "private",
+        "approved": true,
+        "revision": 2,
+        "created_at": "2026-10-10T19:43:11.312567+00:00",
+        "updated_at": "2026-10-10T19:43:11.313561+00:00",
+        "entity_id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a"
+      }
+    ],
+    "ingestion_runs": [
+      {
+        "id": "ed80fb02fd2d4306b8b114eb1cc6e341",
+        "source_id": "931611d054a7469c9aaff1387e1727ca",
+        "source_revision": 2,
+        "document_hash": "4c7cd40bfca1cc79bd2a6c4e70ecbf69dda53bb306a0d0a1b00a192a187840ac",
+        "extractor": "exact-excerpts-v1",
+        "mode": "fields",
+        "status": "completed",
+        "attempts": 1,
+        "created_at": "2026-10-10T19:43:11.314728+00:00",
+        "updated_at": "2026-10-10T19:43:11.314728+00:00",
+        "replayed": false,
+        "error_code": null,
+        "items": [
+          {
+            "index": 0,
+            "outcome": "created",
+            "memory_id": "d5c62f8a096a419eb02b237f7c7dab72",
+            "conflict_ids": []
+          }
+        ],
+        "trace": [
+          {
+            "stage": "source",
+            "outcome": "completed",
+            "count": 1
+          },
+          {
+            "stage": "extraction",
+            "outcome": "completed",
+            "count": 1
+          },
+          {
+            "stage": "deduplication",
+            "outcome": "completed",
+            "count": 0
+          },
+          {
+            "stage": "conflicts",
+            "outcome": "completed",
+            "count": 0
+          },
+          {
+            "stage": "storage",
+            "outcome": "completed",
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "origins": [
+      {
+        "id": "49573fcbb94043bba2699d82e1938484",
+        "memory_id": "d5c62f8a096a419eb02b237f7c7dab72",
+        "memory_revision": 1,
+        "source_id": "931611d054a7469c9aaff1387e1727ca",
+        "source_revision": 2,
+        "document_hash": "4c7cd40bfca1cc79bd2a6c4e70ecbf69dda53bb306a0d0a1b00a192a187840ac",
+        "start": 20,
+        "end": 45,
+        "excerpt": "Fictional migration owner",
+        "run_id": "ed80fb02fd2d4306b8b114eb1cc6e341",
+        "created_at": "2026-10-10T19:43:11.314728+00:00"
+      }
+    ],
+    "forgotten": [],
+    "entities": [
+      {
+        "id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "kind": "person",
+        "name": "Fictional migration owner",
+        "aliases": [],
+        "sensitivity": "private",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "source": "manual",
+        "status": "confirmed",
+        "revision": 2,
+        "created_at": "2026-10-10T19:43:11.311057+00:00",
+        "updated_at": "2026-10-10T19:43:11.311852+00:00"
+      }
+    ],
+    "entity_revisions": [
+      {
+        "id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "kind": "person",
+        "name": "Fictional migration owner",
+        "aliases": [],
+        "sensitivity": "private",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "source": "manual",
+        "status": "pending",
+        "revision": 1,
+        "created_at": "2026-10-10T19:43:11.311057+00:00",
+        "updated_at": "2026-10-10T19:43:11.311057+00:00",
+        "change": "created"
+      },
+      {
+        "id": "dce5637fcb974e7d8475951d6c0e6fe8",
+        "kind": "person",
+        "name": "Fictional migration owner",
+        "aliases": [],
+        "sensitivity": "private",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "source": "manual",
+        "status": "confirmed",
+        "revision": 2,
+        "created_at": "2026-10-10T19:43:11.311057+00:00",
+        "updated_at": "2026-10-10T19:43:11.311852+00:00",
+        "change": "confirmed"
+      }
+    ],
+    "relationships": [],
+    "relationship_revisions": [],
+    "retention_policy": {
+      "revision": 1,
+      "policy": {}
+    },
+    "retention_plans": [],
+    "tool_permissions": [
+      {
+        "tool": "notes.create",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "scope": "workspace_notes",
+        "enabled": true,
+        "labels": [
+          "public",
+          "private"
+        ],
+        "entity_ids": null,
+        "revision": 2
+      }
+    ],
+    "action_plans": [
+      {
+        "id": "ab6b87725d384569bb9e3f954e4235c1",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "invocation": {
+          "tool": "notes.create",
+          "arguments": {
+            "title": "Fictional imported note",
+            "content": "Fictional migration payload not rendered <img src=x>",
+            "project_id": null
+          },
+          "idempotency_key": "migration-fixture",
+          "sensitivity": "private",
+          "source_ids": [
+            "d5c62f8a096a419eb02b237f7c7dab72"
+          ],
+          "intent": "act"
+        },
+        "permission_revision": 2,
+        "source_revisions": {
+          "d5c62f8a096a419eb02b237f7c7dab72": 2
+        },
+        "entity_revisions": {
+          "dce5637fcb974e7d8475951d6c0e6fe8": 2
+        },
+        "digest": "7d9ba22165ed78bde5b6058e08ce24399bfe2b370b162c4c97bf30fe71871d7e",
+        "request_digest": "12f3b692bb5feec140b8ecfe23b650b7a3289b37b26265e701d05898f42b3412",
+        "revision": 3,
+        "status": "completed",
+        "attempts": 1,
+        "result": {
+          "table": "notes",
+          "id": "285a82e39c5e4b81a6224f45d233c938",
+          "revision": 1,
+          "changed": true
+        },
+        "undo": {},
+        "approved_digest": "7d9ba22165ed78bde5b6058e08ce24399bfe2b370b162c4c97bf30fe71871d7e",
+        "created_at": "2026-10-10T19:43:11.316264+00:00",
+        "updated_at": "2026-10-10T19:43:11.317235+00:00"
+      }
+    ],
+    "tasks": [],
+    "notes": [
+      {
+        "id": "285a82e39c5e4b81a6224f45d233c938",
+        "title": "Fictional imported note",
+        "content": "Fictional migration payload not rendered <img src=x>",
+        "project_id": null,
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "created_by": "ab6b87725d384569bb9e3f954e4235c1",
+        "sensitivity": "private",
+        "source_ids": [
+          "d5c62f8a096a419eb02b237f7c7dab72"
+        ],
+        "revision": 1,
+        "created_at": "2026-10-10T19:43:11.317136+00:00",
+        "updated_at": "2026-10-10T19:43:11.317136+00:00"
+      }
+    ],
+    "action_events": [
+      {
+        "id": "9ea374e810bf4874a0b0880f5fed09c9",
+        "plan_id": "ab6b87725d384569bb9e3f954e4235c1",
+        "stage": "intent",
+        "outcome": "planned",
+        "code": "owner_request",
+        "created_at": "2026-10-10T19:43:11.316355+00:00"
+      },
+      {
+        "id": "ef046812878a406f86e0a4f671e0ba3e",
+        "plan_id": "ab6b87725d384569bb9e3f954e4235c1",
+        "stage": "plan",
+        "outcome": "planned",
+        "code": "no_effects_yet",
+        "created_at": "2026-10-10T19:43:11.316384+00:00"
+      },
+      {
+        "id": "320665fbd97b4647b75ddbf036c71945",
+        "plan_id": "ab6b87725d384569bb9e3f954e4235c1",
+        "stage": "approval",
+        "outcome": "approved",
+        "code": "exact_plan_digest",
+        "created_at": "2026-10-10T19:43:11.316755+00:00"
+      },
+      {
+        "id": "49508a8398ca4d2e94b798fdb7785c14",
+        "plan_id": "ab6b87725d384569bb9e3f954e4235c1",
+        "stage": "execution",
+        "outcome": "completed",
+        "code": "transaction_committed",
+        "created_at": "2026-10-10T19:43:11.317261+00:00"
+      }
+    ],
+    "learning_policy": {
+      "revision": 1,
+      "policy": {
+        "source_kinds": [
+          "document",
+          "project",
+          "conversation",
+          "event"
+        ],
+        "labels": [
+          "public",
+          "private",
+          "sensitive"
+        ],
+        "max_candidates": 100,
+        "blocked_key_prefixes": [],
+        "require_revision_labels": [],
+        "require_revision_key_prefixes": []
+      }
+    },
+    "consolidation_plans": [],
+    "audit_events": [
+      {
+        "id": "d4df55e1ed8343629545c462d8c9ac65",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "actor": "core",
+        "operation": "learning.source_register",
+        "outcome": "succeeded",
+        "counts": {
+          "sources": 1
+        },
+        "created_at": "2026-10-10T19:43:11.312948Z"
+      },
+      {
+        "id": "41153257bf3544f198816bd9920fb2cd",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "actor": "core",
+        "operation": "learning.source_approve",
+        "outcome": "succeeded",
+        "counts": {},
+        "created_at": "2026-10-10T19:43:11.313637Z"
+      },
+      {
+        "id": "e4d0274b379b436fb74418e4da0559a5",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "actor": "core",
+        "operation": "learning.ingest",
+        "outcome": "succeeded",
+        "counts": {
+          "items": 1,
+          "attempts": 1
+        },
+        "created_at": "2026-10-10T19:43:11.315043Z"
+      },
+      {
+        "id": "b9be50ecc9c14b99a21d3b94888b54e4",
+        "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+        "actor": "core",
+        "operation": "disclosure.configure",
+        "outcome": "succeeded",
+        "counts": {},
+        "created_at": "2026-10-10T19:43:11.317657Z"
+      }
+    ],
+    "import_archives": [],
+    "ingestion_replay_keys": [
+      {
+        "run_id": "ed80fb02fd2d4306b8b114eb1cc6e341",
+        "key": "ffb38b72610d0b1537d1a1e4cb1a638e0652dbc1e5ce9c25391d2329a6a558ae"
+      }
+    ],
+    "disclosure_policy": {
+      "revision": 2,
+      "policy": {
+        "enabled": true,
+        "target_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "labels": [
+          "private"
+        ],
+        "namespaces": [
+          "public",
+          "memory"
+        ],
+        "entity_ids": null,
+        "memory_ids": null,
+        "document_paths": null
+      }
+    }
+  },
+  "preview": {
+    "digest": "abcc71ad8aceef117abdd6ed8b525ed3875993fbf5b333c96da51378c96d26cf",
+    "source_version": 8,
+    "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+    "destination_owner_id": "bc9c4b328acf483d8d854f3f274841de",
+    "counts": {
+      "entries": 1,
+      "history": 0,
+      "revisions": 2,
+      "sources": 1,
+      "ingestion_runs": 1,
+      "origins": 1,
+      "forgotten": 0,
+      "entities": 1,
+      "entity_revisions": 2,
+      "relationships": 0,
+      "relationship_revisions": 0,
+      "retention_plans": 0,
+      "tool_permissions": 1,
+      "action_plans": 1,
+      "tasks": 0,
+      "notes": 1,
+      "action_events": 4,
+      "consolidation_plans": 0,
+      "audit_events": 4,
+      "import_archives": 0,
+      "ingestion_replay_keys": 1
+    },
+    "tool_permissions_restored": false,
+    "executable_plans_restored": false,
+    "learning_sources_require_review": true,
+    "provider_permissions_restored": false
+  },
+  "receipt": {
+    "digest": "abcc71ad8aceef117abdd6ed8b525ed3875993fbf5b333c96da51378c96d26cf",
+    "source_version": 8,
+    "owner_id": "db13a36fc4ae40338e81e4972cd9572a",
+    "destination_owner_id": "bc9c4b328acf483d8d854f3f274841de",
+    "counts": {
+      "entries": 1,
+      "history": 0,
+      "revisions": 2,
+      "sources": 1,
+      "ingestion_runs": 1,
+      "origins": 1,
+      "forgotten": 0,
+      "entities": 1,
+      "entity_revisions": 2,
+      "relationships": 0,
+      "relationship_revisions": 0,
+      "retention_plans": 0,
+      "tool_permissions": 1,
+      "action_plans": 1,
+      "tasks": 0,
+      "notes": 1,
+      "action_events": 4,
+      "consolidation_plans": 0,
+      "audit_events": 4,
+      "import_archives": 0,
+      "ingestion_replay_keys": 1
+    },
+    "tool_permissions_restored": false,
+    "executable_plans_restored": false,
+    "learning_sources_require_review": true,
+    "provider_permissions_restored": false,
+    "imported": true,
+    "archive_id": "d21f869c01524a4c869d271996155439"
+  }
+}

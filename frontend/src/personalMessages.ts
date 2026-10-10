@@ -1,3 +1,4 @@
+import { migrationMessages, type MigrationMessages } from "./migrationMessages";
 import { erasureMessages, type ErasureMessages } from "./erasureMessages";
 import { agencyMessages, type AgencyMessages } from "./agencyMessages";
 import { semanticMessages, type SemanticMessages } from "./semanticMessages";
@@ -6,6 +7,7 @@ import type { Locale } from "./i18n";
 import { reviewMessages, type ReviewMessages } from "./reviewMessages";
 
 export type PersonalWorkspaceMessages = {
+  migration: MigrationMessages;
   erasure: ErasureMessages;
   agency: AgencyMessages;
   review: ReviewMessages;
@@ -54,6 +56,7 @@ export type PersonalWorkspaceMessages = {
 
 export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   en: {
+    migration: migrationMessages["en"],
     erasure: erasureMessages["en"],
     agency: agencyMessages["en"],
     review: reviewMessages["en"],
@@ -100,6 +103,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Request failed",
   },
   "zh-CN": {
+    migration: migrationMessages["zh-CN"],
     erasure: erasureMessages["zh-CN"],
     agency: agencyMessages["zh-CN"],
     review: reviewMessages["zh-CN"],
@@ -146,6 +150,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "请求失败",
   },
   "zh-TW": {
+    migration: migrationMessages["zh-TW"],
     erasure: erasureMessages["zh-TW"],
     agency: agencyMessages["zh-TW"],
     review: reviewMessages["zh-TW"],
@@ -192,6 +197,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "請求失敗",
   },
   ja: {
+    migration: migrationMessages["ja"],
     erasure: erasureMessages["ja"],
     agency: agencyMessages["ja"],
     review: reviewMessages["ja"],
@@ -238,6 +244,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "リクエストに失敗しました",
   },
   ko: {
+    migration: migrationMessages["ko"],
     erasure: erasureMessages["ko"],
     agency: agencyMessages["ko"],
     review: reviewMessages["ko"],
@@ -284,6 +291,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "요청 실패",
   },
   es: {
+    migration: migrationMessages["es"],
     erasure: erasureMessages["es"],
     agency: agencyMessages["es"],
     review: reviewMessages["es"],
@@ -330,6 +338,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "La solicitud ha fallado",
   },
   fr: {
+    migration: migrationMessages["fr"],
     erasure: erasureMessages["fr"],
     agency: agencyMessages["fr"],
     review: reviewMessages["fr"],
@@ -376,6 +385,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Échec de la requête",
   },
   de: {
+    migration: migrationMessages["de"],
     erasure: erasureMessages["de"],
     agency: agencyMessages["de"],
     review: reviewMessages["de"],
@@ -422,6 +432,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Anfrage fehlgeschlagen",
   },
   "pt-BR": {
+    migration: migrationMessages["pt-BR"],
     erasure: erasureMessages["pt-BR"],
     agency: agencyMessages["pt-BR"],
     review: reviewMessages["pt-BR"],

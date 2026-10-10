@@ -7,6 +7,8 @@ endpoints never access it. Schema extension `7` introduced content-free audit, i
 import-authority archives and ingestion replay keys; migration preserves existing data
 and tool state. This is a bounded personal-memory format, not a filesystem backup.
 
+The [migration/audit workbench](MIGRATION_WORKBENCH.md) adds explicit-file browser import review, destination UUID preconditions, private export and content-free audit inspection.
+
 ## Digest-reviewed portable import
 
 `PortableMemory.preview(snapshot)` validates a version-8 snapshot (or supported version-6/7
