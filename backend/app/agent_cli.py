@@ -10,9 +10,44 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from .identity import IdentityStore
 from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
 from .memory import MemoryError, MemoryInputError, MemoryNotFound, Store
-from .memory_models import Entry, IngestionInput, SourceInput
+from .memory_models import (
+    EntityInput,
+    Entry,
+    IngestionInput,
+    RelationshipInput,
+    RetentionPolicy,
+    SourceInput,
+    TemporalQuery,
+)
+from .retention import RetentionManager
+
+
+def _metadata_flags(parser):
+    parser.add_argument("--entity-id")
+    parser.add_argument("--confidence", type=float)
+    parser.add_argument(
+        "--belief", choices=("known", "inferred", "disputed", "outdated", "unknown")
+    )
+    for name in ("valid-from", "valid-until", "occurred-at"):
+        parser.add_argument(f"--{name}")
+    parser.add_argument(
+        "--unset",
+        action="append",
+        default=[],
+        choices=("entity_id", "confidence", "valid_from", "valid_until", "occurred_at"),
+    )
+
+
+def _metadata(args):
+    fields = ("entity_id", "confidence", "belief", "valid_from", "valid_until", "occurred_at")
+    values = {
+        field: getattr(args, field) for field in fields if getattr(args, field, None) is not None
+    }
+    values.update({field: None for field in getattr(args, "unset", [])})
+    return values
 
 
 def parser() -> argparse.ArgumentParser:
@@ -37,6 +72,7 @@ def parser() -> argparse.ArgumentParser:
             child.add_argument("--replace", action="append", default=[])
             child.add_argument("--replace-revision", action="append", default=[], metavar="ID:REV")
         if action == "edit":
+            _metadata_flags(child)
             child.add_argument("--kind", choices=("fact", "preference", "event", "decision"))
             child.add_argument("--key")
             child.add_argument("--content", required=True)
@@ -46,11 +82,14 @@ def parser() -> argparse.ArgumentParser:
     add.add_argument("--key", required=True)
     add.add_argument("--content", required=True)
     add.add_argument("--sensitivity", default="private", choices=("public", "private", "sensitive"))
+    _metadata_flags(add)
 
     sources = commands.add_parser("source").add_subparsers(dest="action", required=True)
     sources.add_parser("list")
     register = sources.add_parser("register")
     register.add_argument("--name", required=True)
+    register.add_argument("--entity-id")
+    register.add_argument("--entity-alias")
     register.add_argument(
         "--kind", default="document", choices=("document", "project", "conversation", "event")
     )
@@ -66,10 +105,68 @@ def parser() -> argparse.ArgumentParser:
     ingest.add_argument("file", type=Path)
     ingest.add_argument("--mode", default="fields", choices=("fields", "notes"))
     ingest.add_argument("--expected-source-revision", type=int)
+    for name in ("valid-from", "valid-until", "occurred-at"):
+        ingest.add_argument(f"--{name}")
     commands.add_parser("runs")
     recall = commands.add_parser("recall")
     recall.add_argument("question")
     recall.add_argument("--allow-sensitive", action="store_true")
+    recall.add_argument("--entity-id")
+    recall.add_argument("--as-of")
+    recall.add_argument("--known-at")
+    inspect = commands.add_parser("select")
+    for name in ("entity-id", "as-of", "known-at"):
+        inspect.add_argument(f"--{name}")
+    inspect.add_argument("--allow-sensitive", action="store_true")
+    inspect.add_argument("--include-uncertain", action="store_true")
+    kinds = ("person", "project", "organization", "event", "idea", "preference", "decision")
+    entity = commands.add_parser("entity").add_subparsers(dest="action", required=True)
+    entity.add_parser("list")
+    resolve = entity.add_parser("resolve")
+    resolve.add_argument("name")
+    resolve.add_argument("--allow-sensitive", action="store_true")
+    for action in ("add", "edit"):
+        child = entity.add_parser(action)
+        child.add_argument("--kind", choices=kinds, required=action == "add")
+        child.add_argument("--name", required=True)
+        child.add_argument("--alias", action="append")
+        child.add_argument("--sensitivity", choices=("public", "private", "sensitive"))
+        if action == "add":
+            child.add_argument("--distinct", action="store_true")
+        else:
+            child.add_argument("id")
+            child.add_argument("--expected-revision", type=int, required=True)
+    for action in ("confirm", "history", "delete", "neighbours"):
+        child = entity.add_parser(action)
+        child.add_argument("id")
+        if action == "confirm":
+            child.add_argument("--expected-revision", type=int, required=True)
+        if action == "delete":
+            child.add_argument("--yes", action="store_true")
+        if action == "neighbours":
+            child.add_argument("--allow-sensitive", action="store_true")
+    relation = commands.add_parser("relationship").add_subparsers(dest="action", required=True)
+    relation.add_parser("list")
+    create = relation.add_parser("add")
+    for name in ("from-entity-id", "to-entity-id", "predicate", "evidence-id"):
+        create.add_argument(f"--{name}", required=True)
+    for action in ("confirm", "history", "delete"):
+        child = relation.add_parser(action)
+        child.add_argument("id")
+        if action == "confirm":
+            child.add_argument("--expected-revision", type=int, required=True)
+        if action == "delete":
+            child.add_argument("--yes", action="store_true")
+    retention = commands.add_parser("retention").add_subparsers(dest="action", required=True)
+    retention.add_parser("policy")
+    retention.add_parser("plans")
+    configure = retention.add_parser("configure")
+    configure.add_argument("--policy-json", required=True)
+    configure.add_argument("--expected-revision", type=int, required=True)
+    retention.add_parser("preview").add_argument("--as-of")
+    apply = retention.add_parser("apply")
+    apply.add_argument("id")
+    apply.add_argument("--yes", action="store_true")
     export = commands.add_parser("export")
     export.add_argument("file", help="Private JSON destination, or '-' for stdout")
     export.add_argument("--force", action="store_true", help="Overwrite an existing regular file")
@@ -98,13 +195,83 @@ def _replacement_versions(values, ids):
 def execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
+    identity = IdentityStore(store)
+    if args.command in {"entity", "relationship"}:
+        relationship = args.command == "relationship"
+        if args.action == "list":
+            return identity.relationships() if relationship else identity.entities()
+        if args.action == "confirm":
+            return identity.confirm(args.id, args.expected_revision, relationship=relationship)
+        if args.action == "history":
+            return identity.history(args.id, relationship=relationship)
+        if args.action == "delete":
+            if not args.yes:
+                raise MemoryInputError("Identity deletion requires --yes")
+            return identity.delete(args.id, relationship=relationship)
+        if relationship:
+            return identity.relate(
+                RelationshipInput(
+                    **{
+                        field: getattr(args, field)
+                        for field in ("from_entity_id", "to_entity_id", "predicate", "evidence_id")
+                    }
+                )
+            )
+        if args.action == "resolve":
+            return identity.resolve(args.name, allow_sensitive=args.allow_sensitive)
+        if args.action == "neighbours":
+            return identity.neighbours(args.id, allow_sensitive=args.allow_sensitive)
+        data = {"name": args.name}
+        for field, argument in (
+            ("kind", args.kind),
+            ("aliases", args.alias),
+            ("sensitivity", args.sensitivity),
+        ):
+            if argument is not None:
+                data[field] = argument
+        if args.action == "edit":
+            current = next((item for item in identity.entities() if item["id"] == args.id), None)
+            if not current:
+                raise MemoryNotFound("Entity not found")
+            data.setdefault("kind", current["kind"])
+            return identity.edit(args.id, EntityInput(**data), args.expected_revision)
+        return identity.add(EntityInput(**data), distinct=args.distinct)
+    if args.command == "retention":
+        manager = RetentionManager(store)
+        if args.action == "policy":
+            return manager.settings()
+        if args.action == "configure":
+            return manager.configure(
+                RetentionPolicy.model_validate_json(args.policy_json), args.expected_revision
+            )
+        if args.action == "preview":
+            return manager.preview(as_of=args.as_of)
+        if args.action == "plans":
+            return manager.plans()
+        if not args.yes:
+            raise MemoryInputError("Applying retention requires --yes after reviewing the plan")
+        return manager.apply(args.id)
+    if args.command == "select":
+        return store.select(
+            TemporalQuery(
+                as_of=args.as_of,
+                known_at=args.known_at,
+                entity_id=args.entity_id,
+                allow_sensitive=args.allow_sensitive,
+                include_uncertain=args.include_uncertain,
+            )
+        )
     if args.command == "memory":
         if args.action == "list":
             return store.entries(include_superseded=args.include_superseded)
         if args.action == "add":
             return store.add(
                 Entry(
-                    kind=args.kind, key=args.key, content=args.content, sensitivity=args.sensitivity
+                    kind=args.kind,
+                    key=args.key,
+                    content=args.content,
+                    sensitivity=args.sensitivity,
+                    **_metadata(args),
                 )
             )
         if args.action == "show":
@@ -132,6 +299,7 @@ def execute(args):
             key=args.key or item["key"],
             content=args.content,
             **({"sensitivity": args.sensitivity} if args.sensitivity is not None else {}),
+            **_metadata(args),
         )
         return store.edit(
             args.id,
@@ -143,7 +311,13 @@ def execute(args):
             return learning.sources()
         if args.action == "register":
             return learning.register(
-                SourceInput(kind=args.kind, name=args.name, sensitivity=args.sensitivity)
+                SourceInput(
+                    kind=args.kind,
+                    name=args.name,
+                    sensitivity=args.sensitivity,
+                    entity_id=args.entity_id,
+                    entity_alias=args.entity_alias,
+                )
             )
         return learning.approve(
             args.id, approved=args.action == "approve", expected_revision=args.expected_revision
@@ -159,6 +333,10 @@ def execute(args):
                 content=content.decode("utf-8"),
                 mode=args.mode,
                 expected_source_revision=args.expected_source_revision,
+                **{
+                    field: getattr(args, field)
+                    for field in ("valid_from", "valid_until", "occurred_at")
+                },
             ),
         )
     if args.command == "runs":
@@ -166,7 +344,13 @@ def execute(args):
     if args.command == "recall":
         return [
             dict(path=match.document.path, excerpt=match.excerpt, score=match.score)
-            for match in store.context(args.question, allow_sensitive=args.allow_sensitive)
+            for match in store.context(
+                args.question,
+                allow_sensitive=args.allow_sensitive,
+                as_of=args.as_of,
+                known_at=args.known_at,
+                entity_id=args.entity_id,
+            )
         ]
     data = store.export()
     if args.file == "-":

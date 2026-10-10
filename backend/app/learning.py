@@ -18,8 +18,10 @@ from .memory import (
     MemoryPermissionDenied,
     Store,
     memory_digest,
+    record_digest,
 )
 from .memory_models import Entry, IngestionInput, SourceInput
+from .memory_time import iso
 
 EXTRACTOR = "exact-excerpts-v1"
 MAX_DOCUMENT_BYTES = 200_000
@@ -44,14 +46,23 @@ def _slug(text: str) -> str:
     return re.sub(r"[^\w.-]+", ".", text.casefold()).strip(".")[:64] or "untitled"
 
 
-def extract(content: str, source: dict, mode: str) -> list[Candidate]:
+def extract(content: str, source: dict, mode: str, temporal=None) -> list[Candidate]:
     """Propose literal source data, never infer identity or execute source instructions."""
     candidates: list[Candidate] = []
 
     def append(kind: str, key: str, start: int, end: int):
         try:
             entry = Entry(
-                kind=kind, key=key, content=content[start:end], sensitivity=source["sensitivity"]
+                kind=kind,
+                key=key,
+                content=content[start:end],
+                sensitivity=source["sensitivity"],
+                entity_id=source.get("entity_id"),
+                valid_from=(temporal or {}).get("valid_from"),
+                valid_until=(temporal or {}).get("valid_until"),
+                occurred_at=(temporal or {}).get("occurred_at")
+                if kind in {"event", "decision"}
+                else None,
             )
         except ValidationError:
             raise MemoryInputError("Extracted record exceeds the memory contract") from None
@@ -117,19 +128,33 @@ class LearningPipeline:
             ]
 
     def register(self, payload: SourceInput):
+        from .identity import IdentityStore
+
+        entity_id = payload.entity_id
+        if payload.entity_alias is not None:
+            result = IdentityStore(self.store).resolve(payload.entity_alias, allow_sensitive=True)
+            if result["status"] != "resolved":
+                raise MemoryConflict("Source identity alias is unknown or ambiguous")
+            entity_id = result["matches"][0]["id"]
         now = datetime.now(UTC).isoformat()
         item = dict(
             id=uuid4().hex,
-            **payload.model_dump(),
+            **payload.model_dump(exclude={"entity_alias", "entity_id"}),
+            entity_id=entity_id,
+            owner_id=self.store.owner_id,
             approved=False,
             revision=1,
             created_at=now,
             updated_at=now,
         )
         with self.store.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            self.store._entity(db, entity_id)
             db.execute(
-                "INSERT INTO sources VALUES (:id,:kind,:name,:sensitivity,:approved,:revision,"
-                ":created_at,:updated_at)",
+                "INSERT INTO sources (id,kind,name,sensitivity,approved,revision,created_at,"
+                "updated_at,entity_id,owner_id) VALUES "
+                "(:id,:kind,:name,:sensitivity,:approved,:revision,"
+                ":created_at,:updated_at,:entity_id,:owner_id)",
                 item,
             )
         return item
@@ -174,8 +199,7 @@ class LearningPipeline:
             rows = db.execute("SELECT run_json FROM ingestion_runs ORDER BY rowid DESC LIMIT 100")
             return [json.loads(row[0]) for row in rows]
 
-    @staticmethod
-    def _source(db, source_id, expected_revision):
+    def _source(self, db, source_id, expected_revision):
         source = db.execute("SELECT * FROM sources WHERE id=?", (source_id,)).fetchone()
         if not source:
             raise MemoryNotFound("Source not found")
@@ -183,7 +207,13 @@ class LearningPipeline:
             raise MemoryPermissionDenied("Source is not approved for learning")
         if expected_revision is not None and source["revision"] != expected_revision:
             raise MemoryConflict("Source changed; refresh before ingesting")
-        return dict(source)
+        item = dict(source)
+        entity = self.store._entity(db, item["entity_id"])
+        if entity:
+            item["sensitivity"] = max(
+                (item["sensitivity"], entity["sensitivity"]), key=_LEVEL.__getitem__
+            )
+        return item
 
     @staticmethod
     def _save(db, replay_key, run):
@@ -203,17 +233,21 @@ class LearningPipeline:
             with self.store.connect() as db:
                 db.execute("BEGIN IMMEDIATE")
                 source = self._source(db, source_id, payload.expected_source_revision)
-                replay_key = hashlib.sha256(
-                    json.dumps(
-                        [
-                            source_id,
-                            source["revision"],
-                            digest,
-                            payload.mode,
-                            EXTRACTOR,
-                        ]
-                    ).encode()
-                ).hexdigest()
+                identity = [
+                    source_id,
+                    source["revision"],
+                    digest,
+                    payload.mode,
+                    EXTRACTOR,
+                ]
+                qualifier = [
+                    iso(payload.valid_from),
+                    iso(payload.valid_until),
+                    iso(payload.occurred_at),
+                ]
+                if any(value is not None for value in qualifier):
+                    identity.append(qualifier)
+                replay_key = hashlib.sha256(json.dumps(identity).encode()).hexdigest()
                 previous = db.execute(
                     "SELECT run_json FROM ingestion_runs WHERE replay_key=?", (replay_key,)
                 ).fetchone()
@@ -238,7 +272,15 @@ class LearningPipeline:
                     trace=[dict(stage="source", outcome="completed", count=1)],
                 )
                 try:
-                    candidates = extract(payload.content, source, payload.mode)
+                    candidates = extract(
+                        payload.content,
+                        source,
+                        payload.mode,
+                        temporal={
+                            field: getattr(payload, field)
+                            for field in ("valid_from", "valid_until", "occurred_at")
+                        },
+                    )
                 except MemoryInputError:
                     run.update(status="failed", error_code="extraction_invalid")
                     run["trace"].append(dict(stage="extraction", outcome="failed", count=0))
@@ -281,8 +323,12 @@ class LearningPipeline:
         created = duplicated = conflicts = 0
         for index, candidate in enumerate(candidates):
             entry = candidate.entry
-            digest = memory_digest(entry.kind, entry.key, entry.content)
-            if db.execute("SELECT 1 FROM forgotten WHERE digest=?", (digest,)).fetchone():
+            digest = record_digest(entry.model_dump(mode="json"))
+            # Legacy unscoped forgetting remains conservative when a caller later binds identity.
+            legacy = memory_digest(entry.kind, entry.key, entry.content)
+            if db.execute(
+                "SELECT 1 FROM forgotten WHERE digest IN (?,?)", (digest, legacy)
+            ).fetchone():
                 run["items"].append(
                     dict(index=index, outcome="forgotten", memory_id=None, conflict_ids=[])
                 )
@@ -329,14 +375,7 @@ class LearningPipeline:
                 created += 1
                 outcome = "created"
                 item = self.store._insert(db, entry, source=f"source:{source['id']}")
-            conflict_ids = [
-                row[0]
-                for row in db.execute(
-                    "SELECT id FROM entries WHERE kind=? AND key=? COLLATE NFC "
-                    "AND status='confirmed' AND id!=?",
-                    (entry.kind, entry.key, item["id"]),
-                )
-            ]
+            conflict_ids = list(self.store._conflicts(db, item))
             conflicts += bool(conflict_ids)
             db.execute(
                 "INSERT OR IGNORE INTO origins VALUES (?,?,?,?,?,?,?,?,?,?,?)",

@@ -119,3 +119,13 @@ hashes, and record IDs, not original documents or private reasoning. Failure rec
 Private API routes are adapters to the same core. Structured sensitive records are withheld from
 context by default; owner opt-in is explicit. This does not classify private Markdown automatically.
 See [learning contracts](LEARNING.md) and the [acceptance ledger](AGENT_IMPLEMENTATION.md).
+
+
+## Identity and temporal repository semantics
+
+`identity.py` manages owner-reviewed typed identities, canonical aliases and current relationships linked
+to exact memory revisions. `memory_time.py` separates UTC validity/occurrence from learned time.
+`memory.py` selects epistemic state and applies current/historical privacy floors without resurrecting
+deleted snapshots. `retention.py` performs policy-based forgetting only through previewed, stale-safe,
+explicit atomic plans. All have native Core/API/CLI paths with no frontend addition.
+See [identity/time contracts](IDENTITY_TIME.md) and `scripts/evaluate_identity.py`.

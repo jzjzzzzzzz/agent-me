@@ -35,6 +35,8 @@ jobs:
         run: .venv/bin/python scripts/evaluate_memory.py
       - name: Evaluate controlled personal learning
         run: .venv/bin/python scripts/evaluate_learning.py
+      - name: Evaluate identity, temporal memory and retention
+        run: .venv/bin/python scripts/evaluate_identity.py
       - name: Publish baseline evaluation summary
         run: |
           set -o pipefail
@@ -66,6 +68,7 @@ jobs:
       - run: .venv/bin/pytest backend/tests
       - run: .venv/bin/python scripts/evaluate_memory.py
       - run: .venv/bin/python scripts/evaluate_learning.py
+      - run: .venv/bin/python scripts/evaluate_identity.py
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
@@ -117,6 +120,7 @@ jobs:
           .\.venv\Scripts\pytest.exe backend\tests
           .\.venv\Scripts\python.exe scripts\evaluate_memory.py
           .\.venv\Scripts\python.exe scripts\evaluate_learning.py
+          .\.venv\Scripts\python.exe scripts\evaluate_identity.py
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
           .\.venv\Scripts\python.exe scripts\check_docs.py

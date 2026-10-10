@@ -31,14 +31,14 @@ preference response.style: Lead with the conclusion
 Kinds are `fact`, `preference`, `event`, and `decision`. Keys are non-whitespace strings without a
 colon, at most 100 characters. Values are literal text, at most 2,000 characters. Multiline prose
 belongs in `notes` mode. A malformed field line fails the entire extraction, never silently dropping
-that line or truncating a claim. Use distinct dated event keys for repeated episodes until structured
-event-time identity is implemented.
+that line or truncating a claim. Use distinct event keys or explicit `occurred_at` qualifiers for repeated episodes;
+[structured event-time identity](IDENTITY_TIME.md) is now supported.
 
 `notes` mode quotes whole nonempty Markdown paragraphs under their headings. Documents/projects
 propose facts; event/conversation sources propose events. Generated keys use source name, heading,
 and paragraph ordinal. These are **literal notes**, not inferred structured biographical claims.
-Reordering paragraphs can change generated keys; review the resulting candidates. Entity resolution,
-semantic duplicate detection, and model-assisted extraction are not implemented here.
+Reordering paragraphs can change generated keys; review the resulting candidates. Explicit confirmed alias/entity binding is supported; semantic duplicate detection and model-assisted
+extraction are not implemented here. See [identity/time contracts](IDENTITY_TIME.md).
 
 Both modes retain the exact excerpt and its `[start, end)` **Unicode code-point offsets** in the
 submitted string (not UTF-8 byte offsets or JavaScript UTF-16 offsets). No separate copy of the submitted document is
@@ -148,7 +148,7 @@ workspace token. It outputs JSON and never loads provider configuration.
 | `memory restore ID --revision N` | Propose an old version as a new candidate |
 | `memory delete ID --yes` | Purge this record/versions/origins and register forgetting digests |
 | `recall QUESTION --allow-sensitive` | Local current-memory retrieval, with optional explicit disclosure |
-| `export FILE` | Export version-3 private snapshot; refuses overwrite unless `--force` |
+| `export FILE` | Export version-4 private snapshot; refuses overwrite unless `--force` |
 
 Export permissions are restricted to 0600 on POSIX; Windows access protection depends on filesystem
 ACLs rather than POSIX mode bits. Export is plaintext and is not an import, encryption, or backup-recovery
@@ -166,7 +166,7 @@ All paths use `/api/v1/personal` and the existing owner token:
 | GET | `/learning/runs` | Latest 100 durable run records |
 | GET | `/entries/{id}/origins` | Exact source excerpts and code-point spans |
 
-Private export is now version `3` and includes sources, ingestion runs, origins and forgetting digests
+Private export is now version `4` and includes sources, ingestion runs, origins and forgetting digests
 alongside entries/history/revisions, read in one database snapshot. Older export consumers must be
 updated. The repository release version is unchanged; the reference UI downloads JSON without parsing it.
 
@@ -181,3 +181,7 @@ Expected: memory 18/18 and learning 17/17. `make evaluate` includes both plus co
 Tests additionally cover malformed/oversized input, Unicode normalization, concurrent replay, rollback,
 source review races, sensitive opt-in, source revocation, and the CLI. These are deterministic regression
 checks, not proof of semantic truth, personality imitation, or unattended long-term ingestion quality.
+
+
+Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
+are documented in [Structured identity and time](IDENTITY_TIME.md).

@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
 from .config import Settings, get_settings
+from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
 from .learning import LearningPipeline
 from .memory import Store
@@ -16,7 +17,12 @@ from .memory_models import (
     CandidateOrigin,
     Confirm,
     EditEntry,
+    EntityInput,
+    EntityRecord,
+    EntityResolution,
+    EntityRevision,
     Entry,
+    IdentityContext,
     IngestionInput,
     IngestionRun,
     MemoryExport,
@@ -24,12 +30,23 @@ from .memory_models import (
     MemoryRecord,
     MemoryRevision,
     RegisteredSource,
+    RelationshipInput,
+    RelationshipRecord,
+    RelationshipRevision,
+    ResolveEntity,
     RestoreMemory,
+    RetentionPlan,
+    RetentionPolicy,
+    RetentionPreview,
+    RetentionSettings,
+    SelectedMemory,
     SourceInput,
     StoredTurn,
+    TemporalQuery,
     valid_unicode,
 )
 from .provider import context_matches, generate_answer
+from .retention import RetentionManager
 from .schemas import ChatTurn
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
@@ -46,6 +63,23 @@ class SourceReview(BaseModel):
     model_config = ConfigDict(extra="forbid")
     approved: bool = Field(strict=True)
     expected_revision: int | None = Field(default=None, ge=1, strict=True)
+
+
+class IdentityReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1, strict=True)
+
+
+class CreateEntity(EntityInput):
+    distinct: bool = Field(default=False, strict=True)
+
+
+class EditEntity(EntityInput):
+    expected_revision: int = Field(ge=1, strict=True)
+
+
+class ConfigureRetention(IdentityReview):
+    policy: RetentionPolicy
 
 
 def authorize(
@@ -84,6 +118,114 @@ def memory_history(entry_id: str, db: Store = Depends(store)):
 @router.get("/entries/{entry_id}/origins", response_model=list[CandidateOrigin])
 def memory_origins(entry_id: str, db: Store = Depends(store)):
     return LearningPipeline(db).origins(entry_id)
+
+
+@router.post("/memory/select", response_model=list[SelectedMemory])
+def select_memory(payload: TemporalQuery, db: Store = Depends(store)):
+    return db.select(payload)
+
+
+@router.get("/identity/entities", response_model=list[EntityRecord])
+def list_entities(db: Store = Depends(store)):
+    return IdentityStore(db).entities()
+
+
+@router.post("/identity/entities", response_model=EntityRecord)
+def create_entity(payload: CreateEntity, db: Store = Depends(store)):
+    return IdentityStore(db).add(
+        EntityInput.model_validate(payload.model_dump(exclude={"distinct"})),
+        distinct=payload.distinct,
+    )
+
+
+@router.post("/identity/entities/{entity_id}/edit", response_model=EntityRecord)
+def edit_entity(entity_id: str, payload: EditEntity, db: Store = Depends(store)):
+    return IdentityStore(db).edit(
+        entity_id,
+        EntityInput.model_validate(
+            payload.model_dump(exclude={"expected_revision"}, exclude_unset=True)
+        ),
+        payload.expected_revision,
+    )
+
+
+@router.post("/identity/entities/{entity_id}/confirm", response_model=EntityRecord)
+def confirm_entity(entity_id: str, payload: IdentityReview, db: Store = Depends(store)):
+    return IdentityStore(db).confirm(entity_id, payload.expected_revision)
+
+
+@router.get("/identity/entities/{entity_id}/history", response_model=list[EntityRevision])
+def entity_history(entity_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).history(entity_id)
+
+
+@router.post("/identity/entities/{entity_id}/delete")
+def delete_entity(entity_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).delete(entity_id)
+
+
+@router.post("/identity/resolve", response_model=EntityResolution)
+def resolve_entity(payload: ResolveEntity, db: Store = Depends(store)):
+    return IdentityStore(db).resolve(
+        payload.name, kind=payload.kind, allow_sensitive=payload.allow_sensitive
+    )
+
+
+@router.get("/identity/entities/{entity_id}/neighbours", response_model=IdentityContext)
+def entity_neighbours(entity_id: str, allow_sensitive: bool = False, db: Store = Depends(store)):
+    return IdentityStore(db).neighbours(entity_id, allow_sensitive=allow_sensitive)
+
+
+@router.get("/identity/relationships", response_model=list[RelationshipRecord])
+def list_relationships(db: Store = Depends(store)):
+    return IdentityStore(db).relationships()
+
+
+@router.post("/identity/relationships", response_model=RelationshipRecord)
+def create_relationship(payload: RelationshipInput, db: Store = Depends(store)):
+    return IdentityStore(db).relate(payload)
+
+
+@router.post("/identity/relationships/{relation_id}/confirm", response_model=RelationshipRecord)
+def confirm_relationship(relation_id: str, payload: IdentityReview, db: Store = Depends(store)):
+    return IdentityStore(db).confirm(relation_id, payload.expected_revision, relationship=True)
+
+
+@router.get(
+    "/identity/relationships/{relation_id}/history", response_model=list[RelationshipRevision]
+)
+def relationship_history(relation_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).history(relation_id, relationship=True)
+
+
+@router.post("/identity/relationships/{relation_id}/delete")
+def delete_relationship(relation_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).delete(relation_id, relationship=True)
+
+
+@router.get("/retention/policy", response_model=RetentionSettings)
+def retention_policy(db: Store = Depends(store)):
+    return RetentionManager(db).settings()
+
+
+@router.post("/retention/policy", response_model=RetentionSettings)
+def configure_retention(payload: ConfigureRetention, db: Store = Depends(store)):
+    return RetentionManager(db).configure(payload.policy, payload.expected_revision)
+
+
+@router.post("/retention/preview", response_model=RetentionPlan)
+def preview_retention(payload: RetentionPreview, db: Store = Depends(store)):
+    return RetentionManager(db).preview(as_of=payload.as_of)
+
+
+@router.get("/retention/plans", response_model=list[RetentionPlan])
+def retention_plans(db: Store = Depends(store)):
+    return RetentionManager(db).plans()
+
+
+@router.post("/retention/plans/{plan_id}/apply", response_model=RetentionPlan)
+def apply_retention(plan_id: str, db: Store = Depends(store)):
+    return RetentionManager(db).apply(plan_id)
 
 
 @router.get("/learning/sources", response_model=list[RegisteredSource])

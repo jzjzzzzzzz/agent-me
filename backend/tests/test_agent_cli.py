@@ -40,7 +40,7 @@ def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     )
     destination = tmp_path / "private-export.json"
     assert call(tmp_path, capsys, "export", str(destination))[0] == 0
-    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 3
+    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 4
     if os.name == "posix":
         assert destination.stat().st_mode & 0o777 == 0o600
     before = destination.read_bytes()
@@ -174,3 +174,120 @@ def test_cli_export_never_follows_symlinks(tmp_path, capsys):
     link.symlink_to(original)
     assert call(tmp_path, capsys, "export", str(link), "--force")[0] == 2
     assert original.read_text(encoding="utf-8") == "Keep this"
+
+
+def test_cli_identity_bound_memory_relationship_and_time_controls(tmp_path, capsys):
+    _, person = call(
+        tmp_path,
+        capsys,
+        "entity",
+        "add",
+        "--kind",
+        "person",
+        "--name",
+        "Alex Example",
+        "--alias",
+        "Alex",
+    )
+    assert (
+        call(tmp_path, capsys, "entity", "confirm", person["id"], "--expected-revision", "1")[0]
+        == 0
+    )
+    assert call(tmp_path, capsys, "entity", "resolve", "Alex")[1]["status"] == "resolved"
+    _, project = call(
+        tmp_path, capsys, "entity", "add", "--kind", "project", "--name", "Orchid Demo"
+    )
+    call(tmp_path, capsys, "entity", "confirm", project["id"], "--expected-revision", "1")
+    _, memory = call(
+        tmp_path,
+        capsys,
+        "memory",
+        "add",
+        "--key",
+        "project.role",
+        "--content",
+        "Alex works on Orchid",
+        "--entity-id",
+        person["id"],
+        "--confidence",
+        "0.8",
+    )
+    call(tmp_path, capsys, "memory", "confirm", memory["id"], "--expected-revision", "1")
+    _, edge = call(
+        tmp_path,
+        capsys,
+        "relationship",
+        "add",
+        "--from-entity-id",
+        person["id"],
+        "--to-entity-id",
+        project["id"],
+        "--predicate",
+        "works_on",
+        "--evidence-id",
+        memory["id"],
+    )
+    call(tmp_path, capsys, "relationship", "confirm", edge["id"], "--expected-revision", "1")
+    assert call(tmp_path, capsys, "entity", "neighbours", person["id"])[1]["relationships"]
+    selected = call(tmp_path, capsys, "select", "--entity-id", person["id"])[1]
+    assert selected[0]["record"]["confidence"] == 0.8
+    assert (
+        call(
+            tmp_path,
+            capsys,
+            "memory",
+            "edit",
+            memory["id"],
+            "--content",
+            "UncertainCedar",
+            "--belief",
+            "disputed",
+            "--expected-revision",
+            "2",
+        )[0]
+        == 0
+    )
+    call(tmp_path, capsys, "memory", "confirm", memory["id"], "--expected-revision", "3")
+    assert call(tmp_path, capsys, "select")[1] == []
+    assert (
+        call(tmp_path, capsys, "select", "--include-uncertain")[1][0]["effective_belief"]
+        == "disputed"
+    )
+
+
+def test_cli_retention_is_previewed_and_requires_explicit_apply(tmp_path, capsys):
+    _, item = call(
+        tmp_path,
+        capsys,
+        "memory",
+        "add",
+        "--key",
+        "project",
+        "--content",
+        "ExpiredOrchid",
+        "--valid-until",
+        "2020-01-01T00:00:00Z",
+    )
+    call(tmp_path, capsys, "memory", "confirm", item["id"], "--expected-revision", "1")
+    assert (
+        call(
+            tmp_path,
+            capsys,
+            "retention",
+            "configure",
+            "--policy-json",
+            '{"expired_days":1}',
+            "--expected-revision",
+            "1",
+        )[0]
+        == 0
+    )
+    _, plan = call(tmp_path, capsys, "retention", "preview")
+    assert plan["targets"][0]["id"] == item["id"]
+    assert call(tmp_path, capsys, "retention", "apply", plan["id"])[0] == 2
+    assert (
+        call(tmp_path, capsys, "retention", "apply", plan["id"], "--yes")[1]["deleted_counts"][
+            "entries"
+        ]
+        == 1
+    )

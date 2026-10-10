@@ -37,15 +37,15 @@ The opt-in single-owner private workspace additionally provides typed fact, pref
 event, and decision records; server-controlled source links and timestamps; pending/confirmed
 review; transactional revision snapshots and same-key supersession; restore-as-candidate;
 optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
-version-3 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+version-4 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
 deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
 
 Current boundaries are equally important: public conversations are not persisted; private
-conversations are persisted for display but not re-injected as evidence. The knowledge source
-is not yet a structured identity graph, pre-migration revision history cannot be reconstructed,
+conversations are persisted for display but not re-injected as evidence. The knowledge source includes explicit entities and evidence-linked relationships;
+pre-migration revision history cannot be reconstructed,
 controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
-semantic inference. Entity resolution, temporal retention, contextual tools, and portable import
-remain unfinished; the Verifier does not prove factual truth or semantic entailment.
+semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
+Unified retrieval, contextual tools, portable import and full audit/metrics coverage remain unfinished; the Verifier does not prove factual truth or semantic entailment.
 
 
 Approved document, project, conversation, and event sources can additionally propose pending
@@ -54,6 +54,13 @@ deduplication, conflict reporting, replayable runs, recoverable failure, revocat
 forgetting. Structured sensitivity labels control context disclosure. A local owner CLI requires
 neither an HTTP server nor a model provider. See [learning contracts](docs/LEARNING.md) and the
 [full implementation acceptance ledger](docs/AGENT_IMPLEMENTATION.md) for evidence and gaps.
+
+
+Structured identity now supports seven entity kinds, ambiguity-aware aliases, reviewed relationships,
+workspace ownership, memory categories, optional declared confidence, and explicit belief states.
+Valid time is distinct from recorded knowledge time; context excludes expired, future and disputed
+claims by default. Retention is opt-in, previewed, stale-safe and atomic. See
+[identity/time contracts](docs/IDENTITY_TIME.md) for evidence and limits.
 
 ## Workstreams
 

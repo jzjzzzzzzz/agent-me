@@ -11,25 +11,54 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from pydantic import ValidationError
+
+from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
-from .memory_models import Confirm, EditEntry, Entry, RestoreMemory
+from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQuery
+from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
 _RECORD_COLUMNS = (
-    "id,kind,key,content,source,status,created_at,updated_at,revision,superseded_by,sensitivity"
+    "id,kind,key,content,source,status,created_at,updated_at,revision,superseded_by,sensitivity,"
+    "entity_id,confidence,belief,valid_from,valid_until,occurred_at,owner_id,category"
 )
 
 
-def memory_digest(kind: str, key: str, content: str) -> str:
+def memory_digest(
+    kind: str,
+    key: str,
+    content: str,
+    *,
+    entity_id=None,
+    occurred_at=None,
+    valid_from=None,
+    valid_until=None,
+) -> str:
     """Exact normalized identity, not a semantic-equivalence or truth judgement."""
     values = [
         unicodedata.normalize("NFC", value.strip().replace("\r\n", "\n"))
         for value in (kind, key, content)
     ]
+    qualifiers = [entity_id, iso(occurred_at), iso(valid_from), iso(valid_until)]
+    if any(value is not None for value in qualifiers):
+        values.append(qualifiers)
     return hashlib.sha256(json.dumps(values, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def record_digest(item):
+    return memory_digest(
+        item["kind"],
+        item["key"],
+        item["content"],
+        **{
+            field: item.get(field)
+            for field in ("entity_id", "occurred_at", "valid_from", "valid_until")
+        },
+    )
 
 
 class MemoryError(Exception):
@@ -115,6 +144,7 @@ class Store:
             db.execute(
                 "ALTER TABLE revisions ADD COLUMN sensitivity TEXT NOT NULL DEFAULT 'private'"
             )
+        extend_records(db)
         columns = ",".join(f"e.{column}" for column in _RECORD_COLUMNS.split(","))
         db.execute(f"""
             INSERT INTO revisions ({_RECORD_COLUMNS},change)
@@ -129,16 +159,14 @@ class Store:
         db.execute("CREATE INDEX IF NOT EXISTS memory_digest_lookup ON memory_digests(digest)")
         db.executemany(
             "INSERT OR REPLACE INTO memory_digests VALUES (?,?)",
-            [
-                (row["id"], memory_digest(row["kind"], row["key"], row["content"]))
-                for row in db.execute("SELECT * FROM entries")
-            ],
+            [(row["id"], record_digest(dict(row))) for row in db.execute("SELECT * FROM entries")],
         )
         db.execute("""
             CREATE TABLE IF NOT EXISTS forgotten (
                 digest TEXT PRIMARY KEY, forgotten_at TEXT NOT NULL
             )
         """)
+
         db.execute("""
             CREATE TABLE IF NOT EXISTS sources (
                 id TEXT PRIMARY KEY, kind TEXT NOT NULL, name TEXT NOT NULL,
@@ -160,6 +188,7 @@ class Store:
                 UNIQUE (memory_id,source_id,document_hash,start,end)
             )
         """)
+        extend_identity(db)
 
     @contextmanager
     def connect(self):
@@ -185,6 +214,38 @@ class Store:
                 query += " WHERE status!='superseded'"
             return [dict(r) for r in db.execute(query + " ORDER BY rowid")]
 
+    @property
+    def owner_id(self):
+        with self.connect() as db:
+            return db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+
+    @staticmethod
+    def _entity(db, entity_id):
+        if entity_id is None:
+            return None
+        row = db.execute("SELECT data_json FROM entities WHERE id=?", (entity_id,)).fetchone()
+        if not row:
+            raise MemoryNotFound("Entity not found")
+        entity = json.loads(row[0])
+        if entity["status"] != "confirmed":
+            raise MemoryConflict("Entity must be confirmed before linking memory")
+        owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+        if entity["owner_id"] != owner:
+            raise MemoryPermissionDenied("Entity belongs to another workspace owner")
+        return entity
+
+    @staticmethod
+    def _conflicts(db, item):
+        return {
+            row["id"]: row["revision"]
+            for row in db.execute(
+                "SELECT * FROM entries WHERE kind=? AND key=? COLLATE NFC "
+                "AND entity_id IS ? AND status='confirmed' AND id!=?",
+                (item["kind"], item["key"], item.get("entity_id"), item["id"]),
+            )
+            if overlaps(dict(row), item)
+        }
+
     def export(self):
         # An explicit read transaction pins all tables to the same SQLite snapshot.
         with self.connect() as db:
@@ -204,8 +265,27 @@ class Store:
             ]
             origins = [dict(r) for r in db.execute("SELECT * FROM origins ORDER BY rowid")]
             forgotten = [dict(r) for r in db.execute("SELECT * FROM forgotten ORDER BY rowid")]
+            owner_id = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            entities = records(db, "entities")
+            entity_revisions = records(db, "entities_revisions")
+            relationships = records(db, "relationships")
+            relationship_revisions = records(db, "relationships_revisions")
+            retention_policy = {
+                "revision": int(
+                    db.execute(
+                        "SELECT value FROM workspace WHERE key='retention_revision'"
+                    ).fetchone()[0]
+                ),
+                "policy": json.loads(
+                    db.execute(
+                        "SELECT value FROM workspace WHERE key='retention_policy'"
+                    ).fetchone()[0]
+                ),
+            }
+            retention_plans = records(db, "retention_plans")
         return {
-            "version": 3,
+            "version": 4,
+            "owner_id": owner_id,
             "entries": entries,
             "history": turns,
             "revisions": revisions,
@@ -213,6 +293,12 @@ class Store:
             "ingestion_runs": runs,
             "origins": origins,
             "forgotten": forgotten,
+            "entities": entities,
+            "entity_revisions": entity_revisions,
+            "relationships": relationships,
+            "relationship_revisions": relationship_revisions,
+            "retention_policy": retention_policy,
+            "retention_plans": retention_plans,
         }
 
     @staticmethod
@@ -248,6 +334,11 @@ class Store:
 
     def _insert(self, db, entry: Entry, source: str):
         now = datetime.now(UTC).isoformat()
+        entity = self._entity(db, entry.entity_id)
+        sensitivity = max(
+            (entry.sensitivity, entity["sensitivity"] if entity else "public"),
+            key={"public": 0, "private": 1, "sensitive": 2}.__getitem__,
+        )
         item = dict(
             id=uuid4().hex,
             kind=entry.kind,
@@ -259,23 +350,37 @@ class Store:
             updated_at=now,
             revision=1,
             superseded_by=None,
-            sensitivity=entry.sensitivity,
+            sensitivity=sensitivity,
+            entity_id=entry.entity_id,
+            confidence=entry.confidence,
+            belief=entry.belief,
+            valid_from=iso(entry.valid_from),
+            valid_until=iso(entry.valid_until),
+            occurred_at=iso(entry.occurred_at),
+            owner_id=db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0],
+            category="episodic"
+            if entry.kind in {"event", "decision"}
+            else "preference"
+            if entry.kind == "preference"
+            else "semantic",
         )
         db.execute(
             f"INSERT INTO entries ({_RECORD_COLUMNS}) VALUES "
             "(:id,:kind,:key,:content,:source,:status,"
-            ":created_at,:updated_at,:revision,:superseded_by,:sensitivity)",
+            ":created_at,:updated_at,:revision,:superseded_by,:sensitivity,"
+            ":entity_id,:confidence,:belief,:valid_from,:valid_until,:occurred_at,:owner_id,:category)",
             item,
         )
         self._snapshot(db, item["id"], "created")
         db.execute(
             "INSERT INTO memory_digests VALUES (?,?)",
-            (item["id"], memory_digest(item["kind"], item["key"], item["content"])),
+            (item["id"], record_digest(item)),
         )
         return item
 
     def add(self, entry: Entry, source: str = "manual"):
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
             return self._insert(db, entry, source)
 
     def restore(self, entry_id: str, revision: int, expected_revision: int | None = None):
@@ -301,6 +406,17 @@ class Store:
                     (current["sensitivity"], item["sensitivity"]),
                     key={"public": 0, "private": 1, "sensitive": 2}.__getitem__,
                 ),
+                **{
+                    field: item[field]
+                    for field in (
+                        "entity_id",
+                        "confidence",
+                        "belief",
+                        "valid_from",
+                        "valid_until",
+                        "occurred_at",
+                    )
+                },
             )
             return self._insert(db, entry, source=f"memory:{entry_id}@{revision}")
 
@@ -314,25 +430,52 @@ class Store:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             item = self._reviewable(db, entry_id, expected_revision)
+            data = {field: item[field] for field in Entry.model_fields}
+            data.update(
+                {
+                    field: getattr(entry, field)
+                    for field in Entry.model_fields
+                    if field in entry.model_fields_set
+                }
+            )
+            # Core callers may deliberately change kind/content; defaults aren't a request
+            # to erase metadata that an older client does not understand.
+            data.update(kind=entry.kind, key=entry.key, content=entry.content)
+            try:
+                checked = Entry.model_validate(data)
+            except ValidationError:
+                raise MemoryInputError(
+                    "Edited metadata is incompatible; explicitly clear conflicting time fields"
+                ) from None
+            entity = self._entity(db, checked.entity_id)
+            data = checked.model_dump(mode="json")
+            data["sensitivity"] = max(
+                (checked.sensitivity, entity["sensitivity"] if entity else "public"),
+                key={"public": 0, "private": 1, "sensitive": 2}.__getitem__,
+            )
+            for field in ("valid_from", "valid_until", "occurred_at"):
+                data[field] = iso(getattr(checked, field))
+            data.update(
+                id=entry_id,
+                updated_at=datetime.now(UTC).isoformat(),
+                category="episodic"
+                if checked.kind in {"event", "decision"}
+                else "preference"
+                if checked.kind == "preference"
+                else "semantic",
+            )
             db.execute(
-                "UPDATE entries SET kind=?,key=?,content=?,source='manual',status='pending',"
-                "updated_at=?,revision=revision+1,sensitivity=? "
-                "WHERE id=?",
-                (
-                    entry.kind,
-                    entry.key,
-                    entry.content,
-                    datetime.now(UTC).isoformat(),
-                    entry.sensitivity
-                    if "sensitivity" in entry.model_fields_set
-                    else item["sensitivity"],
-                    entry_id,
-                ),
+                "UPDATE entries SET kind=:kind,key=:key,content=:content,source='manual',"
+                "status='pending',"
+                "updated_at=:updated_at,revision=revision+1,sensitivity=:sensitivity,entity_id=:entity_id,"
+                "confidence=:confidence,belief=:belief,valid_from=:valid_from,valid_until=:valid_until,"
+                "occurred_at=:occurred_at,category=:category WHERE id=:id",
+                data,
             )
             self._snapshot(db, entry_id, "edited")
             db.execute(
                 "UPDATE memory_digests SET digest=? WHERE memory_id=?",
-                (memory_digest(entry.kind, entry.key, entry.content), entry_id),
+                (record_digest(data), entry_id),
             )
         return {"status": "pending", "revision": item["revision"] + 1}
 
@@ -351,14 +494,8 @@ class Store:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             item = self._reviewable(db, entry_id, expected_revision)
-            conflict_revisions = {
-                r["id"]: r["revision"]
-                for r in db.execute(
-                    "SELECT id,revision FROM entries WHERE kind=? AND key=? COLLATE NFC "
-                    "AND status='confirmed' AND id!=?",
-                    (item["kind"], item["key"], entry_id),
-                )
-            }
+            self._entity(db, item["entity_id"])
+            conflict_revisions = self._conflicts(db, dict(item))
             conflicts = list(conflict_revisions)
             if set(conflicts) != set(replace_ids):
                 raise MemoryConflict(
@@ -387,19 +524,27 @@ class Store:
     def delete(self, entry_id: str):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            for row in db.execute("SELECT * FROM revisions WHERE id=?", (entry_id,)).fetchall():
-                db.execute(
-                    "INSERT OR REPLACE INTO forgotten VALUES (?,?)",
-                    (
-                        memory_digest(row["kind"], row["key"], row["content"]),
-                        datetime.now(UTC).isoformat(),
-                    ),
-                )
-            db.execute("DELETE FROM origins WHERE memory_id=?", (entry_id,))
-            db.execute("DELETE FROM memory_digests WHERE memory_id=?", (entry_id,))
-            db.execute("DELETE FROM revisions WHERE id=?", (entry_id,))
-            db.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+            self._delete(db, entry_id)
         return {"deleted": True}
+
+    @staticmethod
+    def _delete(db, entry_id):
+        for row in db.execute("SELECT * FROM revisions WHERE id=?", (entry_id,)).fetchall():
+            db.execute(
+                "INSERT OR REPLACE INTO forgotten VALUES (?,?)",
+                (
+                    record_digest(dict(row)),
+                    datetime.now(UTC).isoformat(),
+                ),
+            )
+        db.execute("DELETE FROM origins WHERE memory_id=?", (entry_id,))
+        db.execute("DELETE FROM memory_digests WHERE memory_id=?", (entry_id,))
+        db.execute("DELETE FROM revisions WHERE id=?", (entry_id,))
+        db.execute("DELETE FROM entries WHERE id=?", (entry_id,))
+        for relation in records(db, "relationships"):
+            if relation["evidence_id"] == entry_id:
+                db.execute("DELETE FROM relationships_revisions WHERE id=?", (relation["id"],))
+                db.execute("DELETE FROM relationships WHERE id=?", (relation["id"],))
 
     def history(self):
         with self.connect() as db:
@@ -433,19 +578,92 @@ class Store:
             if candidate is not None:
                 self._insert(db, candidate, source=f"turn:{turn_id}")
 
-    def context(self, question: str, *, allow_sensitive: bool = False):
+    def select(self, query: TemporalQuery):
+        now = datetime.now(UTC)
+        as_of, known_at = utc(query.as_of) or now, utc(query.known_at) or now
+        with self.connect() as db:
+            db.execute("BEGIN")
+            current = {
+                row["id"]: dict(row) for row in db.execute("SELECT * FROM entries ORDER BY rowid")
+            }
+            owner_id = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            entities = {item["id"]: item for item in records(db, "entities")}
+            if query.known_at is None:
+                chosen = current
+            else:
+                chosen = {}
+                for row in db.execute("SELECT * FROM revisions ORDER BY id,revision DESC"):
+                    if (
+                        row["id"] not in chosen
+                        and row["id"] in current
+                        and utc(row["updated_at"]) <= known_at
+                    ):
+                        chosen[row["id"]] = dict(row)
+        selected = []
+        for raw in chosen.values():
+            item = {field: raw[field] for field in _RECORD_COLUMNS.split(",")}
+            if item["status"] != "confirmed" or item["owner_id"] != owner_id:
+                continue
+            if query.entity_id is not None and item["entity_id"] != query.entity_id:
+                if item["entity_id"] is not None or item["kind"] != "preference":
+                    continue
+            entity = entities.get(item["entity_id"]) if item["entity_id"] else None
+            current_entity = entities.get(current[item["id"]]["entity_id"])
+            if item["entity_id"] and (
+                not entity or entity["status"] != "confirmed" or entity["owner_id"] != owner_id
+            ):
+                continue
+            sensitivity = max(
+                (
+                    item["sensitivity"],
+                    current[item["id"]]["sensitivity"],
+                    entity["sensitivity"] if entity else "public",
+                    current_entity["sensitivity"] if current_entity else "public",
+                ),
+                key={"public": 0, "private": 1, "sensitive": 2}.__getitem__,
+            )
+            if sensitivity == "sensitive" and not query.allow_sensitive:
+                continue
+            belief = item["belief"]
+            if not active_at(item, as_of):
+                belief = (
+                    "outdated"
+                    if utc(item["valid_until"]) is not None and utc(item["valid_until"]) <= as_of
+                    else "unknown"
+                )
+            if belief != "known" and not query.include_uncertain:
+                continue
+            selected.append(
+                dict(
+                    record=item,
+                    effective_belief=belief,
+                    effective_sensitivity=sensitivity,
+                    historical=query.known_at is not None,
+                )
+            )
+        return selected
+
+    def context(
+        self,
+        question: str,
+        *,
+        allow_sensitive: bool = False,
+        as_of=None,
+        known_at=None,
+        entity_id=None,
+    ):
         if type(allow_sensitive) is not bool:
             raise MemoryInputError("Sensitive disclosure requires an explicit boolean")
         tokens = normalized_tokens(question)
         preferences: list[Match] = []
         facts: list[Match] = []
-        with self.connect() as db:
-            items = db.execute(
-                "SELECT * FROM entries WHERE status='confirmed' ORDER BY rowid"
-            ).fetchall()
-        for item in items:
-            if item["sensitivity"] == "sensitive" and not allow_sensitive:
-                continue
+        items = self.select(
+            TemporalQuery(
+                allow_sensitive=allow_sensitive, as_of=as_of, known_at=known_at, entity_id=entity_id
+            )
+        )
+        for selected in items:
+            item = selected["record"]
             excerpt = f"{item['key']}: {item['content']}"
             overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
             # Preferences are always eligible, but do not outrank relevant factual evidence.

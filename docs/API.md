@@ -182,6 +182,10 @@ Partial provider configuration makes `/ready` return `503` instead of silently c
 ## Private memory lifecycle
 
 The opt-in private API is separate from public chat and collaboration. Its complete route table,
-version-3 export format, revision preconditions, deletion boundaries, and independent Agent core
+version-4 export format, revision preconditions, deletion boundaries, and independent Agent core
 are documented in [Private AI Twin](PERSONAL.md#typed-memory-contract--结构化记忆契约).
 No public endpoint reads the private database.
+
+
+Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
+are documented in [Structured identity and time](IDENTITY_TIME.md).

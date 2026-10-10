@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Sensitivity = Literal["public", "private", "sensitive"]
+Belief = Literal["known", "inferred", "disputed", "outdated", "unknown"]
+EntityKind = Literal["person", "project", "organization", "event", "idea", "preference", "decision"]
 
 
 def valid_unicode(value: str) -> str:
@@ -24,7 +26,21 @@ class Entry(BaseModel):
     key: str = Field(min_length=1, max_length=100)
     content: str = Field(min_length=1, max_length=2000)
     sensitivity: Sensitivity = "private"
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+    confidence: float | None = Field(default=None, ge=0, le=1, strict=True, allow_inf_nan=False)
+    belief: Belief = "known"
+    valid_from: AwareDatetime | None = None
+    valid_until: AwareDatetime | None = None
+    occurred_at: AwareDatetime | None = None
     _unicode = field_validator("key", "content")(valid_unicode)
+
+    @model_validator(mode="after")
+    def valid_time(self):
+        if self.valid_from and self.valid_until and self.valid_until <= self.valid_from:
+            raise ValueError("Validity end must be after its start")
+        if self.occurred_at is not None and self.kind not in {"event", "decision"}:
+            raise ValueError("Occurrence time belongs to episodic event or decision memory")
+        return self
 
 
 class MemoryRecord(Entry):
@@ -37,6 +53,8 @@ class MemoryRecord(Entry):
     updated_at: datetime
     revision: int = Field(ge=1)
     superseded_by: str | None
+    owner_id: str
+    category: Literal["episodic", "semantic", "preference"]
 
 
 class MemoryRevision(MemoryRecord):
@@ -93,7 +111,15 @@ class SourceInput(BaseModel):
     kind: Literal["document", "project", "conversation", "event"]
     name: str = Field(min_length=1, max_length=160)
     sensitivity: Sensitivity = "private"
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+    entity_alias: str | None = Field(default=None, min_length=1, max_length=160)
     _unicode = field_validator("name")(valid_unicode)
+
+    @model_validator(mode="after")
+    def one_subject(self):
+        if self.entity_id is not None and self.entity_alias is not None:
+            raise ValueError("Specify an entity ID or alias, not both")
+        return self
 
 
 class RegisteredSource(SourceInput):
@@ -102,6 +128,7 @@ class RegisteredSource(SourceInput):
     revision: int = Field(ge=1)
     created_at: datetime
     updated_at: datetime
+    owner_id: str
 
 
 class IngestionInput(BaseModel):
@@ -109,6 +136,9 @@ class IngestionInput(BaseModel):
     content: str = Field(min_length=1, max_length=80_000)
     mode: Literal["fields", "notes"] = "fields"
     expected_source_revision: int | None = Field(default=None, ge=1, strict=True)
+    valid_from: AwareDatetime | None = None
+    valid_until: AwareDatetime | None = None
+    occurred_at: AwareDatetime | None = None
     _unicode = field_validator("content")(valid_unicode)
 
 
@@ -166,9 +196,149 @@ class ForgottenDigest(BaseModel):
     forgotten_at: datetime
 
 
+class EntityInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, frozen=True)
+    kind: EntityKind
+    name: str = Field(min_length=1, max_length=160)
+    aliases: list[Annotated[str, Field(min_length=1, max_length=160)]] = Field(
+        default_factory=list, max_length=20
+    )
+    sensitivity: Sensitivity = "private"
+    _unicode = field_validator("name")(valid_unicode)
+
+    @field_validator("aliases")
+    @classmethod
+    def valid_aliases(cls, values):
+        for value in values:
+            valid_unicode(value)
+        return values
+
+
+class EntityRecord(EntityInput):
+    id: str
+    owner_id: str
+    source: Literal["manual"] = "manual"
+    status: Literal["pending", "confirmed"]
+    revision: int = Field(ge=1)
+    created_at: datetime
+    updated_at: datetime
+
+
+class ResolveEntity(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=160)
+    kind: EntityKind | None = None
+    allow_sensitive: bool = Field(default=False, strict=True)
+    _unicode = field_validator("name")(valid_unicode)
+
+
+class EntityResolution(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    status: Literal["resolved", "ambiguous", "unknown"]
+    matches: list[EntityRecord]
+
+
+class EntityRevision(EntityRecord):
+    change: Literal["created", "edited", "confirmed"]
+
+
+class RelationshipInput(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, frozen=True)
+    from_entity_id: str = Field(min_length=1, max_length=100)
+    to_entity_id: str = Field(min_length=1, max_length=100)
+    predicate: str = Field(min_length=1, max_length=100, pattern=r"^[a-z][a-z0-9_]*$")
+    evidence_id: str = Field(min_length=1, max_length=100)
+    sensitivity: Sensitivity = "private"
+
+
+class RelationshipRecord(RelationshipInput):
+    id: str
+    owner_id: str
+    evidence_revision: int = Field(ge=1)
+    status: Literal["pending", "confirmed"]
+    revision: int = Field(ge=1)
+    created_at: datetime
+    updated_at: datetime
+
+
+class RelationshipRevision(RelationshipRecord):
+    change: Literal["created", "confirmed"]
+
+
+class IdentityContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    entities: list[EntityRecord]
+    relationships: list[RelationshipRecord]
+
+
+class RetentionPolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    pending_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)
+    superseded_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)
+    expired_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)
+    history_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)
+    run_days: int | None = Field(default=None, ge=1, le=365_000, strict=True)
+
+
+class RetentionSettings(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    revision: int = Field(ge=1)
+    policy: RetentionPolicy
+
+
+class RetentionTarget(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    table: Literal["entries", "turns", "ingestion_runs"]
+    id: str
+    revision: int | None = None
+    fingerprint: str | None = None
+
+
+class RetentionCounts(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    entries: int = 0
+    turns: int = 0
+    ingestion_runs: int = 0
+
+
+class RetentionPreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    as_of: AwareDatetime | None = None
+
+
+class RetentionPlan(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    owner_id: str
+    status: Literal["planned", "applied"]
+    policy_revision: int = Field(ge=1)
+    as_of: AwareDatetime
+    created_at: datetime
+    targets: list[RetentionTarget] = Field(max_length=1000)
+    deleted_counts: RetentionCounts = Field(default_factory=RetentionCounts)
+
+
+class TemporalQuery(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    as_of: AwareDatetime | None = None
+    known_at: AwareDatetime | None = None
+    allow_sensitive: bool = Field(default=False, strict=True)
+    include_uncertain: bool = Field(default=False, strict=True)
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+class SelectedMemory(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    record: MemoryRecord
+    effective_belief: Belief
+    effective_sensitivity: Sensitivity
+    historical: bool
+
+
 class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: Literal[3] = 3
+    version: Literal[4] = 4
+    owner_id: str
     entries: list[MemoryRecord]
     history: list[StoredTurn]
     revisions: list[MemoryRevision]
@@ -176,3 +346,9 @@ class MemoryExport(BaseModel):
     ingestion_runs: list[IngestionRun]
     origins: list[CandidateOrigin]
     forgotten: list[ForgottenDigest]
+    entities: list[EntityRecord]
+    entity_revisions: list[EntityRevision]
+    relationships: list[RelationshipRecord]
+    relationship_revisions: list[RelationshipRevision]
+    retention_policy: RetentionSettings
+    retention_plans: list[RetentionPlan]

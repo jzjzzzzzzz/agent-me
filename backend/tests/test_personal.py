@@ -364,7 +364,7 @@ def test_legacy_workspace_migrates_once_without_inventing_history(tmp_path):
     db.edit("legacy", Entry(key="project", content="CurrentOrchid"), 1)
     reopened = Store(str(tmp_path))
     assert [r["change"] for r in reopened.revisions("legacy")] == ["baseline", "edited"]
-    assert reopened.export()["version"] == 3
+    assert reopened.export()["version"] == 4
 
 
 def test_revision_writes_roll_back_with_failed_supersession(tmp_path, monkeypatch):
@@ -434,7 +434,7 @@ async def test_revision_route_auth_export_and_delete(personal):
     assert response.headers["cache-control"] == "no-store"
     assert response.json()[0]["change"] == "created"
     exported = (await client.get("/api/v1/personal/export", headers=HEADERS)).json()
-    assert exported["version"] == 3
+    assert exported["version"] == 4
     assert exported["revisions"] == response.json()
     await client.post(f"/api/v1/personal/entries/{item['id']}/delete", headers=HEADERS)
     assert (await client.get(endpoint, headers=HEADERS)).status_code == 404
@@ -591,12 +591,12 @@ def test_concurrent_initialization_migrates_once_and_rejects_future_schema(tmp_p
     item = stores[0].add(Entry(key="project", content="SyntheticOrchid"))
     assert len(stores[-1].revisions(item["id"])) == 1
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
-        connection.execute("PRAGMA user_version=4")
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        connection.execute("PRAGMA user_version=5")
     with pytest.raises(ValueError, match="newer"):
         Store(str(tmp_path))
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
         assert connection.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 1
 
 
