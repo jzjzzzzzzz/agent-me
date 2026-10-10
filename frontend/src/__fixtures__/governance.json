@@ -1,0 +1,234 @@
+{
+  "state": {
+    "owner_id": "277bc580752f49208392377f615fdeb7",
+    "observed_at": "2026-10-10T20:16:42.680457Z",
+    "learning": {
+      "revision": 1,
+      "policy": {
+        "source_kinds": [
+          "document",
+          "project",
+          "conversation",
+          "event"
+        ],
+        "labels": [
+          "public",
+          "private",
+          "sensitive"
+        ],
+        "max_candidates": 100,
+        "blocked_key_prefixes": [],
+        "require_revision_labels": [],
+        "require_revision_key_prefixes": []
+      }
+    },
+    "retention": {
+      "revision": 1,
+      "policy": {
+        "pending_days": null,
+        "superseded_days": null,
+        "expired_days": null,
+        "history_days": null,
+        "run_days": null
+      }
+    },
+    "retention_plans": [],
+    "consolidation_plans": [
+      {
+        "id": "d156ccd8affd43e1b18d00b53218daf9",
+        "owner_id": "277bc580752f49208392377f615fdeb7",
+        "status": "planned",
+        "digest": "7ed91c03fae829f4e346471f4d91b5fa0ec8c5fdbe1d36b41ed988f7ad240793",
+        "groups": [
+          {
+            "keeper_id": "79844de55d634e8e89f750f3921df5cc",
+            "members": [
+              {
+                "id": "79844de55d634e8e89f750f3921df5cc",
+                "revision": 1,
+                "fingerprint": "901cd67ccd90cddfb3a47b0f38ff17983bb95b338930ac41bbfb1078d25f5065"
+              },
+              {
+                "id": "360d809199874a6aad5f912cd5d624ff",
+                "revision": 1,
+                "fingerprint": "574071b703ba32c31ed61ba7bccc66eabc68f62314b75a8edcd0c40377fea982"
+              }
+            ]
+          }
+        ],
+        "created_at": "2026-10-10T20:16:42.679023Z",
+        "merged_count": 0
+      }
+    ]
+  },
+  "consolidation": {
+    "id": "d156ccd8affd43e1b18d00b53218daf9",
+    "owner_id": "277bc580752f49208392377f615fdeb7",
+    "status": "planned",
+    "digest": "7ed91c03fae829f4e346471f4d91b5fa0ec8c5fdbe1d36b41ed988f7ad240793",
+    "groups": [
+      {
+        "keeper_id": "79844de55d634e8e89f750f3921df5cc",
+        "members": [
+          {
+            "id": "79844de55d634e8e89f750f3921df5cc",
+            "revision": 1,
+            "fingerprint": "901cd67ccd90cddfb3a47b0f38ff17983bb95b338930ac41bbfb1078d25f5065"
+          },
+          {
+            "id": "360d809199874a6aad5f912cd5d624ff",
+            "revision": 1,
+            "fingerprint": "574071b703ba32c31ed61ba7bccc66eabc68f62314b75a8edcd0c40377fea982"
+          }
+        ]
+      }
+    ],
+    "created_at": "2026-10-10T20:16:42.679023Z",
+    "merged_count": 0
+  },
+  "consolidationApplied": {
+    "id": "d156ccd8affd43e1b18d00b53218daf9",
+    "owner_id": "277bc580752f49208392377f615fdeb7",
+    "status": "applied",
+    "digest": "7ed91c03fae829f4e346471f4d91b5fa0ec8c5fdbe1d36b41ed988f7ad240793",
+    "groups": [
+      {
+        "keeper_id": "79844de55d634e8e89f750f3921df5cc",
+        "members": [
+          {
+            "id": "79844de55d634e8e89f750f3921df5cc",
+            "revision": 1,
+            "fingerprint": "901cd67ccd90cddfb3a47b0f38ff17983bb95b338930ac41bbfb1078d25f5065"
+          },
+          {
+            "id": "360d809199874a6aad5f912cd5d624ff",
+            "revision": 1,
+            "fingerprint": "574071b703ba32c31ed61ba7bccc66eabc68f62314b75a8edcd0c40377fea982"
+          }
+        ]
+      }
+    ],
+    "created_at": "2026-10-10T20:16:42.679023Z",
+    "merged_count": 1
+  },
+  "memories": [
+    {
+      "id": "79844de55d634e8e89f750f3921df5cc",
+      "kind": "fact",
+      "key": "fictional.duplicate",
+      "content": "Fictional duplicate pending body",
+      "source": "manual",
+      "status": "pending",
+      "created_at": "2026-10-10T20:16:42.676605+00:00",
+      "updated_at": "2026-10-10T20:16:42.676605+00:00",
+      "revision": 1,
+      "superseded_by": null,
+      "sensitivity": "private",
+      "entity_id": null,
+      "confidence": null,
+      "belief": "known",
+      "valid_from": null,
+      "valid_until": null,
+      "occurred_at": null,
+      "owner_id": "277bc580752f49208392377f615fdeb7",
+      "category": "semantic"
+    },
+    {
+      "id": "360d809199874a6aad5f912cd5d624ff",
+      "kind": "fact",
+      "key": "fictional.duplicate",
+      "content": "Fictional duplicate pending body",
+      "source": "manual",
+      "status": "pending",
+      "created_at": "2026-10-10T20:16:42.677558+00:00",
+      "updated_at": "2026-10-10T20:16:42.677558+00:00",
+      "revision": 1,
+      "superseded_by": null,
+      "sensitivity": "private",
+      "entity_id": null,
+      "confidence": null,
+      "belief": "known",
+      "valid_from": null,
+      "valid_until": null,
+      "occurred_at": null,
+      "owner_id": "277bc580752f49208392377f615fdeb7",
+      "category": "semantic"
+    }
+  ],
+  "retention": {
+    "id": "1de5c5c772644b25b13b81b31a20f013",
+    "owner_id": "277bc580752f49208392377f615fdeb7",
+    "status": "planned",
+    "policy_revision": 2,
+    "as_of": "2026-10-10T20:16:42.683287Z",
+    "created_at": "2026-10-10T20:16:42.683419Z",
+    "targets": [
+      {
+        "table": "entries",
+        "id": "4affa3b1a4324e76b0c7435c6c76ed5a",
+        "revision": 1,
+        "fingerprint": null
+      }
+    ],
+    "deleted_counts": {
+      "entries": 0,
+      "turns": 0,
+      "ingestion_runs": 0
+    }
+  },
+  "retentionReview": {
+    "plan": {
+      "id": "1de5c5c772644b25b13b81b31a20f013",
+      "owner_id": "277bc580752f49208392377f615fdeb7",
+      "status": "planned",
+      "policy_revision": 2,
+      "as_of": "2026-10-10T20:16:42.683287Z",
+      "created_at": "2026-10-10T20:16:42.683419Z",
+      "targets": [
+        {
+          "table": "entries",
+          "id": "4affa3b1a4324e76b0c7435c6c76ed5a",
+          "revision": 1,
+          "fingerprint": null
+        }
+      ],
+      "deleted_counts": {
+        "entries": 0,
+        "turns": 0,
+        "ingestion_runs": 0
+      }
+    },
+    "digest": "5c37ccdc600ede9aa8f81a8a351b793b2cae25fdddf8dbd341b77179aec12e27",
+    "scope_digest": "358d811ebced02aebed223d5e06aa9b4d85325d19e245623f1d3ea32f1b130ef",
+    "removed_counts": {
+      "entries": 1,
+      "revisions": 1,
+      "memory_digests": 1
+    },
+    "forgetting_counts": {
+      "added": 1
+    },
+    "retained_counts": {}
+  },
+  "retentionApplied": {
+    "id": "1de5c5c772644b25b13b81b31a20f013",
+    "owner_id": "277bc580752f49208392377f615fdeb7",
+    "status": "applied",
+    "policy_revision": 2,
+    "as_of": "2026-10-10T20:16:42.683287Z",
+    "created_at": "2026-10-10T20:16:42.683419Z",
+    "targets": [
+      {
+        "table": "entries",
+        "id": "4affa3b1a4324e76b0c7435c6c76ed5a",
+        "revision": 1,
+        "fingerprint": null
+      }
+    ],
+    "deleted_counts": {
+      "entries": 1,
+      "turns": 0,
+      "ingestion_runs": 0
+    }
+  }
+}

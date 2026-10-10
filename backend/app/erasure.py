@@ -59,9 +59,9 @@ def content(row):
     )
 
 
-def snapshot(db):
+def snapshot(db, *, tables=TABLES):
     result = {}
-    for table in TABLES:
+    for table in tables:
         columns = sorted(
             (row for row in db.execute(f"PRAGMA table_info({table})") if row["pk"]),
             key=lambda row: row["pk"],

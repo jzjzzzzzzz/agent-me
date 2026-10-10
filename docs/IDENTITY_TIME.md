@@ -271,3 +271,6 @@ at harness startup and cannot be supplied by a browser request or point to an ex
 Each test resets it to disabled; the additional desktop/mobile scenario explicitly enables it and
 reviews source-specific disclosure before exercising real browser hash binding and pending quotes.
 These scripted responses are not a real-model quality measurement.
+
+Owner browser controls and two-digest retention review are documented in
+[reviewed learning governance](LEARNING_GOVERNANCE.md).

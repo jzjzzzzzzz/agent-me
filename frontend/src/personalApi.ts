@@ -5,6 +5,7 @@ import {
 } from "./agencyApi";
 import { isErasureCatalogue, isErasurePreview, isErasureResult, sameErasureRequest, type ErasurePreview, type ErasureRequest } from "./erasureApi";
 import { isAuditRows, isDestination, isImportReceipt, isImportReview, snapshotBody, snapshotFits, strictSnapshotJson, type DestinationState, type ImportReview, type RawSnapshot } from "./migrationApi";
+import { isConsolidationPlan, isGovernanceData, isLearningSettings, isRetentionPlan, isRetentionReview, isRetentionSettings, type ConsolidationFilter, type ConsolidationPlan, type GovernanceData, type LearningPolicy, type RetentionPlan, type RetentionPolicy, type RetentionReview } from "./governanceApi";
 export type Sensitivity = "public" | "private" | "sensitive";
 export type MemoryKind = "fact" | "preference" | "event" | "decision";
 export type MemoryStatus = "pending" | "confirmed" | "superseded";
@@ -214,6 +215,35 @@ export function createPersonalClient(token: string, signal: AbortSignal) {
     return value;
   }
   return {
+    loadGovernance: () => request("/learning/governance", isGovernanceData),
+    async configureLearning(state: GovernanceData, policy: LearningPolicy) {
+      const value = await request("/learning/policy", isLearningSettings, { policy, expected_revision: state.learning.revision, expected_owner_id: state.owner_id });
+      if (value.revision !== state.learning.revision + 1) throw new PersonalApiError(502, "invalid"); return value;
+    },
+    async configureRetention(state: GovernanceData, policy: RetentionPolicy) {
+      const value = await request("/retention/policy", isRetentionSettings, { policy, expected_revision: state.retention.revision, expected_owner_id: state.owner_id });
+      if (value.revision !== state.retention.revision + 1) throw new PersonalApiError(502, "invalid"); return value;
+    },
+    async previewRetention(state: GovernanceData, asOf: string | null) {
+      const value = await request("/retention/preview", isRetentionPlan, { as_of: asOf, expected_owner_id: state.owner_id });
+      if (value.owner_id !== state.owner_id || value.policy_revision !== state.retention.revision || value.status !== "planned") throw new PersonalApiError(502, "invalid"); return value;
+    },
+    async reviewRetention(plan: RetentionPlan) {
+      const value = await request(`/retention/plans/${idPath(plan.id)}/review`, isRetentionReview);
+      if (value.plan.id !== plan.id || value.plan.owner_id !== plan.owner_id || JSON.stringify(value.plan.targets) !== JSON.stringify(plan.targets) || value.plan.status !== plan.status) throw new PersonalApiError(409, "stale"); return value;
+    },
+    async applyRetention(review: RetentionReview) {
+      const value = await request(`/retention/plans/${idPath(review.plan.id)}/apply-reviewed`, isRetentionPlan, { digest: review.digest, scope_digest: review.scope_digest });
+      if (value.id !== review.plan.id || value.owner_id !== review.plan.owner_id || value.status !== "applied" || JSON.stringify(value.targets) !== JSON.stringify(review.plan.targets)) throw new PersonalApiError(502, "invalid"); return value;
+    },
+    async previewConsolidation(state: GovernanceData, filter: ConsolidationFilter) {
+      const value = await request("/consolidation/preview", isConsolidationPlan, { ...filter, expected_owner_id: state.owner_id });
+      if (value.owner_id !== state.owner_id || value.status !== "planned") throw new PersonalApiError(502, "invalid"); return value;
+    },
+    async applyConsolidation(plan: ConsolidationPlan) {
+      const value = await request(`/consolidation/${idPath(plan.id)}/apply`, isConsolidationPlan, { digest: plan.digest });
+      if (value.id !== plan.id || value.owner_id !== plan.owner_id || value.digest !== plan.digest || value.status !== "applied" || JSON.stringify(value.groups) !== JSON.stringify(plan.groups)) throw new PersonalApiError(502, "invalid"); return value;
+    },
     async loadMigration() {
       const [destination, audit] = await Promise.all([request("/portability/state", isDestination), request("/audit?limit=100", isAuditRows)]);
       if (audit.some(row => row.owner_id !== destination.owner_id)) throw new PersonalApiError(502, "invalid");

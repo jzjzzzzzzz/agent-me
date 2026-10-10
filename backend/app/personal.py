@@ -35,6 +35,7 @@ from .erasure_models import (
     ErasureRequest,
     ErasureResult,
 )
+from .governance import GovernanceState, LearningGovernance, RetentionApproval, RetentionReview
 from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
 from .learning import LearningPipeline
@@ -156,10 +157,16 @@ class EditEntity(EntityInput):
 
 class ConfigureRetention(IdentityReview):
     policy: RetentionPolicy
+    expected_owner_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class ConfigureLearning(IdentityReview):
     policy: LearningPolicy
+    expected_owner_id: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+class GovernanceConsolidationFilter(ConsolidationFilter):
+    expected_owner_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class ConfigureDisclosure(IdentityReview):
@@ -352,14 +359,25 @@ def learning_policy(db: Store = Depends(store)):
 
 @router.post("/learning/policy", response_model=LearningSettings)
 def configure_learning(payload: ConfigureLearning, db: Store = Depends(store)):
-    return LearningPolicyManager(db).configure(payload.policy, payload.expected_revision)
+    return LearningPolicyManager(db).configure(
+        payload.policy, payload.expected_revision, expected_owner_id=payload.expected_owner_id
+    )
+
+
+@router.get("/learning/governance", response_model=GovernanceState)
+def learning_governance(db: Store = Depends(store)):
+    return LearningGovernance(db).state()
 
 
 @router.post("/consolidation/preview", response_model=ConsolidationPlan)
 def preview_consolidation(
-    payload: ConsolidationFilter = ConsolidationFilter(), db: Store = Depends(store)
+    payload: GovernanceConsolidationFilter = GovernanceConsolidationFilter(),
+    db: Store = Depends(store),
 ):
-    return ConsolidationManager(db).preview(payload)
+    return ConsolidationManager(db).preview(
+        ConsolidationFilter.model_validate(payload.model_dump(exclude={"expected_owner_id"})),
+        expected_owner_id=payload.expected_owner_id,
+    )
 
 
 @router.get("/consolidation/plans", response_model=list[ConsolidationPlan])
@@ -614,12 +632,26 @@ def retention_policy(db: Store = Depends(store)):
 
 @router.post("/retention/policy", response_model=RetentionSettings)
 def configure_retention(payload: ConfigureRetention, db: Store = Depends(store)):
-    return RetentionManager(db).configure(payload.policy, payload.expected_revision)
+    return RetentionManager(db).configure(
+        payload.policy, payload.expected_revision, expected_owner_id=payload.expected_owner_id
+    )
 
 
 @router.post("/retention/preview", response_model=RetentionPlan)
 def preview_retention(payload: RetentionPreview, db: Store = Depends(store)):
-    return RetentionManager(db).preview(as_of=payload.as_of)
+    return RetentionManager(db).preview(
+        as_of=payload.as_of, expected_owner_id=payload.expected_owner_id
+    )
+
+
+@router.get("/retention/plans/{plan_id}/review", response_model=RetentionReview)
+def review_retention(plan_id: str, db: Store = Depends(store)):
+    return LearningGovernance(db).review_retention(plan_id)
+
+
+@router.post("/retention/plans/{plan_id}/apply-reviewed", response_model=RetentionPlan)
+def apply_reviewed_retention(plan_id: str, payload: RetentionApproval, db: Store = Depends(store)):
+    return LearningGovernance(db).apply_retention(plan_id, payload)
 
 
 @router.get("/retention/plans", response_model=list[RetentionPlan])
