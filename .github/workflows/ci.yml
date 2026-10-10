@@ -100,6 +100,40 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  browser-e2e:
+    name: Owner browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.7"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v7
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: uv sync --project backend --locked --extra dev
+        env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Exercise the built UI against an isolated fictional API
+        run: npm run test:e2e
+        working-directory: frontend
+      - name: Upload fictional browser screenshots and failure traces
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: owner-browser-acceptance
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   windows-powershell:
     runs-on: windows-latest
     timeout-minutes: 10
@@ -160,7 +194,7 @@ jobs:
       - run: python3 scripts/check_docs.py
 
   containers:
-    needs: [backend, frontend, documentation]
+    needs: [backend, frontend, documentation, browser-e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

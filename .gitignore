@@ -19,3 +19,8 @@ private/
 *.sqlite*
 *.db-*
 private-twin-export.json
+
+# Disposable browser-test artifacts and downloaded test browsers.
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright/

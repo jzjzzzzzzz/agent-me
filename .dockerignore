@@ -12,3 +12,7 @@ private/
 *.sqlite*
 *.db-*
 private-twin-export.json
+
+**/test-results
+**/playwright-report
+**/.playwright

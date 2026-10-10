@@ -1,7 +1,9 @@
+import { ReviewDialog } from "./ReviewDialog";
+import { IdentityReview, type IdentityAction } from "./IdentityReview";
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import {
   createPersonalClient, ingestionWithinLimits, PersonalApiError,
-  type IngestionRun, type LearningSource, type MemoryRecord, type PersonalAnswer, type WorkbenchData,
+  type IdentityData, type IngestionRun, type LearningSource, type MemoryRecord, type PersonalAnswer, type WorkbenchData,
 } from "./personalApi";
 import type { PersonalWorkspaceMessages } from "./personalMessages";
 
@@ -14,6 +16,10 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
   token: string; text: PersonalWorkspaceMessages; maxQuestionChars: number; onLock: () => void;
 }) {
   const t = text.review;
+  const [identityOpen, setIdentityOpen] = useState(false);
+  const [identity, setIdentity] = useState<IdentityData | null>(null);
+  const [epoch, setEpoch] = useState(0);
+  const [askEntityId, setAskEntityId] = useState("");
   const [data, setData] = useState<WorkbenchData | null>(null);
   const [busy, setBusy] = useState(true);
   const busyRef = useRef(true);
@@ -72,11 +78,20 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
   }
   async function refresh(client: Client, signal: AbortSignal) {
     const loaded = await client.load();
-    if (!signal.aborted) setData(loaded);
+    const identities = identityOpen ? await client.loadIdentity() : null;
+    if (identities && loaded.entities.some(item => item.owner_id !== identities.owner.owner_id)) throw new PersonalApiError(502, "invalid");
+    if (!signal.aborted) { setData(loaded); setIdentity(identities); setEpoch(value => value + 1); }
   }
   function invalidate() { setAnswer(null); setInspection(null); setConflict(null); }
   async function mutation(action: (client: Client) => Promise<unknown>) {
     await run(async (client, signal) => { invalidate(); await action(client); await refresh(client, signal); });
+  }
+  async function performIdentity(action: IdentityAction, changes = false) {
+    await run(async (client, signal) => {
+      if (changes) { invalidate(); setEpoch(value => value + 1); }
+      await action(client, signal);
+      if (changes) await refresh(client, signal);
+    });
   }
   async function confirm(memory: MemoryRecord) {
     await run(async (client, signal) => {
@@ -96,6 +111,7 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
     event.preventDefault();
     if (!name.trim()) return;
     await run(async (client, signal) => {
+      if (entityId && !data?.entities.some(item => item.id === entityId && item.status === "confirmed")) throw new PersonalApiError(409, "stale");
       invalidate();
       const source = await client.register({ name: name.trim(), kind: sourceKind, sensitivity, entity_id: entityId || null });
       if (signal.aborted) return;
@@ -149,6 +165,18 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
     {busy && <p role="status">{text.working}</p>}
     {error && <p role="alert" className="error">{renderedError}</p>}
     {data && <>
+      <button disabled={busy} aria-expanded={identityOpen} onClick={() => {
+        if (identityOpen) { setIdentityOpen(false); setIdentity(null); }
+        else {
+          setIdentityOpen(true);
+          void run(async (client, signal) => {
+            const value = await client.loadIdentity();
+            if (data.entities.some(item => item.owner_id !== value.owner.owner_id)) throw new PersonalApiError(502, "invalid");
+            if (!signal.aborted) setIdentity(value);
+          });
+        }
+      }}>{identityOpen ? text.identity.close : text.identity.open}</button>
+      {identityOpen && identity && <IdentityReview data={data} identity={identity} text={text} busy={busy} epoch={epoch} perform={performIdentity} />}
       <section aria-label={t.sources}>
         <h4>{t.sources}</h4>
         <form onSubmit={register} className="review-form">
@@ -162,6 +190,7 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
             </select></label>
             <label>{t.entity}<select value={entityId} disabled={busy} onChange={event => setEntityId(event.target.value)}>
               <option value="">{t.unscoped}</option>
+              {entityId && !data.entities.some(item => item.id === entityId && item.status === "confirmed") && <option value={entityId}>{entityId} · {t.pending}</option>}
               {data.entities.filter(item => item.status === "confirmed").map(item => <option key={item.id} value={item.id}>{item.name} · {item.kind}</option>)}
             </select></label>
           </div>
@@ -238,13 +267,13 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
             <button disabled={busy} aria-label={actionName(text.delete, item)} onClick={() => setDeleting(item)}>{text.delete}</button>
           </div>
         </li>)}</ul>
-        {deleting && <aside role="alertdialog" aria-label={actionName(text.delete, deleting)}>
+        {deleting && <ReviewDialog label={actionName(text.delete, deleting)} onCancel={() => setDeleting(null)}>
           <h5>{text.delete}: {deleting.key}</h5><p>{deleting.content}</p>{metadata(deleting)}
           <button disabled={busy} onClick={() => {
             const memory = deleting; setDeleting(null); void mutation(client => client.remove(memory));
           }}>{text.delete}</button>
           <button disabled={busy} onClick={() => setDeleting(null)}>{text.cancel}</button>
-        </aside>}
+        </ReviewDialog>}
         {editing && <form className="review-form" onSubmit={event => {
           event.preventDefault(); if (!editContent.trim()) return;
           void run(async (client, signal) => {
@@ -288,10 +317,16 @@ export function ReviewWorkbench({ token, text, maxQuestionChars, onLock }: {
         <form className="review-form" onSubmit={event => {
           event.preventDefault(); if (!question.trim() || question.length > maxQuestionChars) return;
           void run(async (client, signal) => {
-            setAnswer(null); const value = await client.ask(question.trim(), allowSensitive);
+            if (askEntityId && !data.entities.some(item => item.id === askEntityId && item.status === "confirmed")) throw new PersonalApiError(409, "stale");
+            setAnswer(null); const value = await client.ask(question.trim(), allowSensitive, askEntityId || undefined);
             if (!signal.aborted) { setAnswer(value); setAllowSensitive(false); }
           });
         }}>
+          <label>{t.entity}<select value={askEntityId} disabled={busy} onChange={event => setAskEntityId(event.target.value)}>
+            <option value="">{t.unscoped}</option>
+            {askEntityId && !data.entities.some(item => item.id === askEntityId && item.status === "confirmed") && <option value={askEntityId}>{askEntityId} · {t.pending}</option>}
+            {data.entities.filter(item => item.status === "confirmed").map(item => <option key={item.id} value={item.id}>{item.name} · {item.kind} · {item.id}</option>)}
+          </select></label>
           <label>{text.privateQuestion}<textarea required maxLength={maxQuestionChars} value={question} disabled={busy} onChange={event => setQuestion(event.target.value)} /></label>
           <label className="review-checkbox"><input type="checkbox" checked={allowSensitive} disabled={busy} onChange={event => setAllowSensitive(event.target.checked)} />{t.allowSensitive}</label>
           <button disabled={busy || !question.trim() || question.length > maxQuestionChars}>{text.send}</button>

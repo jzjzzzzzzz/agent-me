@@ -1,7 +1,8 @@
 # Structured identity, uncertainty, time and retention
 
-This is pure Agent core/API/CLI functionality. It does not add a frontend or require a graph database,
-model provider, or server. The [acceptance ledger](AGENT_IMPLEMENTATION.md) tracks the full roadmap;
+The independent Agent core/API/CLI requires neither a graph database nor a model provider.
+The browser review workbench now exposes identity and relationship review; retention remains
+a Core/API/CLI capability. The [acceptance ledger](AGENT_IMPLEMENTATION.md) tracks the full roadmap;
 unified retrieval, local contextual tools, portable import and operational audit are implemented;
 longitudinal metrics are implemented; final full-roadmap acceptance is tracked in the ledger.
 
@@ -28,6 +29,55 @@ memory revision**. They require separate confirmation. Current relationship cont
 endpoints, owner, sensitivity, evidence revision, epistemic state and validity. Changed/deleted evidence
 cannot silently keep an old edge current. Semantic entailment of the predicate is not proven by the
 source link; the owner reviews it. Neighbour context is one hop, at most 32 entities and 64 edges.
+
+## Browser identity review and live review preconditions
+
+Open **Manage identities & relationships** within the unlocked review workbench. Identity data is
+loaded on demand using the existing authenticated, no-store session. All seven entity kinds, names,
+explicit aliases, labels, deliberate distinct creation, edits and separate confirmation are available.
+An edit proposes a new pending revision and preserves source/history. Alias lookup shows resolved,
+ambiguous or unknown results; ambiguity never merges identities. History is read-only and checked
+against the displayed revision. Names, aliases and source instructions render as plain text.
+
+Owner binding has a separate old/new review. The browser sends `expected_owner_entity_id` (including
+explicit null for an unbound owner) and `expected_entity_revision` for the selected confirmed person.
+Both checks execute in one write transaction. Unbinding compares the existing binding but has no
+target revision. A bound owner cannot be edited into a non-person kind; explicitly unbind first.
+Existing clients that omit preconditions keep their compatibility behavior. Owner reads are snapshot
+consistent, and binding responses report the state written by their own transaction.
+
+Relationship proposals use exact displayed endpoint and memory IDs/revisions. Optional
+`expected_evidence_revision` and `expected_entity_revisions` reject unseen changes at creation;
+confirmation additionally checks the relationship revision and can compare both live endpoint
+revisions. A stale evidence link cannot be confirmed through the browser. Exact IDs and explicit
+predicates do not establish semantic entailment. The current-neighbours view continues to filter
+pending endpoints, changed evidence, time/belief and sensitivity. Sensitive alias/neighbour context
+requires an explicit per-lookup checkbox which resets after success. Owner-management lists remain
+owner-level inspection surfaces, not delegated or per-label access controls. The ask form can select
+an explicit confirmed subject; owner binding scopes unqualified owner questions.
+
+### Exact entity/relationship deletion preview
+
+`GET /identity/entities/{id}/delete-preview` and the corresponding relationship route return a
+snapshot-consistent scope: the reviewed record, memories, sources, ingestion runs, dependent
+relationships, owner-binding impact, history/origin counts and a SHA-256 digest. Entity scope includes
+memories linked in **current or historical revisions**, plus relationships that depend on those
+memories even when neither endpoint is the entity being deleted. A relationship-only deletion does
+not remove its evidence or endpoints. Preview does not change these records.
+
+The browser displays this scope and requires a separate **Delete reviewed scope** action. It posts
+`{expected_revision, digest}` to the existing deletion route. Under `BEGIN IMMEDIATE`, the core
+recomputes the scope, including exact histories and origins, before any effect. Changed records,
+new dependents, changed source/run state or a changed owner-binding effect invalidate the digest;
+there are no partial deletions. A digest requires its record revision. No-body unconditioned
+API/CLI deletion remains backward-compatible and does not acquire preview protection implicitly.
+Independent chat, filesystem knowledge, exports, backups, inert archives and tool outputs are not
+part of entity deletion; use their separate owner controls where applicable.
+
+Closing identity review discards its drafts and lookups. Workbench mutations/refresh invalidate
+old lookup/deletion/owner review views, and the identity section shares the parent's single-operation
+mutex and abortable authenticated request session. Closing/locking the entire workbench cancels
+in-flight delivery; it cannot guarantee rollback of a server transaction that has already started.
 
 ## Memory boundaries and uncertainty
 
@@ -93,8 +143,9 @@ legacy unscoped forgetting remains conservative against later automatic re-bindi
 
 Schema-3 and older workspaces migrate transactionally. Existing snapshots, content and timestamps are
 preserved; no confidence or event/validity time is fabricated. Existing records gain the workspace owner
-and category, with null subject/confidence/time bounds. Export version is now `4` with identity histories,
-relationships, ownership and retention state. There is still no import contract.
+and category, with null subject/confidence/time bounds. Export version is now `8` with identity histories, relationships, ownership, learning and owner-control
+state. [Reviewed portable import](OWNER_CONTROL.md) supports versioned snapshots without restoring
+historical execution or disclosure authority.
 
 ## Configurable, reviewable retention
 
@@ -181,3 +232,35 @@ forgetting, valid/knowledge time separation, future/expired/disputed states, and
 Additional tests cover native contracts, API/CLI operations, source binding, policy/target races,
 rollback, UTC equivalence, and migration without invented evidence. These checks do not establish
 semantic entailment, factual truth, automatically calibrated confidence, or personality imitation.
+
+## Repeatable browser acceptance
+
+`make e2e` builds the production frontend and runs Playwright Chromium on desktop (1280×900) and
+mobile-emulated (390×844) viewports. Install the test browser once with
+`cd frontend && npx playwright install chromium`; CI installs its Linux system dependencies too.
+The harness does not control a running Chrome/Safari window or reuse browser profiles.
+
+The owned test gateway binds to loopback port 4193 (override `AGENT_ME_E2E_PORT` if needed),
+starts Uvicorn on an OS-assigned loopback port and serves only built frontend assets plus the API
+proxy. It never reuses an existing server. An owned nonce-marked temporary directory contains
+fictional corpus/data. The helper rejects non-temporary, mismatched-marker, symlink or pre-existing
+private-data paths; it ignores `.env`, strips ambient Settings fields and clears provider credentials.
+The per-test API purge is permitted only after verifying the fixture health marker/profile, with
+one worker so tests never erase each other's workspace. `AGENT_ME_E2E_PYTHON` can select an
+alternate installed project Python interpreter. Shutdown terminates only the owned backend and
+removes its workspace after that process exits.
+
+Six scenarios cover source/identity/memory/relationship review, exact provenance, scoped answers,
+evidence deletion, ambiguous and sensitivity-filtered aliases, stale owner approval, historical
+cascade scope, changed-digest rejection, literal rendering, locale-preserved drafts and lock during
+an in-flight request. Page requests stay on the fixture origin; unexpected HTTP/JavaScript/console
+errors fail the test. Known negative-case HTTP 409 paths are declared explicitly, not globally ignored.
+Keyboard checks verify focus enters the inline review, Escape cancels and focus returns to the
+initiating control (captured before asynchronous preview disables it). Delete previews identify the
+specific entity/relationship, not merely its opaque ID.
+
+Screenshots and traces contain only fictional test data, under ignored `frontend/test-results/` and
+`frontend/playwright-report/`. Desktop/mobile screenshots are visually inspected locally; layout
+checks also reject horizontal viewport overflow. CI retains these fixture-only artifacts for seven
+days and gates container acceptance on the browser job. This is Chromium viewport acceptance,
+not a claim about every browser, mobile device, assistive technology or provider integration.
