@@ -78,6 +78,17 @@ def literal_candidates(response, content, source, _mode, temporal=None):
         raise MemoryInputError("Model proposals violate the literal candidate contract") from None
 
 
+def review_semantic(store, source_id: str, config: Settings):
+    """Credential-free review shared by HTTP and the explicit-file owner CLI."""
+    configured = config.provider_state == "openai-compatible"
+    target = target_id(config.llm_base_url, config.llm_model) if configured else None
+    return {
+        **DisclosureManager(store).describe_learning(source_id, target),
+        "configured": configured,
+        "max_source_chars": max(0, config.max_context_chars - len(INSTRUCTIONS)),
+    }
+
+
 async def propose(settings: Settings, content: str, transport=None):
     """Only the exact consented source and fixed instructions enter the outbound payload."""
     try:
