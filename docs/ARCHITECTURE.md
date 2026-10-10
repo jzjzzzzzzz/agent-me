@@ -139,3 +139,12 @@ selection. Privacy/sufficiency/conflict/budget checks precede output. `personal_
 current authority, verifies exact atomic values, and composes local attributed answers without a
 provider. The Core/API/CLI paths share these components. See
 [personal retrieval](PERSONAL_RETRIEVAL.md) and `scripts/evaluate_retrieval.py`.
+
+## Owner-approved transactional tools
+
+`agent_runtime.py` separates knowledge, recommendations and action plans. `agency.py`
+registers only three typed local SQLite tools. Disabled-by-default per-tool permissions,
+data labels/entity scopes, digest-bound owner approval, and live source/revision checks
+precede effects. Effects and result events commit atomically; idempotency, bounded retry
+and exact-output undo are native Core/API/CLI behavior. No provider or source text grants
+execution authority. See [local agency](AGENCY.md) and `scripts/evaluate_agency.py`.

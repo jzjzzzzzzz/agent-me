@@ -130,7 +130,7 @@ The database persists chat for display (latest 100 turns); it does not replay hi
 so deleted memory cannot leak back through old turns. This first version does not provide full
 multi-turn contextual conversation. Deleting memory does not erase its existing chat transcript:
 use Clear history separately. Deleting a record purges its own revision snapshots, not independently
-restored candidates or archived replacements. Export version `4` includes the full transcript,
+restored candidates or archived replacements. Export version `5` includes the full transcript,
 active and archived entries, and revision snapshots. Import is not implemented. Stop the backend before removing `private/` to erase the entire workspace and token.
 
 Without model credentials, answers are excerpts, not personalized generation. Configure the three
@@ -160,7 +160,7 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
-| GET | `/export` | Version-4 snapshot including learning provenance and forgetting digests |
+| GET | `/export` | Version-5 snapshot including learning provenance and forgetting digests |
 | POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
 
 ### Typed memory contract / 结构化记忆契约
@@ -198,7 +198,7 @@ The server compares these preconditions inside the write transaction; stale requ
 without changing any entries or snapshots. These fields are optional for compatibility with
 existing clients; callers omitting them do **not** receive stale-review protection.
 
-Export uses version `4` (separate from the repository release version) and includes `revisions`,
+Export uses version `5` (separate from the repository release version) and includes `revisions`,
 `sources`, `ingestion_runs`, `origins`, and `forgotten` digest records.
 Entries, full history, and snapshots are read in one database transaction. An older version-1 or version-2
 export consumer must be updated; the existing reference UI downloads the JSON without parsing it.
@@ -261,3 +261,11 @@ are documented in [Structured identity and time](IDENTITY_TIME.md).
 The grounded-local `ask`/`retrieve`/`verify` Agent contracts, owner binding, source-value verification,
 and bilingual/temporal retrieval are described in [Personal retrieval](PERSONAL_RETRIEVAL.md).
 The older private chat endpoint remains a separate compatibility contract.
+
+
+## Local owner agency
+
+Snapshot version `5` additionally includes `tool_permissions`, `action_plans`, `tasks`, `notes`,
+and `action_events`. Tool defaults remain disabled. These are independent private data copies;
+memory deletion does not delete task/note/plan arguments. The [agency contracts](AGENCY.md)
+document explicit approval, inspection, rollback and current deletion boundaries.

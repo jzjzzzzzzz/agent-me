@@ -7,6 +7,8 @@ from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from .agency_models import ActionEvent, ActionPlan, NoteRecord, TaskRecord, ToolPermission
+
 Sensitivity = Literal["public", "private", "sensitive"]
 Belief = Literal["known", "inferred", "disputed", "outdated", "unknown"]
 EntityKind = Literal["person", "project", "organization", "event", "idea", "preference", "decision"]
@@ -337,7 +339,7 @@ class SelectedMemory(BaseModel):
 
 class MemoryExport(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: Literal[4] = 4
+    version: Literal[5] = 5
     owner_id: str
     owner_entity_id: str | None = None
     entries: list[MemoryRecord]
@@ -353,3 +355,8 @@ class MemoryExport(BaseModel):
     relationship_revisions: list[RelationshipRevision]
     retention_policy: RetentionSettings
     retention_plans: list[RetentionPlan]
+    tool_permissions: list[ToolPermission]
+    action_plans: list[ActionPlan]
+    tasks: list[TaskRecord]
+    notes: list[NoteRecord]
+    action_events: list[ActionEvent]

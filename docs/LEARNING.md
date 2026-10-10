@@ -148,7 +148,7 @@ workspace token. It outputs JSON and never loads provider configuration.
 | `memory restore ID --revision N` | Propose an old version as a new candidate |
 | `memory delete ID --yes` | Purge this record/versions/origins and register forgetting digests |
 | `recall QUESTION --allow-sensitive` | Local current-memory retrieval, with optional explicit disclosure |
-| `export FILE` | Export version-4 private snapshot; refuses overwrite unless `--force` |
+| `export FILE` | Export version-5 private snapshot; refuses overwrite unless `--force` |
 
 Export permissions are restricted to 0600 on POSIX; Windows access protection depends on filesystem
 ACLs rather than POSIX mode bits. Export is plaintext and is not an import, encryption, or backup-recovery
@@ -166,7 +166,7 @@ All paths use `/api/v1/personal` and the existing owner token:
 | GET | `/learning/runs` | Latest 100 durable run records |
 | GET | `/entries/{id}/origins` | Exact source excerpts and code-point spans |
 
-Private export is now version `4` and includes sources, ingestion runs, origins and forgetting digests
+Private export is now version `5` and includes sources, ingestion runs, origins and forgetting digests
 alongside entries/history/revisions, read in one database snapshot. Older export consumers must be
 updated. The repository release version is unchanged; the reference UI downloads JSON without parsing it.
 

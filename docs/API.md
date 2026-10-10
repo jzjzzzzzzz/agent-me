@@ -182,7 +182,7 @@ Partial provider configuration makes `/ready` return `503` instead of silently c
 ## Private memory lifecycle
 
 The opt-in private API is separate from public chat and collaboration. Its complete route table,
-version-4 export format, revision preconditions, deletion boundaries, and independent Agent core
+version-5 export format, revision preconditions, deletion boundaries, and independent Agent core
 are documented in [Private AI Twin](PERSONAL.md#typed-memory-contract--结构化记忆契约).
 No public endpoint reads the private database.
 
@@ -197,3 +197,10 @@ Authenticated `/api/v1/personal/ask`, `/retrieve`, `/verify`, and `/identity/own
 documented in [Personal retrieval](PERSONAL_RETRIEVAL.md). This local path emits exact atomic
 source values and performs live verification; it does not automatically certify legacy provider prose.
 Public chat/collaboration remain separate and never access this private workspace.
+
+## Owner-approved local agency
+
+Authenticated `/api/v1/personal/agent`, `/tools/permissions`, `/actions`, `/tasks` and
+`/notes` implement typed know/recommend/act routing and real local tools. Plan creation
+never executes; exact owner approval and live data/permission validation are mandatory.
+See [local agency contracts](AGENCY.md) for complete routes, retry and rollback semantics.

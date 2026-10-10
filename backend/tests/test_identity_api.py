@@ -84,7 +84,7 @@ async def test_identity_api_ownership_review_resolution_relationships_and_histor
     ).json()
     assert [row["change"] for row in history] == ["created", "confirmed"]
     exported = MemoryExport.model_validate((await client.get(BASE + "/export", headers=H)).json())
-    assert exported.version == 4 and len(exported.relationships) == 1
+    assert exported.version == 5 and len(exported.relationships) == 1
 
 
 async def test_entity_api_edits_preserve_sensitive_labels_and_require_review(personal):

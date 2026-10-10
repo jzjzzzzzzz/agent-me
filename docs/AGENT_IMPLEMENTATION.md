@@ -22,9 +22,9 @@ This ledger is not a release promise or a claim that the roadmap is complete.
 | Retrieval | Temporal selection and stale/disputed knowledge | Valid-time and knowledge-time selection, expiry/future exclusion and effective belief states; `evaluate_identity.py` |
 | Retrieval | Sensitivity-aware assembly and evidence sufficiency | Typed bounded evidence assembly, live privacy/confidence checks, sufficiency states and presentation-vs-fact separation |
 | Retrieval | Factual, temporal, preference, project and relationship evaluation | `evaluate_retrieval.py` covers factual/temporal/preference/project/relationship, unsupported/privacy/adversarial cases |
-| Agency | Typed routing and explicit tool/data permissions | Not yet implemented |
-| Agency | Plan/approval gates and inspectable calls/results | Not yet implemented |
-| Agency | Idempotency, retry, rollback and clear know/recommend/act boundaries | Memory transactions exist; actual bounded tools remain |
+| Agency | Typed routing and explicit tool/data permissions | `agent_runtime.py`, `agency.py`: three registered local task/note tools, disabled defaults, labels and entity scopes; Core/API/CLI tests |
+| Agency | Plan/approval gates and inspectable calls/results | Digest/revision-bound review, live preconditions, inspectable plans/results/events; `test_agency.py`, `test_agency_api.py` |
+| Agency | Idempotency, retry, rollback and clear know/recommend/act boundaries | Real SQLite effects, atomic failure, concurrent idempotency, bounded explicit retries and unchanged-output rollback; `evaluate_agency.py` 17 cases |
 | Verification | Atomic claim/evidence mapping and temporal consistency | `personal_agent.py` constrained atomic values and live authoritative verification; arbitrary paraphrase entailment remains unproven |
 | Verification | Fidelity, contradiction, correction, deletion and injection/privacy regressions | Lifecycle, relationship, temporal, privacy, injection-as-data, forged-claim and in-flight deletion suites exist; full metrics remain |
 | Verification | Calibration, coverage, provenance and correction-effort metrics | Boolean memory evaluation exists; longitudinal metrics remain |
@@ -42,7 +42,8 @@ This ledger is not a release promise or a claim that the roadmap is complete.
    (implemented; `identity.py`, `memory_time.py`, `retention.py`, Core/API/CLI tests and identity evaluation).
 4. Unified personal retrieval, disputed/stale evidence and atomic grounded answers (implemented;
    Core/API/CLI ask/retrieve/verify, `test_personal_retrieval.py`, `evaluate_retrieval.py`).
-5. Typed contextual agency and real bounded tools with permissions and approval gates.
+5. Typed contextual agency and real bounded tools with permissions and approval gates
+   (implemented; [contracts](AGENCY.md), Core/API/CLI tests and 17-case agency evaluation).
 6. Portability/import, audit/threat-model coverage, longitudinal metrics, complete acceptance audit.
 7. Run all applicable quality gates, review public artifacts for private data, push the developed
    branch, and verify the remote commit and CI. Only then consider the full objective achieved.

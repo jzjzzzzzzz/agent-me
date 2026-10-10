@@ -40,7 +40,7 @@ def test_cli_learning_review_recall_and_private_export(tmp_path, capsys):
     )
     destination = tmp_path / "private-export.json"
     assert call(tmp_path, capsys, "export", str(destination))[0] == 0
-    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 4
+    assert json.loads(destination.read_text(encoding="utf-8"))["version"] == 5
     if os.name == "posix":
         assert destination.stat().st_mode & 0o777 == 0o600
     before = destination.read_bytes()
@@ -339,3 +339,92 @@ def test_cli_owner_binding_and_temporal_project_question(tmp_path, capsys):
     answer = call(tmp_path, capsys, "ask", "我的项目在 2020年是什么？")[1]
     assert answer["status"] == "known" and "OldOrchid" in answer["answer"]
     assert call(tmp_path, capsys, "entity", "owner", "--clear")[1]["entity_id"] is None
+
+
+def test_cli_explicit_permission_plan_approval_and_reversible_effect(tmp_path, capsys):
+    assert all(not item["enabled"] for item in call(tmp_path, capsys, "tools", "permissions")[1])
+    assert (
+        call(
+            tmp_path,
+            capsys,
+            "tools",
+            "configure",
+            "tasks.create",
+            "--policy-json",
+            '{"enabled":true}',
+            "--expected-revision",
+            "1",
+        )[0]
+        == 0
+    )
+    invocation = tmp_path / "action.json"
+    invocation.write_text(
+        json.dumps(
+            {
+                "tool": "tasks.create",
+                "arguments": {"title": "Synthetic demo"},
+                "idempotency_key": "cli-demo",
+            }
+        ),
+        encoding="utf-8",
+    )
+    _, plan = call(tmp_path, capsys, "action", "plan", str(invocation))
+    assert plan["status"] == "planned" and call(tmp_path, capsys, "tasks")[1] == []
+    assert call(tmp_path, capsys, "action", "execute", plan["id"], "--yes")[0] == 2
+    assert (
+        call(
+            tmp_path,
+            capsys,
+            "action",
+            "approve",
+            plan["id"],
+            "--expected-revision",
+            "1",
+            "--digest",
+            plan["digest"],
+        )[0]
+        == 0
+    )
+    assert call(tmp_path, capsys, "action", "execute", plan["id"])[0] == 2
+    assert (
+        call(tmp_path, capsys, "action", "execute", plan["id"], "--yes")[1]["status"] == "completed"
+    )
+    assert len(call(tmp_path, capsys, "tasks")[1]) == 1
+    assert (
+        call(tmp_path, capsys, "action", "rollback", plan["id"], "--yes")[1]["status"]
+        == "rolled_back"
+    )
+    assert call(tmp_path, capsys, "tasks")[1] == []
+
+
+def test_cli_typed_runtime_is_local_and_never_executes_a_recommendation(tmp_path, capsys):
+    request = tmp_path / "agent.json"
+    request.write_text(
+        json.dumps(
+            {
+                "intent": {
+                    "kind": "recommend",
+                    "invocation": {
+                        "tool": "notes.create",
+                        "arguments": {"title": "Synthetic", "content": "Fictional note"},
+                        "idempotency_key": "recommend",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    status, result = call(tmp_path, capsys, "agent", str(request))
+    assert (
+        status == 0
+        and result["kind"] == "recommendation"
+        and result["result"]["status"] == "recommended"
+    )
+    assert call(tmp_path, capsys, "notes")[1] == []
+    request.write_text(
+        json.dumps(
+            {"intent": {"kind": "ask", "request": {"question": "What do you know about me?"}}}
+        ),
+        encoding="utf-8",
+    )
+    assert call(tmp_path, capsys, "agent", str(request))[1]["kind"] == "knowledge"

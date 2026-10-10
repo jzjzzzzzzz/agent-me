@@ -8,6 +8,20 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
+from .agency import Agency
+from .agency_models import (
+    ActionEvent,
+    ActionPlan,
+    ApprovalInput,
+    NoteRecord,
+    PermissionInput,
+    PermissionUpdate,
+    TaskRecord,
+    ToolInvocation,
+    ToolName,
+    ToolPermission,
+)
+from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
 from .config import Settings, get_settings
 from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
@@ -134,6 +148,78 @@ def authorize(
 
 def store(config: Settings = Depends(authorize)) -> Store:
     return Store(config.personal_data_dir)
+
+
+@router.post("/agent", response_model=AgentOutcome)
+def route_agent(
+    payload: AgentIntent, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    if isinstance(payload.intent, KnowledgeIntent):
+        payload = AgentIntent(
+            intent=KnowledgeIntent(
+                kind="ask", request=bounded_request(payload.intent.request, config)
+            )
+        )
+    return AgentRuntime(personal_retriever(db, config)).route(payload)
+
+
+@router.get("/tools/permissions", response_model=list[ToolPermission])
+def tool_permissions(db: Store = Depends(store)):
+    return Agency(db).permissions()
+
+
+@router.post("/tools/permissions/{name}", response_model=ToolPermission)
+def configure_tool(name: ToolName, payload: PermissionUpdate, db: Store = Depends(store)):
+    return Agency(db).configure(
+        name,
+        PermissionInput.model_validate(payload.model_dump(exclude={"expected_revision"})),
+        payload.expected_revision,
+    )
+
+
+@router.get("/actions", response_model=list[ActionPlan])
+def action_plans(db: Store = Depends(store)):
+    return Agency(db).plans()
+
+
+@router.post("/actions", response_model=ActionPlan)
+def create_action(payload: ToolInvocation, db: Store = Depends(store)):
+    return Agency(db).plan(payload)
+
+
+@router.post("/actions/{plan_id}/approve", response_model=ActionPlan)
+def approve_action(plan_id: str, payload: ApprovalInput, db: Store = Depends(store)):
+    return Agency(db).approve(plan_id, payload.expected_revision, payload.digest)
+
+
+@router.post("/actions/{plan_id}/execute", response_model=ActionPlan)
+def execute_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).execute(plan_id)
+
+
+@router.post("/actions/{plan_id}/rollback", response_model=ActionPlan)
+def rollback_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).rollback(plan_id)
+
+
+@router.post("/actions/{plan_id}/cancel", response_model=ActionPlan)
+def cancel_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).cancel(plan_id)
+
+
+@router.get("/actions/{plan_id}/events", response_model=list[ActionEvent])
+def action_events(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).events(plan_id)
+
+
+@router.get("/tasks", response_model=list[TaskRecord])
+def list_tasks(db: Store = Depends(store)):
+    return Agency(db).tasks()
+
+
+@router.get("/notes", response_model=list[NoteRecord])
+def list_notes(db: Store = Depends(store)):
+    return Agency(db).notes()
 
 
 @router.post("/ask", response_model=PersonalAnswer)

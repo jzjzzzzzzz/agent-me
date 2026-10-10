@@ -37,7 +37,7 @@ The opt-in single-owner private workspace additionally provides typed fact, pref
 event, and decision records; server-controlled source links and timestamps; pending/confirmed
 review; transactional revision snapshots and same-key supersession; restore-as-candidate;
 optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
-version-4 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+version-5 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
 deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
 
 Current boundaries are equally important: public conversations are not persisted; private
@@ -45,7 +45,7 @@ conversations are persisted for display but not re-injected as evidence. The kno
 pre-migration revision history cannot be reconstructed,
 controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
 semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
-Unified hybrid retrieval and live atomic source-value verification now exist; contextual tools,
+Unified hybrid retrieval, live atomic source-value verification and approved local tools now exist;
 portable import and full audit/metrics coverage remain unfinished; the Verifier does not prove factual truth or semantic entailment.
 
 
@@ -68,6 +68,10 @@ The local personal Agent now answers through typed owner-scoped hybrid retrieval
 whole-record budgets and live atomic evidence checks. Public fictional examples cannot establish
 owner identity, preferences do not stand in for factual support, and temporal queries do not invent
 episode dates. See [personal retrieval contracts](docs/PERSONAL_RETRIEVAL.md).
+
+Typed know/recommend/act routing and three real local task/note tools now provide explicit
+per-tool data permissions, reviewed plans, live preconditions, inspectable outcomes, atomic effects,
+bounded retries and exact-output rollback. See [local agency contracts](docs/AGENCY.md).
 
 ## Workstreams
 

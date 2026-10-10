@@ -13,13 +13,14 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from .agency_schema import extend_agency
 from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
 from .memory_models import Confirm, EditEntry, Entry, RestoreMemory, TemporalQuery
 from .memory_time import active_at, iso, overlaps, utc
 from .text import normalized_tokens
 
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 5
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
 _RECORD_COLUMNS = (
@@ -189,6 +190,7 @@ class Store:
             )
         """)
         extend_identity(db)
+        extend_agency(db)
 
     @contextmanager
     def connect(self):
@@ -286,8 +288,16 @@ class Store:
                 ),
             }
             retention_plans = records(db, "retention_plans")
+            permissions = [
+                json.loads(row[0])
+                for row in db.execute("SELECT data_json FROM tool_permissions ORDER BY name")
+            ]
+            plans = records(db, "action_plans")
+            tasks = records(db, "tasks")
+            notes = records(db, "notes")
+            events = records(db, "action_events")
         return {
-            "version": 4,
+            "version": 5,
             "owner_id": owner_id,
             "owner_entity_id": owner_entity[0] if owner_entity else None,
             "entries": entries,
@@ -303,6 +313,11 @@ class Store:
             "relationship_revisions": relationship_revisions,
             "retention_policy": retention_policy,
             "retention_plans": retention_plans,
+            "tool_permissions": permissions,
+            "action_plans": plans,
+            "tasks": tasks,
+            "notes": notes,
+            "action_events": events,
         }
 
     @staticmethod

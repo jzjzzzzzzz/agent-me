@@ -10,6 +10,9 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from .agency import Agency
+from .agency_models import PermissionInput, ToolInvocation
+from .agent_runtime import AgentIntent, AgentRuntime
 from .identity import IdentityStore
 from .knowledge import KnowledgeBase
 from .learning import MAX_DOCUMENT_BYTES, LearningPipeline
@@ -206,6 +209,29 @@ def parser() -> argparse.ArgumentParser:
         "file", type=Path, help="JSON VerifyRequest containing original request and claims"
     )
     verify.add_argument("--public-knowledge", type=Path)
+    commands.add_parser("tasks")
+    commands.add_parser("notes")
+    agent = commands.add_parser("agent")
+    agent.add_argument("file", type=Path)
+    tools = commands.add_parser("tools").add_subparsers(dest="action", required=True)
+    tools.add_parser("permissions")
+    configure = tools.add_parser("configure")
+    configure.add_argument("name", choices=("tasks.create", "tasks.complete", "notes.create"))
+    configure.add_argument("--policy-json", required=True)
+    configure.add_argument("--expected-revision", type=int, required=True)
+    action = commands.add_parser("action").add_subparsers(dest="action", required=True)
+    action.add_parser("list")
+    create = action.add_parser("plan")
+    create.add_argument("file", type=Path, help="JSON ToolInvocation; no effects occur")
+    approve = action.add_parser("approve")
+    approve.add_argument("id")
+    approve.add_argument("--expected-revision", type=int, required=True)
+    approve.add_argument("--digest", required=True)
+    for name in ("execute", "rollback", "cancel", "events"):
+        child = action.add_parser(name)
+        child.add_argument("id")
+        if name in {"execute", "rollback"}:
+            child.add_argument("--yes", action="store_true")
     export = commands.add_parser("export")
     export.add_argument("file", help="Private JSON destination, or '-' for stdout")
     export.add_argument("--force", action="store_true", help="Overwrite an existing regular file")
@@ -235,6 +261,46 @@ def execute(args):
     store = Store(args.data_dir)
     learning = LearningPipeline(store)
     identity = IdentityStore(store)
+    if args.command in {"tools", "action", "tasks", "notes", "agent"}:
+        agency = Agency(store)
+        if args.command == "tools":
+            if args.action == "permissions":
+                return agency.permissions()
+            return agency.configure(
+                args.name,
+                PermissionInput.model_validate_json(args.policy_json),
+                args.expected_revision,
+            )
+        if args.command in {"tasks", "notes"}:
+            return agency.tasks() if args.command == "tasks" else agency.notes()
+        if args.command == "agent" or args.action == "plan":
+            with args.file.open("rb") as handle:
+                data = handle.read(65537)
+            if len(data) > 65536:
+                raise MemoryInputError("Agent/action request exceeds the byte limit")
+            if args.command == "agent":
+                retriever = PersonalRetriever(
+                    store, documents={"private": KnowledgeBase(str(store.root / "knowledge"))}
+                )
+                return (
+                    AgentRuntime(retriever)
+                    .route(AgentIntent.model_validate_json(data))
+                    .model_dump(mode="json")
+                )
+            return agency.plan(ToolInvocation.model_validate_json(data))
+        if args.action == "list":
+            return agency.plans()
+        if args.action == "approve":
+            return agency.approve(args.id, args.expected_revision, args.digest)
+        if args.action == "events":
+            return agency.events(args.id)
+        if args.action == "cancel":
+            return agency.cancel(args.id)
+        if not args.yes:
+            raise MemoryInputError(
+                "Action execution/rollback requires --yes after reviewing its plan"
+            )
+        return agency.execute(args.id) if args.action == "execute" else agency.rollback(args.id)
     if args.command in {"entity", "relationship"}:
         relationship = args.command == "relationship"
         if args.action == "list":
