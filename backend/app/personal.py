@@ -5,22 +5,29 @@ from __future__ import annotations
 import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
 from .config import Settings, get_settings
 from .knowledge import Document, KnowledgeBase, Match
-from .memory import (
+from .learning import LearningPipeline
+from .memory import Store
+from .memory_models import (
+    CandidateOrigin,
     Confirm,
     EditEntry,
     Entry,
+    IngestionInput,
+    IngestionRun,
     MemoryExport,
     MemoryMutation,
     MemoryRecord,
     MemoryRevision,
+    RegisteredSource,
     RestoreMemory,
-    Store,
+    SourceInput,
     StoredTurn,
+    valid_unicode,
 )
 from .provider import context_matches, generate_answer
 from .schemas import ChatTurn
@@ -31,6 +38,14 @@ router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
 class PersonalChat(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     question: str = Field(min_length=1, max_length=8000)
+    allow_sensitive: bool = Field(default=False, strict=True)
+    _unicode = field_validator("question")(valid_unicode)
+
+
+class SourceReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approved: bool = Field(strict=True)
+    expected_revision: int | None = Field(default=None, ge=1, strict=True)
 
 
 def authorize(
@@ -64,6 +79,38 @@ def add(payload: Entry, db: Store = Depends(store)):
 @router.get("/entries/{entry_id}/history", response_model=list[MemoryRevision])
 def memory_history(entry_id: str, db: Store = Depends(store)):
     return db.revisions(entry_id)
+
+
+@router.get("/entries/{entry_id}/origins", response_model=list[CandidateOrigin])
+def memory_origins(entry_id: str, db: Store = Depends(store)):
+    return LearningPipeline(db).origins(entry_id)
+
+
+@router.get("/learning/sources", response_model=list[RegisteredSource])
+def learning_sources(db: Store = Depends(store)):
+    return LearningPipeline(db).sources()
+
+
+@router.post("/learning/sources", response_model=RegisteredSource)
+def register_source(payload: SourceInput, db: Store = Depends(store)):
+    return LearningPipeline(db).register(payload)
+
+
+@router.post("/learning/sources/{source_id}/review", response_model=RegisteredSource)
+def review_source(source_id: str, payload: SourceReview, db: Store = Depends(store)):
+    return LearningPipeline(db).approve(
+        source_id, approved=payload.approved, expected_revision=payload.expected_revision
+    )
+
+
+@router.post("/learning/sources/{source_id}/ingest", response_model=IngestionRun)
+def ingest_source(source_id: str, payload: IngestionInput, db: Store = Depends(store)):
+    return LearningPipeline(db).ingest(source_id, payload)
+
+
+@router.get("/learning/runs", response_model=list[IngestionRun])
+def learning_runs(db: Store = Depends(store)):
+    return LearningPipeline(db).runs()
 
 
 @router.post("/entries/{entry_id}/restore", response_model=MemoryRecord)
@@ -132,7 +179,9 @@ async def chat(
         )
         for m in local
     ]
-    private = await run_in_threadpool(db.context, payload.question)
+    private = await run_in_threadpool(
+        db.context, payload.question, allow_sensitive=payload.allow_sensitive
+    )
     matches = sorted(private + local + public, key=lambda m: m.score, reverse=True)
     # Deliberately don't re-inject stored conversations: deleted memories must not return
     # through stale chat history. History is persisted for display, not factual grounding.

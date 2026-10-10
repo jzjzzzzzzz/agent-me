@@ -105,3 +105,17 @@ translates domain errors into HTTP responses. Public Q&A and collaboration do no
 provider calls. See [memory contracts](PERSONAL.md#typed-memory-contract--结构化记忆契约) for migration,
 export, and deletion semantics. This is not yet entity resolution, semantic memory extraction,
 or automatic ingestion of ordinary conversation.
+
+
+## Controlled learning and local owner CLI
+
+`memory_models.py` owns immutable memory/source input contracts and typed persistence/export
+records. `learning.py` proposes literal fields or paragraph excerpts only from approved sources.
+Candidate writes and provenance are atomic; normalized digests deduplicate exact claims and
+prevent automatic resurrection after forgetting. Durable runs contain bounded stage outcomes,
+hashes, and record IDs, not original documents or private reasoning. Failure recovery reuses a run ID.
+
+`agent_cli.py` provides owner operations without loading configuration, HTTP modules, or providers.
+Private API routes are adapters to the same core. Structured sensitive records are withheld from
+context by default; owner opt-in is explicit. This does not classify private Markdown automatically.
+See [learning contracts](LEARNING.md) and the [acceptance ledger](AGENT_IMPLEMENTATION.md).

@@ -72,7 +72,7 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 - 不同字段之间的语义矛盾尚不自动识别；请使用一致的字段命名。
 - 删除记忆会同时删除该条目的全部版本快照。被替代条目和恢复产生的候选是独立记录，需要分别删除；删除新条目不会重新激活旧条目。聊天记录中已有的原文仍在，可另行清空全部聊天。
 - 历史聊天持久化用于显示（最近 100 条），本版不自动重新发送历史聊天给模型，避免删除的记忆通过旧对话重新进入上下文。因此不是完整的多轮指代对话。
-- 导出版本 `2` 包含所有活跃与已替代记忆、版本历史及完整聊天；通过同一数据库快照读取。当前不提供导入接口，旧导出不会被后续删除追溯清除。
+- 导出版本 `3` 包含所有活跃与已替代记忆、版本历史及完整聊天；通过同一数据库快照读取。当前不提供导入接口，旧导出不会被后续删除追溯清除。
 - 清空聊天不会删除记忆；删除所有本地数据时，先停止后端，再删除 `private/`，重新初始化会生成新密钥。
 
 ### 5. 隐私与发布
@@ -130,7 +130,7 @@ The database persists chat for display (latest 100 turns); it does not replay hi
 so deleted memory cannot leak back through old turns. This first version does not provide full
 multi-turn contextual conversation. Deleting memory does not erase its existing chat transcript:
 use Clear history separately. Deleting a record purges its own revision snapshots, not independently
-restored candidates or archived replacements. Export version `2` includes the full transcript,
+restored candidates or archived replacements. Export version `3` includes the full transcript,
 active and archived entries, and revision snapshots. Import is not implemented. Stop the backend before removing `private/` to erase the entire workspace and token.
 
 Without model credentials, answers are excerpts, not personalized generation. Configure the three
@@ -160,7 +160,7 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | POST | `/entries/{id}/delete` | Delete a record and all of its revision snapshots |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
-| GET | `/export` | Version-2 snapshot of all entries, turns, and revisions |
+| GET | `/export` | Version-3 snapshot including learning provenance and forgetting digests |
 | POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
 
 ### Typed memory contract / 结构化记忆契约
@@ -172,7 +172,7 @@ or the model provider. The [personal API](../backend/app/personal.py) is a trans
 
 OpenAPI describes `MemoryRecord`, `MemoryRevision`, `StoredTurn`, and `MemoryExport`.
 A memory contains `kind`, `key`, `content`, server-generated `id`, `source`, `status`
-(`pending`, `confirmed`, or `superseded`), UTC `created_at` / `updated_at` timestamps,
+(`pending`, `confirmed`, or `superseded`), `sensitivity` (`public`, `private`, `sensitive`), UTC `created_at` / `updated_at` timestamps,
 a monotonically increasing `revision`, and nullable `superseded_by`.
 The default list excludes superseded records; export includes them.
 
@@ -198,13 +198,16 @@ The server compares these preconditions inside the write transaction; stale requ
 without changing any entries or snapshots. These fields are optional for compatibility with
 existing clients; callers omitting them do **not** receive stale-review protection.
 
-Export uses version `2` (separate from the repository release version) and adds `revisions`.
-Entries, full history, and snapshots are read in one database transaction. An older version-1
+Export uses version `3` (separate from the repository release version) and includes `revisions`,
+`sources`, `ingestion_runs`, `origins`, and `forgotten` digest records.
+Entries, full history, and snapshots are read in one database transaction. An older version-1 or version-2
 export consumer must be updated; the existing reference UI downloads the JSON without parsing it.
 There is still no import or backup-restoration contract.
 
-Deletion removes the selected record and all of its snapshots in one transaction. It does not
+Deletion removes the selected record, all of its snapshots, and its ingestion excerpts in one transaction.
+Opaque digests of current and historical kind/key/content are retained to block automatic re-ingestion. It does not
 cascade to separate archived/restored records, transcript text, previous exports, or provider data.
+A deliberate manual re-add remains possible; replay of an earlier ingestion cannot recreate the record.
 A historical `source` or `superseded_by` ID can refer to a record subsequently deleted by its owner.
 Retrieval reads only current confirmed records, never snapshots or chat history. Deleting a
 replacement never makes an archived record current again. Already-running generation is not
@@ -214,6 +217,20 @@ cancelled by a later deletion.
 事务提交；旧数据库自动迁移为已知状态的基线，不伪造之前的变化历史。API 默认只列出活跃条目，
 历史和已替代条目可显式查询；它们不参与回答。恢复只创建来源可追溯的新候选，仍须确认。
 删除会清除所选条目及其全部快照，不自动删除独立的恢复候选、已替代条目或聊天原文。
+
+### Structured-memory sensitivity / 结构化记忆敏感性
+
+Structured records default to `private`. `sensitive` records are excluded from `Store.context`
+and private chat unless the owner explicitly sets `allow_sensitive=True` / `{"allow_sensitive": true}`.
+When an external model is configured, that opt-in permits the selected sensitive memory excerpts to
+be sent with the question. CLI recall is local and never calls a provider. Source labels become a
+floor for extracted candidates; cross-source duplicate pending candidates retain the highest label.
+Edits without an explicit sensitivity field preserve the label, and restoration never implicitly
+lowers the current classification. Label lowering requires a separate explicit owner edit.
+
+Labels do not automatically classify PII, redact the owner's question, or classify manually maintained
+private Markdown. Those existing Markdown and question/provider boundaries remain unchanged.
+The reference UI does not provide sensitive-memory opt-in; use the API or CLI for that operation.
 
 ### Pure Agent verification / 纯 Agent 验证
 
@@ -228,3 +245,10 @@ pending exclusion, unsupported queries, correction, stale approval, supersession
 restore-as-candidate, deletion, preference fidelity, and empty export after forgetting.
 `make evaluate` runs these cases alongside the existing collaboration evaluation.
 These deterministic checks do not measure semantic entailment, embedding quality, or personality imitation.
+
+
+### Controlled learning
+
+Approved-source registration, candidate extraction, exact provenance, deduplication, replay,
+failed-run recovery, revocation, CLI use, and forgetting semantics are described in
+[Controlled Agent learning](LEARNING.md). These are core/API/CLI capabilities, not frontend additions.

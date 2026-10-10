@@ -125,8 +125,11 @@ def evaluate() -> list[EvaluationResult]:
         check("deleted-preference-excluded", not db.context("SyntheticTulip"))
         check(
             "export-empty-after-forgetting",
-            db.export()
-            == {"version": 2, "entries": [], "history": [], "revisions": []},
+            not any(
+                db.export()[field]
+                for field in ("entries", "history", "revisions", "origins")
+            )
+            and bool(db.export()["forgotten"]),
         )
     return results
 

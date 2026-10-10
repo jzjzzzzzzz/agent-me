@@ -1,4 +1,4 @@
-.PHONY: setup dev test lint format docs evaluate evaluate-memory knowledge-check build lock lock-check version-check
+.PHONY: setup dev test lint format docs evaluate evaluate-memory evaluate-learning knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -37,9 +37,13 @@ version-check:
 evaluate:
 	.venv/bin/python scripts/evaluate_collaboration.py
 	.venv/bin/python scripts/evaluate_memory.py
+	.venv/bin/python scripts/evaluate_learning.py
 
 evaluate-memory:
 	.venv/bin/python scripts/evaluate_memory.py
+
+evaluate-learning:
+	.venv/bin/python scripts/evaluate_learning.py
 
 knowledge-check:
 	.venv/bin/python scripts/check_knowledge.py

@@ -33,6 +33,8 @@ jobs:
       - run: .venv/bin/pytest backend/tests
       - name: Evaluate longitudinal personal memory
         run: .venv/bin/python scripts/evaluate_memory.py
+      - name: Evaluate controlled personal learning
+        run: .venv/bin/python scripts/evaluate_learning.py
       - name: Publish baseline evaluation summary
         run: |
           set -o pipefail
@@ -63,6 +65,7 @@ jobs:
         env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
       - run: .venv/bin/pytest backend/tests
       - run: .venv/bin/python scripts/evaluate_memory.py
+      - run: .venv/bin/python scripts/evaluate_learning.py
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
@@ -113,6 +116,7 @@ jobs:
           .\.venv\Scripts\ruff.exe format --check backend scripts
           .\.venv\Scripts\pytest.exe backend\tests
           .\.venv\Scripts\python.exe scripts\evaluate_memory.py
+          .\.venv\Scripts\python.exe scripts\evaluate_learning.py
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
           .\.venv\Scripts\python.exe scripts\check_docs.py

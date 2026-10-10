@@ -1,6 +1,8 @@
 from functools import lru_cache
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
@@ -9,7 +11,13 @@ from . import __version__
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
 from .knowledge import KnowledgeBase, KnowledgeLoadError
-from .memory import MemoryConflict, MemoryError, MemoryNotFound
+from .memory import (
+    MemoryConflict,
+    MemoryError,
+    MemoryInputError,
+    MemoryNotFound,
+    MemoryPermissionDenied,
+)
 from .personal import router as personal_router
 from .provider import ProviderError, context_matches, generate_answer
 from .request_id import RequestIDMiddleware
@@ -70,9 +78,42 @@ async def memory_error_handler(_request: Request, error: MemoryError):
             "conflict_ids": list(error.conflicts),
             "conflict_revisions": error.conflicts,
         }
+    status = 409
+    if isinstance(error, MemoryNotFound):
+        status = 404
+    elif isinstance(error, MemoryPermissionDenied):
+        status = 403
+    elif isinstance(error, MemoryInputError):
+        status = 422
+    return JSONResponse(status_code=status, content={"detail": detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, error: RequestValidationError):
+    if not request.url.path.startswith("/api/v1/personal"):
+        return await request_validation_exception_handler(request, error)
+
+    # Private validation must not echo document/credential values or produce an
+    # invalid UTF-8 response when JSON contains unpaired Unicode surrogates.
+    def safe(value):
+        return (
+            value.encode("utf-8", "backslashreplace").decode() if isinstance(value, str) else value
+        )
+
+    errors = error.errors()
     return JSONResponse(
-        status_code=404 if isinstance(error, MemoryNotFound) else 409,
-        content={"detail": detail},
+        status_code=422,
+        content={
+            "detail": [
+                {
+                    "loc": [safe(part) for part in item["loc"]],
+                    "msg": safe(item["msg"]),
+                    "type": item["type"],
+                }
+                for item in errors[:20]
+            ],
+            "errors_truncated": len(errors) > 20,
+        },
     )
 
 

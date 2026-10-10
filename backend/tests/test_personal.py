@@ -1,31 +1,9 @@
 from pathlib import Path
 
-import httpx
 import pytest
 
-from app.config import Settings, get_settings
 from app.main import app
 from app.memory import Entry, MemoryConflict, MemoryNotFound, Store
-
-
-@pytest.fixture
-async def personal(tmp_path):
-    knowledge = tmp_path / "public"
-    knowledge.mkdir()
-    config = Settings(
-        _env_file=None,
-        personal_enabled=True,
-        personal_token="t" * 40,
-        personal_data_dir=str(tmp_path / "private"),
-        knowledge_dir=str(knowledge),
-    )
-    app.dependency_overrides[get_settings] = lambda: config
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        yield client, config
-    app.dependency_overrides.clear()
-
 
 HEADERS = {"Authorization": "Bearer " + "t" * 40}
 
@@ -386,7 +364,7 @@ def test_legacy_workspace_migrates_once_without_inventing_history(tmp_path):
     db.edit("legacy", Entry(key="project", content="CurrentOrchid"), 1)
     reopened = Store(str(tmp_path))
     assert [r["change"] for r in reopened.revisions("legacy")] == ["baseline", "edited"]
-    assert reopened.export()["version"] == 2
+    assert reopened.export()["version"] == 3
 
 
 def test_revision_writes_roll_back_with_failed_supersession(tmp_path, monkeypatch):
@@ -456,7 +434,7 @@ async def test_revision_route_auth_export_and_delete(personal):
     assert response.headers["cache-control"] == "no-store"
     assert response.json()[0]["change"] == "created"
     exported = (await client.get("/api/v1/personal/export", headers=HEADERS)).json()
-    assert exported["version"] == 2
+    assert exported["version"] == 3
     assert exported["revisions"] == response.json()
     await client.post(f"/api/v1/personal/entries/{item['id']}/delete", headers=HEADERS)
     assert (await client.get(endpoint, headers=HEADERS)).status_code == 404
@@ -613,12 +591,12 @@ def test_concurrent_initialization_migrates_once_and_rejects_future_schema(tmp_p
     item = stores[0].add(Entry(key="project", content="SyntheticOrchid"))
     assert len(stores[-1].revisions(item["id"])) == 1
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
-        connection.execute("PRAGMA user_version=3")
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        connection.execute("PRAGMA user_version=4")
     with pytest.raises(ValueError, match="newer"):
         Store(str(tmp_path))
     with sqlite3.connect(stores[0].path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
         assert connection.execute("SELECT COUNT(*) FROM entries").fetchone()[0] == 1
 
 
