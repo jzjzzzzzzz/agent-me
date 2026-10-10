@@ -178,3 +178,48 @@ Malformed request schemas, unknown fields, invalid roles, and blank strings cont
 ## Provider failures
 
 Partial provider configuration makes `/ready` return `503` instead of silently changing answer mode. Provider timeouts, rejected requests, rate limits, invalid JSON, invalid completion shapes, and oversized answers return classified `502`/`503` errors. Upstream bodies, URLs, and credentials are never copied into client errors.
+
+## Private memory lifecycle
+
+The opt-in private API is separate from public chat and collaboration. Its complete route table,
+version-8 export format, revision preconditions, deletion boundaries, and independent Agent core
+are documented in [Private AI Twin](PERSONAL.md#typed-memory-contract--结构化记忆契约).
+No public endpoint reads the private database.
+
+
+Entity binding, declared confidence, belief states, validity/knowledge time and owner-reviewed retention
+are documented in [Structured identity and time](IDENTITY_TIME.md).
+
+
+## Grounded personal Agent
+
+Authenticated `/api/v1/personal/ask`, `/retrieve`, `/verify`, and `/identity/owner` contracts are
+documented in [Personal retrieval](PERSONAL_RETRIEVAL.md). This local path emits exact atomic
+source values and performs live verification; it does not automatically certify legacy provider prose.
+Public chat/collaboration remain separate and never access this private workspace.
+
+## Owner-approved local agency
+
+Authenticated `/api/v1/personal/agent`, `/tools/permissions`, `/actions`, `/tasks` and
+`/notes` implement typed know/recommend/act routing and real local tools. Plan creation
+never executes; exact owner approval and live data/permission validation are mandatory.
+See [local agency contracts](AGENCY.md) for complete routes, retry and rollback semantics.
+
+## Owner learning controls
+
+Authenticated `/api/v1/personal/learning/policy` and `/consolidation` routes configure
+learning boundaries and explicitly reviewed exact cross-record consolidation. See
+[learning control contracts](LEARNING_CONTROL.md) for full methods and preservation semantics.
+
+## Portable owner control and audit
+
+Authenticated `/api/v1/personal/portability`, `/audit`, revision-bound output/action/source
+erasure and `/workspace/purge` contracts are documented in [owner control](OWNER_CONTROL.md).
+Import requires an empty destination and the exact reviewed digest; historical grants/plans
+are inert data. Audit does not store request content, tokens, private paths or exception text.
+
+## Optional private provider disclosure
+
+`/api/v1/personal/chat` is local/extractive unless both workspace authorization and explicit
+`allow_provider: true` apply. `/disclosure/target` and `/disclosure/policy` expose owner target
+review and data scopes. See [disclosure contracts](DISCLOSURE.md); atomic ask remains provider-free.

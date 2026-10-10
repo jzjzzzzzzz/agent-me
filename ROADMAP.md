@@ -33,7 +33,60 @@ The repository currently provides:
 - deterministic evaluation fixtures; and
 - a runnable FastAPI + React reference application using fictional public examples.
 
-Current boundaries are equally important: conversations are not persisted, the knowledge source is not yet a structured identity store, continuous ingestion is not implemented, and the Verifier does not prove factual truth or semantic entailment.
+The opt-in single-owner private workspace additionally provides typed fact, preference,
+event, and decision records; server-controlled source links and timestamps; pending/confirmed
+review; transactional revision snapshots and same-key supersession; restore-as-candidate;
+optional stale-review preconditions; deletion of record snapshots; and snapshot-consistent
+version-8 export with learning provenance and forgetting digests. The memory core runs independently of HTTP and model providers, with a
+deterministic longitudinal evaluation suite. See [private workspace contracts](docs/PERSONAL.md).
+
+Current boundaries are equally important: public conversations are not persisted; private
+conversations are persisted for display but not re-injected as evidence. The knowledge source includes explicit entities and evidence-linked relationships;
+pre-migration revision history cannot be reconstructed,
+controlled document ingestion supports exact fields and literal paragraph candidates, not autonomous
+semantic inference. Alias resolution, declared valid/event time, epistemic states and previewed retention now exist.
+Unified hybrid retrieval, live atomic source-value verification and approved local tools now exist;
+portable import and operational audit now exist; longitudinal metrics and explicit provider/data disclosure now exist; final acceptance is tracked in the ledger; the Verifier does not prove factual truth or semantic entailment.
+
+
+Approved document, project, conversation, and event sources can additionally propose pending
+memories through the independent learning pipeline. It provides exact excerpts, canonical exact
+deduplication, conflict reporting, replayable runs, recoverable failure, revocation, and replay-aware
+forgetting. Structured sensitivity labels control context disclosure. A local owner CLI requires
+neither an HTTP server nor a model provider. See [learning contracts](docs/LEARNING.md) and the
+[full implementation acceptance ledger](docs/AGENT_IMPLEMENTATION.md) for evidence and gaps.
+
+
+Structured identity now supports seven entity kinds, ambiguity-aware aliases, reviewed relationships,
+workspace ownership, memory categories, optional declared confidence, and explicit belief states.
+Valid time is distinct from recorded knowledge time; context excludes expired, future and disputed
+claims by default. Retention is opt-in, previewed, stale-safe and atomic. See
+[identity/time contracts](docs/IDENTITY_TIME.md) for evidence and limits.
+
+
+The local personal Agent now answers through typed owner-scoped hybrid retrieval, explicit uncertainty,
+whole-record budgets and live atomic evidence checks. Public fictional examples cannot establish
+owner identity, preferences do not stand in for factual support, and temporal queries do not invent
+episode dates. See [personal retrieval contracts](docs/PERSONAL_RETRIEVAL.md).
+
+Typed know/recommend/act routing and three real local task/note tools now provide explicit
+per-tool data permissions, reviewed plans, live preconditions, inspectable outcomes, atomic effects,
+bounded retries and exact-output rollback. See [local agency contracts](docs/AGENCY.md).
+
+Learning policy now narrows source kinds, labels, candidate batches and keys, and supports stronger
+revision-bound review for sensitive/identity keys. Exact cross-record consolidation is explicitly
+previewed, digest-approved and history-preserving; it never accepts pending memories. See
+[learning control contracts](docs/LEARNING_CONTROL.md).
+
+Digest-reviewed portable import now preserves personal state while moving historical grants/approvals
+into inert archives. Content-free ingestion/access audit, independent-copy erasure and explicit SQLite
+purge are owner-controlled. See [owner control](docs/OWNER_CONTROL.md) and the
+[connected-tool threat model](docs/THREAT_MODEL.md).
+
+Default-off, per-request opt-in provider disclosure is target-bound and label/namespace/entity/record/
+document-scoped. Twenty longitudinal stages measure status, coverage, provenance, privacy, preference
+fidelity, declared-confidence calibration and correction cost. See
+[disclosure](docs/DISCLOSURE.md) and [longitudinal evaluation](docs/LONGITUDINAL_EVALUATION.md).
 
 ## Workstreams
 

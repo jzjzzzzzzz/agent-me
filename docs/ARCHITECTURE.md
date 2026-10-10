@@ -91,3 +91,86 @@ The public reference endpoints do not persist requests. The opt-in, token-protec
 [private workspace](PERSONAL.md) persists its own chats and confirmed memories in SQLite;
 public endpoints never read that database. Add a database only when the product needs
 persistence, and document the purpose, retention, and access controls before collecting data.
+
+## Independent personal-memory core
+
+`backend/app/memory.py` provides the local single-owner memory repository and typed records without
+FastAPI, provider, or configuration imports. It maintains pending, confirmed, and superseded states,
+transactional revision snapshots, optional optimistic review preconditions, and source-linked
+restore candidates. Only current confirmed records participate in context assembly.
+`backend/app/personal.py` adapts these operations to authenticated routes; `backend/app/main.py`
+translates domain errors into HTTP responses. Public Q&A and collaboration do not use this store.
+
+`scripts/evaluate_memory.py` exercises longitudinal changes with disposable synthetic data and no
+provider calls. See [memory contracts](PERSONAL.md#typed-memory-contract--结构化记忆契约) for migration,
+export, and deletion semantics. This is not yet entity resolution, semantic memory extraction,
+or automatic ingestion of ordinary conversation.
+
+
+## Controlled learning and local owner CLI
+
+`memory_models.py` owns immutable memory/source input contracts and typed persistence/export
+records. `learning.py` proposes literal fields or paragraph excerpts only from approved sources.
+Candidate writes and provenance are atomic; normalized digests deduplicate exact claims and
+prevent automatic resurrection after forgetting. Durable runs contain bounded stage outcomes,
+hashes, and record IDs, not original documents or private reasoning. Failure recovery reuses a run ID.
+
+`agent_cli.py` provides owner operations without loading configuration, HTTP modules, or providers.
+Private API routes are adapters to the same core. Structured sensitive records are withheld from
+context by default; owner opt-in is explicit. This does not classify private Markdown automatically.
+See [learning contracts](LEARNING.md) and the [acceptance ledger](AGENT_IMPLEMENTATION.md).
+
+
+## Identity and temporal repository semantics
+
+`identity.py` manages owner-reviewed typed identities, canonical aliases and current relationships linked
+to exact memory revisions. `memory_time.py` separates UTC validity/occurrence from learned time.
+`memory.py` selects epistemic state and applies current/historical privacy floors without resurrecting
+deleted snapshots. `retention.py` performs policy-based forgetting only through previewed, stale-safe,
+explicit atomic plans. All have native Core/API/CLI paths with no frontend addition.
+See [identity/time contracts](IDENTITY_TIME.md) and `scripts/evaluate_identity.py`.
+
+
+## Hybrid personal retrieval and literal atomic answers
+
+`retrieval_models.py` defines request/evidence/claim/result contracts. `retrieval.py` combines
+lexical overlap with controlled field synonyms, approved aliases, typed relationships and temporal
+selection. Privacy/sufficiency/conflict/budget checks precede output. `personal_agent.py` re-reads
+current authority, verifies exact atomic values, and composes local attributed answers without a
+provider. The Core/API/CLI paths share these components. See
+[personal retrieval](PERSONAL_RETRIEVAL.md) and `scripts/evaluate_retrieval.py`.
+
+## Owner-approved transactional tools
+
+`agent_runtime.py` separates knowledge, recommendations and action plans. `agency.py`
+registers only three typed local SQLite tools. Disabled-by-default per-tool permissions,
+data labels/entity scopes, digest-bound owner approval, and live source/revision checks
+precede effects. Effects and result events commit atomically; idempotency, bounded retry
+and exact-output undo are native Core/API/CLI behavior. No provider or source text grants
+execution authority. See [local agency](AGENCY.md) and `scripts/evaluate_agency.py`.
+
+## Explicit learning policy and consolidation
+
+`learning_policy.py` narrows accepted source types/labels/batch sizes/keys and can require
+revision-bound owner review for sensitive or identity-defining records. `consolidation.py`
+archives only fully equal records through fingerprinted, digest-reviewed atomic plans.
+History/origins remain attributable, pending records never become accepted implicitly,
+and live consumers reject stale revisions. See [learning controls](LEARNING_CONTROL.md).
+
+## Portability, operational audit and erasure
+
+`portability.py` validates typed snapshots and consistency/provenance, then atomically adopts
+data into an empty workspace only after exact digest review. Execution grants and plans
+become inert historical archives. `audit.py` stores bounded content-free operation metadata;
+core ingestion/retrieval and authenticated HTTP/CLI adapters use it. `owner_control.py`
+provides explicit revision-bound independent-copy erasure and all-SQLite purge. See
+[owner control](OWNER_CONTROL.md) and the [threat model](THREAT_MODEL.md).
+
+## Optional disclosure and longitudinal measurement
+
+`disclosure.py` owns default-off revisioned endpoint/model-bound data authorization independently
+of provider credentials. The private adapter additionally requires per-request opt-in and refreshes
+data before forwarding whole scoped records. Imports archive, rather than restore, that grant.
+`evaluate_longitudinal.py` measures actual atomic answers through twenty state transitions with
+independent fictional labels and explicit metric denominators. See [disclosure](DISCLOSURE.md)
+and [longitudinal evaluation](LONGITUDINAL_EVALUATION.md).

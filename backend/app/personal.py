@@ -3,43 +3,179 @@
 from __future__ import annotations
 
 import secrets
-import sqlite3
-from contextlib import contextmanager
-from datetime import UTC, datetime
-from pathlib import Path
-from typing import Literal
-from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
+from .agency import Agency
+from .agency_models import (
+    ActionEvent,
+    ActionPlan,
+    ApprovalInput,
+    NoteRecord,
+    PermissionInput,
+    PermissionUpdate,
+    TaskRecord,
+    ToolInvocation,
+    ToolName,
+    ToolPermission,
+)
+from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
+from .audit import AuditLog
 from .config import Settings, get_settings
+from .consolidation import ConsolidationManager
+from .disclosure import DisclosureManager, target_id
+from .identity import IdentityStore
 from .knowledge import Document, KnowledgeBase, Match
-from .provider import context_matches, generate_answer
+from .learning import LearningPipeline
+from .learning_policy import LearningPolicyManager
+from .memory import Store
+from .memory_models import (
+    CandidateOrigin,
+    Confirm,
+    ConsolidationFilter,
+    ConsolidationPlan,
+    EditEntry,
+    EntityInput,
+    EntityRecord,
+    EntityResolution,
+    EntityRevision,
+    Entry,
+    IdentityContext,
+    IngestionInput,
+    IngestionRun,
+    LearningPolicy,
+    LearningSettings,
+    MemoryExport,
+    MemoryMutation,
+    MemoryRecord,
+    MemoryRevision,
+    RegisteredSource,
+    RelationshipInput,
+    RelationshipRecord,
+    RelationshipRevision,
+    ResolveEntity,
+    RestoreMemory,
+    RetentionPlan,
+    RetentionPolicy,
+    RetentionPreview,
+    RetentionSettings,
+    SelectedMemory,
+    SourceInput,
+    StoredTurn,
+    TemporalQuery,
+    valid_unicode,
+)
+from .owner_control import OwnerControl
+from .owner_models import (
+    ActionDelete,
+    AuditEvent,
+    DisclosurePolicy,
+    DisclosureSettings,
+    ImportArchive,
+    ImportPreview,
+    ImportResult,
+    RevisionDelete,
+    SourceDelete,
+    WorkspacePurge,
+)
+from .personal_agent import ClaimVerifier, PersonalAgent
+from .portability import PortableMemory
+from .provider import context_matches, extractive_answer, generate_answer
+from .retention import RetentionManager
+from .retrieval import PersonalRetriever
+from .retrieval_models import (
+    AskRequest,
+    PersonalAnswer,
+    RetrievalResult,
+    VerifiedClaim,
+    VerifyRequest,
+)
 from .schemas import ChatTurn
-from .text import normalized_tokens
 
 router = APIRouter(prefix="/api/v1/personal", tags=["private twin"])
-
-_MAX_MATCHES = 20
-_MAX_PREFERENCE_MATCHES = 5
-
-
-class Entry(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-    kind: Literal["fact", "preference", "event", "decision"] = "fact"
-    key: str = Field(min_length=1, max_length=100)
-    content: str = Field(min_length=1, max_length=2000)
-
-
-class Confirm(BaseModel):
-    replace_ids: list[str] = Field(default_factory=list, max_length=100)
 
 
 class PersonalChat(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     question: str = Field(min_length=1, max_length=8000)
+    allow_sensitive: bool = Field(default=False, strict=True)
+    allow_provider: bool = Field(default=False, strict=True)
+    _unicode = field_validator("question")(valid_unicode)
+
+
+class SourceReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    approved: bool = Field(strict=True)
+    expected_revision: int | None = Field(default=None, ge=1, strict=True)
+
+
+class IdentityReview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    expected_revision: int = Field(ge=1, strict=True)
+
+
+class CreateEntity(EntityInput):
+    distinct: bool = Field(default=False, strict=True)
+
+
+class EditEntity(EntityInput):
+    expected_revision: int = Field(ge=1, strict=True)
+
+
+class ConfigureRetention(IdentityReview):
+    policy: RetentionPolicy
+
+
+class ConfigureLearning(IdentityReview):
+    policy: LearningPolicy
+
+
+class ConfigureDisclosure(IdentityReview):
+    policy: DisclosurePolicy
+
+
+class ReviewedDigest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class ImportPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    snapshot: dict = Field(max_length=40)
+
+
+class ImportApproval(ImportPayload):
+    digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+class OwnerBinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    entity_id: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+def personal_retriever(db: Store, config: Settings):
+    options = dict(
+        max_document_bytes=config.max_document_bytes,
+        max_documents=config.max_knowledge_documents,
+        max_corpus_bytes=config.max_knowledge_bytes,
+    )
+    return PersonalRetriever(
+        db,
+        documents={
+            "public": KnowledgeBase(config.knowledge_dir, **options),
+            "private": KnowledgeBase(str(db.root / "knowledge"), **options),
+        },
+    )
+
+
+def bounded_request(payload: AskRequest, config: Settings):
+    if len(payload.question) > config.max_question_chars:
+        raise HTTPException(413, "Question exceeds configured limit")
+    return payload.model_copy(
+        update={"max_context_chars": min(payload.max_context_chars, config.max_context_chars)}
+    )
 
 
 def authorize(
@@ -55,186 +191,400 @@ def authorize(
     return config
 
 
-class Store:
-    def __init__(self, directory: str):
-        self.root = Path(directory)
-        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
-        self.path = self.root / "twin.sqlite3"
-        if self.path.is_symlink():
-            raise ValueError("Database must not be a symbolic link")
-        with self.connect() as db:
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS entries (
-                    id TEXT PRIMARY KEY, kind TEXT NOT NULL, key TEXT NOT NULL,
-                    content TEXT NOT NULL, source TEXT NOT NULL, status TEXT NOT NULL,
-                    created_at TEXT NOT NULL, updated_at TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS turns (
-                    id TEXT PRIMARY KEY, role TEXT NOT NULL, content TEXT NOT NULL,
-                    created_at TEXT NOT NULL
-                );
-            """)
-        self.path.chmod(0o600)
+def store(request: Request, config: Settings = Depends(authorize)) -> Store:
+    db = Store(config.personal_data_dir)
+    request.state.personal_store = db
+    return db
 
-    @contextmanager
-    def connect(self):
-        db = sqlite3.connect(self.path, timeout=10)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA secure_delete=ON")
-        try:
-            with db:
-                yield db
-        finally:
-            db.close()
 
-    def entries(self):
-        with self.connect() as db:
-            return [dict(r) for r in db.execute("SELECT * FROM entries ORDER BY rowid")]
+@router.get("/disclosure/policy", response_model=DisclosureSettings)
+def disclosure_policy(db: Store = Depends(store)):
+    return DisclosureManager(db).settings()
 
-    def add(self, entry: Entry, source: str = "manual"):
-        now = datetime.now(UTC).isoformat()
-        item = dict(
-            id=uuid4().hex,
-            **entry.model_dump(),
-            source=source,
-            status="pending",
-            created_at=now,
-            updated_at=now,
+
+@router.get("/disclosure/target")
+def disclosure_target(config: Settings = Depends(authorize), db: Store = Depends(store)):
+    configured = config.provider_state == "openai-compatible"
+    return {
+        "configured": configured,
+        "target_id": target_id(config.llm_base_url, config.llm_model) if configured else None,
+    }
+
+
+@router.post("/disclosure/policy", response_model=DisclosureSettings)
+def configure_disclosure(
+    payload: ConfigureDisclosure, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    if payload.policy.enabled and (
+        config.provider_state != "openai-compatible"
+        or payload.policy.target_id != target_id(config.llm_base_url, config.llm_model)
+    ):
+        from .memory import MemoryPermissionDenied
+
+        raise MemoryPermissionDenied(
+            "Disclosure must name the currently configured provider target"
         )
-        with self.connect() as db:
-            db.execute(
-                "INSERT INTO entries VALUES (:id,:kind,:key,:content,:source,:status,"
-                ":created_at,:updated_at)",
-                item,
+    return DisclosureManager(db).configure(payload.policy, payload.expected_revision)
+
+
+@router.get("/audit", response_model=list[AuditEvent])
+def audit_events(limit: int = 100, db: Store = Depends(store)):
+    return AuditLog(db).events(limit)
+
+
+@router.post("/audit/clear")
+def clear_audit(db: Store = Depends(store)):
+    return AuditLog(db).clear()
+
+
+@router.post("/portability/preview", response_model=ImportPreview)
+def preview_import(payload: ImportPayload, db: Store = Depends(store)):
+    return PortableMemory(db).preview(payload.snapshot)
+
+
+@router.post("/portability/import", response_model=ImportResult)
+def import_snapshot(payload: ImportApproval, db: Store = Depends(store)):
+    return PortableMemory(db).apply(payload.snapshot, payload.digest)
+
+
+@router.get("/portability/archives", response_model=list[ImportArchive])
+def import_archives(db: Store = Depends(store)):
+    return OwnerControl(db).archives()
+
+
+@router.post("/portability/archives/{archive_id}/delete")
+def delete_import_archive(archive_id: str, db: Store = Depends(store)):
+    return OwnerControl(db).delete_archive(archive_id)
+
+
+@router.post("/tasks/{item_id}/delete")
+def delete_task(item_id: str, payload: RevisionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_output("tasks", item_id, payload.expected_revision)
+
+
+@router.post("/notes/{item_id}/delete")
+def delete_note(item_id: str, payload: RevisionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_output("notes", item_id, payload.expected_revision)
+
+
+@router.post("/actions/{item_id}/delete")
+def delete_action(item_id: str, payload: ActionDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_action(item_id, **payload.model_dump())
+
+
+@router.post("/sources/{source_id}/delete")
+def delete_source(source_id: str, payload: SourceDelete, db: Store = Depends(store)):
+    return OwnerControl(db).delete_source(source_id, **payload.model_dump())
+
+
+@router.post("/workspace/purge")
+def purge_workspace(payload: WorkspacePurge, db: Store = Depends(store)):
+    return OwnerControl(db).purge(payload)
+
+
+@router.get("/learning/policy", response_model=LearningSettings)
+def learning_policy(db: Store = Depends(store)):
+    return LearningPolicyManager(db).settings()
+
+
+@router.post("/learning/policy", response_model=LearningSettings)
+def configure_learning(payload: ConfigureLearning, db: Store = Depends(store)):
+    return LearningPolicyManager(db).configure(payload.policy, payload.expected_revision)
+
+
+@router.post("/consolidation/preview", response_model=ConsolidationPlan)
+def preview_consolidation(
+    payload: ConsolidationFilter = ConsolidationFilter(), db: Store = Depends(store)
+):
+    return ConsolidationManager(db).preview(payload)
+
+
+@router.get("/consolidation/plans", response_model=list[ConsolidationPlan])
+def consolidation_plans(db: Store = Depends(store)):
+    return ConsolidationManager(db).plans()
+
+
+@router.post("/consolidation/{plan_id}/apply", response_model=ConsolidationPlan)
+def apply_consolidation(plan_id: str, payload: ReviewedDigest, db: Store = Depends(store)):
+    return ConsolidationManager(db).apply(plan_id, payload.digest)
+
+
+@router.post("/agent", response_model=AgentOutcome)
+def route_agent(
+    payload: AgentIntent, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    if isinstance(payload.intent, KnowledgeIntent):
+        payload = AgentIntent(
+            intent=KnowledgeIntent(
+                kind="ask", request=bounded_request(payload.intent.request, config)
             )
-        return item
-
-    def edit(self, entry_id: str, entry: Entry):
-        with self.connect() as db:
-            cur = db.execute(
-                "UPDATE entries SET kind=?,key=?,content=?,status='pending',updated_at=? "
-                "WHERE id=?",
-                (entry.kind, entry.key, entry.content, datetime.now(UTC).isoformat(), entry_id),
-            )
-            if not cur.rowcount:
-                raise HTTPException(404, "Memory not found")
-        return {"status": "pending"}
-
-    def confirm(self, entry_id: str, replace_ids: list[str]):
-        with self.connect() as db:
-            db.execute("BEGIN IMMEDIATE")
-            item = db.execute("SELECT * FROM entries WHERE id=?", (entry_id,)).fetchone()
-            if not item:
-                raise HTTPException(404, "Memory not found")
-            conflicts = [
-                r[0]
-                for r in db.execute(
-                    "SELECT id FROM entries WHERE kind=? AND key=? "
-                    "AND status='confirmed' AND id!=?",
-                    (item["kind"], item["key"], entry_id),
-                )
-            ]
-            if set(conflicts) != set(replace_ids):
-                raise HTTPException(
-                    409,
-                    {
-                        "message": "Confirm replacement of conflicting memories",
-                        "conflict_ids": conflicts,
-                    },
-                )
-            for old_id in conflicts:
-                db.execute("DELETE FROM entries WHERE id=?", (old_id,))
-            db.execute(
-                "UPDATE entries SET status='confirmed',updated_at=? WHERE id=?",
-                (datetime.now(UTC).isoformat(), entry_id),
-            )
-        return {"status": "confirmed"}
-
-    def delete(self, entry_id: str):
-        with self.connect() as db:
-            db.execute("DELETE FROM entries WHERE id=?", (entry_id,))
-        return {"deleted": True}
-
-    def history(self):
-        with self.connect() as db:
-            rows = db.execute("SELECT * FROM turns ORDER BY rowid DESC LIMIT 100").fetchall()
-            return [dict(r) for r in reversed(rows)]
-
-    def clear_history(self):
-        with self.connect() as db:
-            db.execute("DELETE FROM turns")
-        return {"deleted": True}
-
-    def save_chat(self, question: str, answer: str):
-        turn_id = uuid4().hex
-        with self.connect() as db:
-            now = datetime.now(UTC).isoformat()
-            db.executemany(
-                "INSERT INTO turns VALUES (?,?,?,?)",
-                [(turn_id, "user", question, now), (uuid4().hex, "assistant", answer, now)],
-            )
-        # Explicit syntax only: do not silently infer personal facts from casual conversation.
-        for prefix in ("记住：", "记住:", "Remember:", "remember:"):
-            if question.startswith(prefix):
-                value = question[len(prefix) :].strip()
-                if value:
-                    self.add(
-                        Entry(
-                            kind="preference", key="conversation.preference", content=value[:2000]
-                        ),
-                        source=f"turn:{turn_id}",
-                    )
-                break
-
-    def context(self, question: str):
-        tokens = normalized_tokens(question)
-        preferences: list[Match] = []
-        facts: list[Match] = []
-        for item in self.entries():
-            if item["status"] != "confirmed":
-                continue
-            excerpt = f"{item['key']}: {item['content']}"
-            overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
-            # Preferences are always eligible, but do not outrank relevant factual evidence.
-            if overlap or item["kind"] == "preference":
-                doc = Document(title=item["key"], path=f"memory/{item['id']}", text=excerpt)
-                match = Match(document=doc, excerpt=excerpt, score=overlap)
-                (preferences if item["kind"] == "preference" else facts).append(match)
-        # Preferences get a reserved floor of the budget so a flood of matching facts
-        # cannot evict a confirmed preference; facts then fill the rest, and any budget
-        # facts don't use goes back to preferences. Only once confirmed preferences and
-        # relevant facts together exceed the total budget do the lowest-scoring
-        # preferences beyond the reserved floor get dropped.
-        preferences.sort(key=lambda m: m.score, reverse=True)
-        facts.sort(key=lambda m: m.score, reverse=True)
-        reserved = min(len(preferences), _MAX_PREFERENCE_MATCHES)
-        kept_facts = facts[: _MAX_MATCHES - reserved]
-        kept_preferences = preferences[: _MAX_MATCHES - len(kept_facts)]
-        return sorted(kept_preferences + kept_facts, key=lambda m: m.score, reverse=True)
+        )
+    return AgentRuntime(personal_retriever(db, config)).route(payload)
 
 
-def store(config: Settings = Depends(authorize)) -> Store:
-    return Store(config.personal_data_dir)
+@router.get("/tools/permissions", response_model=list[ToolPermission])
+def tool_permissions(db: Store = Depends(store)):
+    return Agency(db).permissions()
 
 
-@router.get("/entries")
-def entries(db: Store = Depends(store)):
-    return db.entries()
+@router.post("/tools/permissions/{name}", response_model=ToolPermission)
+def configure_tool(name: ToolName, payload: PermissionUpdate, db: Store = Depends(store)):
+    return Agency(db).configure(
+        name,
+        PermissionInput.model_validate(payload.model_dump(exclude={"expected_revision"})),
+        payload.expected_revision,
+    )
 
 
-@router.post("/entries")
+@router.get("/actions", response_model=list[ActionPlan])
+def action_plans(db: Store = Depends(store)):
+    return Agency(db).plans()
+
+
+@router.post("/actions", response_model=ActionPlan)
+def create_action(payload: ToolInvocation, db: Store = Depends(store)):
+    return Agency(db).plan(payload)
+
+
+@router.post("/actions/{plan_id}/approve", response_model=ActionPlan)
+def approve_action(plan_id: str, payload: ApprovalInput, db: Store = Depends(store)):
+    return Agency(db).approve(plan_id, payload.expected_revision, payload.digest)
+
+
+@router.post("/actions/{plan_id}/execute", response_model=ActionPlan)
+def execute_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).execute(plan_id)
+
+
+@router.post("/actions/{plan_id}/rollback", response_model=ActionPlan)
+def rollback_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).rollback(plan_id)
+
+
+@router.post("/actions/{plan_id}/cancel", response_model=ActionPlan)
+def cancel_action(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).cancel(plan_id)
+
+
+@router.get("/actions/{plan_id}/events", response_model=list[ActionEvent])
+def action_events(plan_id: str, db: Store = Depends(store)):
+    return Agency(db).events(plan_id)
+
+
+@router.get("/tasks", response_model=list[TaskRecord])
+def list_tasks(db: Store = Depends(store)):
+    return Agency(db).tasks()
+
+
+@router.get("/notes", response_model=list[NoteRecord])
+def list_notes(db: Store = Depends(store)):
+    return Agency(db).notes()
+
+
+@router.post("/ask", response_model=PersonalAnswer)
+def ask_personal(
+    payload: AskRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return PersonalAgent(personal_retriever(db, config)).ask(bounded_request(payload, config))
+
+
+@router.post("/retrieve", response_model=RetrievalResult)
+def retrieve_personal(
+    payload: AskRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return personal_retriever(db, config).retrieve(bounded_request(payload, config))
+
+
+@router.post("/verify", response_model=list[VerifiedClaim])
+def verify_personal(
+    payload: VerifyRequest, config: Settings = Depends(authorize), db: Store = Depends(store)
+):
+    return ClaimVerifier(personal_retriever(db, config)).verify(
+        bounded_request(payload.request, config), payload.claims
+    )
+
+
+@router.get("/identity/owner")
+def owner_identity(db: Store = Depends(store)):
+    return IdentityStore(db).owner()
+
+
+@router.post("/identity/owner")
+def bind_owner_identity(payload: OwnerBinding, db: Store = Depends(store)):
+    return IdentityStore(db).bind_owner(payload.entity_id)
+
+
+@router.get("/entries", response_model=list[MemoryRecord])
+def entries(include_superseded: bool = False, db: Store = Depends(store)):
+    # Existing clients remain an active-memory view. Archives are an explicit opt-in.
+    return db.entries(include_superseded=include_superseded)
+
+
+@router.post("/entries", response_model=MemoryRecord)
 def add(payload: Entry, db: Store = Depends(store)):
     return db.add(payload)
 
 
-@router.post("/entries/{entry_id}/edit")
-def edit(entry_id: str, payload: Entry, db: Store = Depends(store)):
-    return db.edit(entry_id, payload)
+@router.get("/entries/{entry_id}/history", response_model=list[MemoryRevision])
+def memory_history(entry_id: str, db: Store = Depends(store)):
+    return db.revisions(entry_id)
 
 
-@router.post("/entries/{entry_id}/confirm")
+@router.get("/entries/{entry_id}/origins", response_model=list[CandidateOrigin])
+def memory_origins(entry_id: str, db: Store = Depends(store)):
+    return LearningPipeline(db).origins(entry_id)
+
+
+@router.post("/memory/select", response_model=list[SelectedMemory])
+def select_memory(payload: TemporalQuery, db: Store = Depends(store)):
+    return db.select(payload)
+
+
+@router.get("/identity/entities", response_model=list[EntityRecord])
+def list_entities(db: Store = Depends(store)):
+    return IdentityStore(db).entities()
+
+
+@router.post("/identity/entities", response_model=EntityRecord)
+def create_entity(payload: CreateEntity, db: Store = Depends(store)):
+    return IdentityStore(db).add(
+        EntityInput.model_validate(payload.model_dump(exclude={"distinct"})),
+        distinct=payload.distinct,
+    )
+
+
+@router.post("/identity/entities/{entity_id}/edit", response_model=EntityRecord)
+def edit_entity(entity_id: str, payload: EditEntity, db: Store = Depends(store)):
+    return IdentityStore(db).edit(
+        entity_id,
+        EntityInput.model_validate(
+            payload.model_dump(exclude={"expected_revision"}, exclude_unset=True)
+        ),
+        payload.expected_revision,
+    )
+
+
+@router.post("/identity/entities/{entity_id}/confirm", response_model=EntityRecord)
+def confirm_entity(entity_id: str, payload: IdentityReview, db: Store = Depends(store)):
+    return IdentityStore(db).confirm(entity_id, payload.expected_revision)
+
+
+@router.get("/identity/entities/{entity_id}/history", response_model=list[EntityRevision])
+def entity_history(entity_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).history(entity_id)
+
+
+@router.post("/identity/entities/{entity_id}/delete")
+def delete_entity(entity_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).delete(entity_id)
+
+
+@router.post("/identity/resolve", response_model=EntityResolution)
+def resolve_entity(payload: ResolveEntity, db: Store = Depends(store)):
+    return IdentityStore(db).resolve(
+        payload.name, kind=payload.kind, allow_sensitive=payload.allow_sensitive
+    )
+
+
+@router.get("/identity/entities/{entity_id}/neighbours", response_model=IdentityContext)
+def entity_neighbours(entity_id: str, allow_sensitive: bool = False, db: Store = Depends(store)):
+    return IdentityStore(db).neighbours(entity_id, allow_sensitive=allow_sensitive)
+
+
+@router.get("/identity/relationships", response_model=list[RelationshipRecord])
+def list_relationships(db: Store = Depends(store)):
+    return IdentityStore(db).relationships()
+
+
+@router.post("/identity/relationships", response_model=RelationshipRecord)
+def create_relationship(payload: RelationshipInput, db: Store = Depends(store)):
+    return IdentityStore(db).relate(payload)
+
+
+@router.post("/identity/relationships/{relation_id}/confirm", response_model=RelationshipRecord)
+def confirm_relationship(relation_id: str, payload: IdentityReview, db: Store = Depends(store)):
+    return IdentityStore(db).confirm(relation_id, payload.expected_revision, relationship=True)
+
+
+@router.get(
+    "/identity/relationships/{relation_id}/history", response_model=list[RelationshipRevision]
+)
+def relationship_history(relation_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).history(relation_id, relationship=True)
+
+
+@router.post("/identity/relationships/{relation_id}/delete")
+def delete_relationship(relation_id: str, db: Store = Depends(store)):
+    return IdentityStore(db).delete(relation_id, relationship=True)
+
+
+@router.get("/retention/policy", response_model=RetentionSettings)
+def retention_policy(db: Store = Depends(store)):
+    return RetentionManager(db).settings()
+
+
+@router.post("/retention/policy", response_model=RetentionSettings)
+def configure_retention(payload: ConfigureRetention, db: Store = Depends(store)):
+    return RetentionManager(db).configure(payload.policy, payload.expected_revision)
+
+
+@router.post("/retention/preview", response_model=RetentionPlan)
+def preview_retention(payload: RetentionPreview, db: Store = Depends(store)):
+    return RetentionManager(db).preview(as_of=payload.as_of)
+
+
+@router.get("/retention/plans", response_model=list[RetentionPlan])
+def retention_plans(db: Store = Depends(store)):
+    return RetentionManager(db).plans()
+
+
+@router.post("/retention/plans/{plan_id}/apply", response_model=RetentionPlan)
+def apply_retention(plan_id: str, db: Store = Depends(store)):
+    return RetentionManager(db).apply(plan_id)
+
+
+@router.get("/learning/sources", response_model=list[RegisteredSource])
+def learning_sources(db: Store = Depends(store)):
+    return LearningPipeline(db).sources()
+
+
+@router.post("/learning/sources", response_model=RegisteredSource)
+def register_source(payload: SourceInput, db: Store = Depends(store)):
+    return LearningPipeline(db).register(payload)
+
+
+@router.post("/learning/sources/{source_id}/review", response_model=RegisteredSource)
+def review_source(source_id: str, payload: SourceReview, db: Store = Depends(store)):
+    return LearningPipeline(db).approve(
+        source_id, approved=payload.approved, expected_revision=payload.expected_revision
+    )
+
+
+@router.post("/learning/sources/{source_id}/ingest", response_model=IngestionRun)
+def ingest_source(source_id: str, payload: IngestionInput, db: Store = Depends(store)):
+    return LearningPipeline(db).ingest(source_id, payload)
+
+
+@router.get("/learning/runs", response_model=list[IngestionRun])
+def learning_runs(db: Store = Depends(store)):
+    return LearningPipeline(db).runs()
+
+
+@router.post("/entries/{entry_id}/restore", response_model=MemoryRecord)
+def restore(entry_id: str, payload: RestoreMemory, db: Store = Depends(store)):
+    return db.restore(entry_id, payload.revision, payload.expected_revision)
+
+
+@router.post("/entries/{entry_id}/edit", response_model=MemoryMutation)
+def edit(entry_id: str, payload: EditEntry, db: Store = Depends(store)):
+    return db.edit(entry_id, payload, payload.expected_revision)
+
+
+@router.post("/entries/{entry_id}/confirm", response_model=MemoryMutation)
 def confirm(entry_id: str, payload: Confirm, db: Store = Depends(store)):
-    return db.confirm(entry_id, payload.replace_ids)
+    return db.confirm(
+        entry_id, payload.replace_ids, payload.expected_revision, payload.replace_revisions
+    )
 
 
 @router.post("/entries/{entry_id}/delete")
@@ -242,7 +592,7 @@ def delete(entry_id: str, db: Store = Depends(store)):
     return db.delete(entry_id)
 
 
-@router.get("/history")
+@router.get("/history", response_model=list[StoredTurn])
 def history(db: Store = Depends(store)):
     return db.history()
 
@@ -252,11 +602,9 @@ def clear_history(db: Store = Depends(store)):
     return db.clear_history()
 
 
-@router.get("/export")
+@router.get("/export", response_model=MemoryExport)
 def export(db: Store = Depends(store)):
-    with db.connect() as connection:
-        turns = [dict(r) for r in connection.execute("SELECT * FROM turns ORDER BY rowid")]
-    return {"version": 1, "entries": db.entries(), "history": turns}
+    return db.export()
 
 
 @router.post("/chat")
@@ -265,6 +613,7 @@ async def chat(
 ):
     if len(payload.question) > config.max_question_chars:
         raise HTTPException(413, "Question exceeds configured limit")
+    workspace_owner = await run_in_threadpool(lambda: db.owner_id)
     knowledge = KnowledgeBase(
         config.knowledge_dir,
         max_document_bytes=config.max_document_bytes,
@@ -288,15 +637,49 @@ async def chat(
         )
         for m in local
     ]
-    private = await run_in_threadpool(db.context, payload.question)
+    private = await run_in_threadpool(
+        db.context, payload.question, allow_sensitive=payload.allow_sensitive
+    )
     matches = sorted(private + local + public, key=lambda m: m.score, reverse=True)
     # Deliberately don't re-inject stored conversations: deleted memories must not return
     # through stale chat history. History is persisted for display, not factual grounding.
     history: list[ChatTurn] = []
-    answer, mode = await generate_answer(
-        question=payload.question, history=history, matches=matches, settings=config
+    if payload.allow_provider:
+        provider_config = config.model_copy(deep=True)
+        if provider_config.provider_state != "openai-compatible":
+            from .memory import MemoryPermissionDenied
+
+            raise MemoryPermissionDenied("A configured provider is required for disclosure")
+        # Refresh document evidence; memory values/subjects/privacy are re-read by the policy gate.
+        public = await run_in_threadpool(knowledge.search, payload.question)
+        local = await run_in_threadpool(local_knowledge.search, payload.question)
+        local = [
+            Match(
+                Document(m.document.title, "private/knowledge/" + m.document.path, m.document.text),
+                m.excerpt,
+                m.score,
+            )
+            for m in local
+        ]
+        permitted = await run_in_threadpool(
+            DisclosureManager(db).authorize,
+            target_id(provider_config.llm_base_url, provider_config.llm_model),
+            [("memory", m) for m in private]
+            + [("private", m) for m in local]
+            + [("public", m) for m in public],
+            allow_sensitive=payload.allow_sensitive,
+        )
+        matches = context_matches(
+            sorted(permitted, key=lambda m: m.score, reverse=True), config.max_context_chars
+        )
+        answer, mode = await generate_answer(
+            question=payload.question, history=history, matches=matches, settings=provider_config
+        )
+    else:
+        answer, mode = extractive_answer(matches), "extractive"
+    await run_in_threadpool(
+        db.save_chat, payload.question, answer, expected_owner_id=workspace_owner
     )
-    await run_in_threadpool(db.save_chat, payload.question, answer)
     response_matches = (
         context_matches(matches, config.max_context_chars)
         if mode == "openai-compatible"

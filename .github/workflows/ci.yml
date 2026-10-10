@@ -31,6 +31,20 @@ jobs:
       - run: .venv/bin/ruff check backend scripts
       - run: .venv/bin/ruff format --check backend scripts
       - run: .venv/bin/pytest backend/tests
+      - name: Evaluate longitudinal personal memory
+        run: .venv/bin/python scripts/evaluate_memory.py
+      - name: Evaluate controlled personal learning
+        run: .venv/bin/python scripts/evaluate_learning.py
+      - name: Evaluate identity, temporal memory and retention
+        run: .venv/bin/python scripts/evaluate_identity.py
+      - name: Evaluate personal retrieval and live claims
+        run: .venv/bin/python scripts/evaluate_retrieval.py
+      - name: Evaluate bounded local agency
+        run: .venv/bin/python scripts/evaluate_agency.py
+      - name: Evaluate portable owner control and audit
+        run: .venv/bin/python scripts/evaluate_owner_control.py
+      - name: Evaluate longitudinal metrics
+        run: .venv/bin/python scripts/evaluate_longitudinal.py --json
       - name: Publish baseline evaluation summary
         run: |
           set -o pipefail
@@ -60,6 +74,13 @@ jobs:
       - run: uv sync --project backend --locked --extra dev --python 3.11
         env: { UV_PROJECT_ENVIRONMENT: "${{ github.workspace }}/.venv" }
       - run: .venv/bin/pytest backend/tests
+      - run: .venv/bin/python scripts/evaluate_memory.py
+      - run: .venv/bin/python scripts/evaluate_learning.py
+      - run: .venv/bin/python scripts/evaluate_identity.py
+      - run: .venv/bin/python scripts/evaluate_retrieval.py
+      - run: .venv/bin/python scripts/evaluate_agency.py
+      - run: .venv/bin/python scripts/evaluate_owner_control.py
+      - run: .venv/bin/python scripts/evaluate_longitudinal.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --json
       - run: .venv/bin/python scripts/evaluate_collaboration.py --workflow verified --json
 
@@ -109,6 +130,13 @@ jobs:
           .\.venv\Scripts\ruff.exe check backend scripts
           .\.venv\Scripts\ruff.exe format --check backend scripts
           .\.venv\Scripts\pytest.exe backend\tests
+          .\.venv\Scripts\python.exe scripts\evaluate_memory.py
+          .\.venv\Scripts\python.exe scripts\evaluate_learning.py
+          .\.venv\Scripts\python.exe scripts\evaluate_identity.py
+          .\.venv\Scripts\python.exe scripts\evaluate_retrieval.py
+          .\.venv\Scripts\python.exe scripts\evaluate_agency.py
+          .\.venv\Scripts\python.exe scripts\evaluate_owner_control.py
+          .\.venv\Scripts\python.exe scripts\evaluate_longitudinal.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --json
           .\.venv\Scripts\python.exe scripts\evaluate_collaboration.py --workflow verified --json
           .\.venv\Scripts\python.exe scripts\check_docs.py
