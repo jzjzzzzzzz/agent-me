@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from app.knowledge import KnowledgeBase, KnowledgeLoadError, _excerpt
+from app.text import normalized_tokens
 
 
 def test_documents_are_relative_sorted_and_utf8(tmp_path: Path) -> None:
@@ -198,6 +199,37 @@ def test_long_excerpt_preserves_unicode_match(tmp_path: Path) -> None:
 
     assert len(match.excerpt) <= 1_000
     assert "Évaluation" in match.excerpt
+
+
+@pytest.mark.parametrize("term", ["Évaluation", "E\u0301valuation"])
+@pytest.mark.parametrize("question", ["évaluation", "e\u0301valuation"])
+def test_long_excerpt_keeps_composed_and_decomposed_matches(
+    tmp_path: Path, term: str, question: str
+) -> None:
+    paragraph = "filler " * 170 + term + " trailing" * 170
+    (tmp_path / "unicode.md").write_text(paragraph, encoding="utf-8")
+
+    matches = KnowledgeBase(str(tmp_path)).search(question)
+
+    assert len(matches) == 1
+    assert matches[0].score == 1.0
+    assert len(matches[0].excerpt) <= 1_000
+    assert term in matches[0].excerpt
+    assert matches[0].excerpt in paragraph
+    assert normalized_tokens(question) <= normalized_tokens(matches[0].excerpt)
+
+
+@pytest.mark.parametrize("term", ["检索", "E\u0301valuation"])
+def test_long_excerpt_keeps_matches_inside_unspaced_han_text(tmp_path: Path, term: str) -> None:
+    paragraph = "填" * 1_100 + term + "充" * 1_100
+    (tmp_path / "han.md").write_text(paragraph, encoding="utf-8")
+
+    match = KnowledgeBase(str(tmp_path)).search(term)[0]
+
+    assert len(match.excerpt) <= 1_000
+    assert term in match.excerpt
+    assert match.excerpt in paragraph
+    assert normalized_tokens(term) <= normalized_tokens(match.excerpt)
 
 
 def test_excerpt_word_boundary_adjustment_does_not_drop_a_match() -> None:

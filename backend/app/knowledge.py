@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from threading import RLock
 
-from .text import normalized_tokens
+from .text import normalized_tokens, token_spans
 
 _ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)(?:\s+#+)?$")
 _MIN_QUERY_COVERAGE = 0.75
@@ -91,11 +91,11 @@ def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
 
     # Match the same word/Han token boundaries and normalization as search. Keep
     # original-text offsets so excerpts remain readable and preserve Unicode.
-    token_pattern = re.compile(r"[\w\u3400-\u9fff]+", re.UNICODE)
-    hits: list[tuple[int, int]] = []
-    for match in token_pattern.finditer(paragraph):
-        if normalized_tokens(match.group()) & query:
-            hits.append(match.span())
+    hits = [
+        (start, end)
+        for start, end in token_spans(paragraph)
+        if normalized_tokens(paragraph[start:end]) & query
+    ]
     if not hits:
         return paragraph[:limit]
 
