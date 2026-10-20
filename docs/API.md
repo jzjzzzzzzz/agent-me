@@ -109,6 +109,19 @@ When retrieval finds no evidence, `grounded` is `false`, the critic outcome is `
 writer returns the fixed insufficient-evidence message with zero citations. In verified mode, the
 verifier records that this safe fallback satisfies the zero-citation invariant.
 
+## Cancel a single browser request
+
+While **Ask** is running in standard, baseline collaboration, or verified collaboration mode,
+**Cancel request** aborts that request's browser fetch and immediately restores the form. The
+button supports keyboard activation and returns focus to the question, which remains editable
+for a retry. A localized cancellation status replaces the generic request-failed alert; genuine
+network and API failures still use the normal error path. Leaving/unmounting the interface also
+aborts the active request, and late responses cannot overwrite a newer run.
+
+This is client-side cancellation only: it does not guarantee that backend work or an external
+provider has stopped, undo data already forwarded, or introduce a durable job-cancellation API.
+The separate **Compare workflows** action is unchanged and is not covered by this cancel button.
+
 ## Compare workflows in the browser
 
 **Compare workflows** is a separate action, not a fourth mode. It submits two requests to

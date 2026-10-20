@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "./App";
 import { downloadCollaborationRun } from "./exportRun";
 import type { CollaborationResponse } from "./api";
+import baseline from "./__fixtures__/collaboration/baseline.json";
+import verified from "./__fixtures__/collaboration/verified.json";
+import { messages, supportedLocales } from "./i18n";
 
 afterEach(() => {
   cleanup();
@@ -113,6 +116,175 @@ function routeFetch(chatResponse: object) {
       : Promise.resolve({ ok: true, json: async () => chatResponse }),
   );
 }
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+const cancellableWorkflows = [
+  {
+    mode: "standard",
+    endpoint: "/api/v1/chat",
+    payload: { answer: "Retried chat answer", mode: "extractive", sources: [] },
+  },
+  { mode: "collaboration", endpoint: "/api/v1/collaborate", payload: baseline },
+  { mode: "verified", endpoint: "/api/v1/collaborate", payload: verified },
+] as const;
+
+it.each(cancellableWorkflows)("cancels $mode once by keyboard and permits a successful retry", async ({ mode, endpoint, payload }) => {
+  window.history.replaceState(null, "", `/?workflow=${mode}`);
+  const abort = vi.spyOn(AbortController.prototype, "abort");
+  let signal!: AbortSignal;
+  let calls = 0;
+  const fetcher = vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    calls += 1;
+    if (calls > 1) return Promise.resolve({ ok: true, json: async () => payload });
+    signal = init?.signal as AbortSignal;
+    return new Promise((_resolve, reject) => {
+      signal?.addEventListener("abort", () => reject(new DOMException("Cancelled", "AbortError")), { once: true });
+    });
+  });
+  vi.stubGlobal("fetch", fetcher);
+  const { unmount } = render(<App />);
+  const user = userEvent.setup();
+  const input = screen.getByLabelText(/ask the example/i);
+  expect(screen.queryByRole("button", { name: "Cancel request" })).not.toBeInTheDocument();
+  await user.type(input, "Synthetic question");
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+
+  expect(signal).toBeInstanceOf(AbortSignal);
+  expect(signal.aborted).toBe(false);
+  expect(fetcher).toHaveBeenLastCalledWith(expect.stringContaining(endpoint), expect.objectContaining({ signal }));
+  expect(screen.getByRole("button", { name: "Searching…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Compare workflows" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: "Standard Q&A" })).toBeDisabled();
+  // Programmatic or rapid submits must not bypass the disabled button.
+  fireEvent.submit(input.closest("form")!);
+  expect(calls).toBe(1);
+
+  input.focus();
+  await user.tab();
+  const cancel = screen.getByRole("button", { name: "Cancel request" });
+  expect(cancel).toHaveFocus();
+  await user.keyboard("{Enter}");
+
+  expect(signal.aborted).toBe(true);
+  expect(abort).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent(messages.en.requestCancelled);
+  expect(screen.queryByRole("button", { name: "Cancel request" })).not.toBeInTheDocument();
+  expect(input).toHaveFocus();
+  expect(input).toHaveValue("Synthetic question");
+  expect(input.closest("form")).toHaveAttribute("aria-busy", "false");
+  expect(screen.getByRole("button", { name: "Ask" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Compare workflows" })).toBeEnabled();
+
+  await user.click(screen.getByRole("button", { name: "Ask" }));
+  expect(await screen.findByText((_content, element) => element?.textContent === payload.answer, { selector: ".answer > p" })).toBeInTheDocument();
+  expect(calls).toBe(2);
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  unmount();
+  expect(abort.mock.contexts.filter((controller) => controller instanceof AbortController && controller.signal === signal)).toHaveLength(1);
+});
+
+it.each(cancellableWorkflows)("aborts $mode on unmount without reporting a request failure", async ({ mode }) => {
+  window.history.replaceState(null, "", `/?workflow=${mode}`);
+  const abort = vi.spyOn(AbortController.prototype, "abort");
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  let signal!: AbortSignal;
+  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    signal = init?.signal as AbortSignal;
+    return new Promise((_resolve, reject) => {
+      signal?.addEventListener("abort", () => reject(new DOMException("Unmounted", "AbortError")), { once: true });
+    });
+  }));
+  const { unmount } = render(<App />);
+  fireEvent.change(screen.getByLabelText(/ask the example/i), { target: { value: "Synthetic question" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await act(async () => unmount());
+  expect(signal.aborted).toBe(true);
+  expect(abort.mock.contexts.filter((controller) => controller instanceof AbortController && controller.signal === signal)).toHaveLength(1);
+  expect(consoleError).not.toHaveBeenCalled();
+});
+
+it.each(["success", "network error", "API error"])("ignores late %s from a cancelled request while a retry is pending", async (outcome) => {
+  const first = deferred<Response>();
+  const retry = deferred<Response>();
+  let calls = 0;
+  vi.stubGlobal("fetch", vi.fn((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    calls += 1;
+    // Deliberately ignore abort to model a late response/body completion.
+    return calls === 1 ? first.promise : retry.promise;
+  }));
+  render(<App />);
+  fireEvent.change(screen.getByLabelText(/ask the example/i), { target: { value: "Synthetic question" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel request" }));
+  expect(screen.getByRole("button", { name: "Ask" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  await act(async () => {
+    if (outcome === "network error") first.reject(new Error("Late network failure"));
+    else first.resolve(new Response(JSON.stringify(outcome === "API error"
+      ? { detail: "Late API failure" }
+      : { answer: "Stale answer", mode: "extractive", sources: [] }), { status: outcome === "API error" ? 503 : 200 }));
+  });
+  expect(screen.queryByText("Stale answer")).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Searching…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Cancel request" })).toBeEnabled();
+  expect(calls).toBe(2);
+  await act(async () => retry.resolve(new Response(JSON.stringify({ answer: "Fresh answer", mode: "extractive", sources: [] }))));
+  expect(screen.getByText("Fresh answer", { selector: ".answer > p" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ask" })).toBeEnabled();
+});
+
+it.each(supportedLocales)("localizes active cancellation and its status in $code", async ({ code }) => {
+  vi.stubGlobal("fetch", vi.fn((url: string) => url.endsWith("/api/v1/profile")
+    ? Promise.resolve(profileResponse) : new Promise(() => undefined)));
+  render(<App />);
+  fireEvent.change(screen.getByLabelText(/ask the example/i), { target: { value: "Synthetic question" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Language" }), { target: { value: code } });
+  fireEvent.click(screen.getByRole("button", { name: messages[code].cancelRequest }));
+  expect(screen.getByRole("status")).toHaveTextContent(messages[code].requestCancelled);
+  expect(screen.getByRole("button", { name: messages[code].ask })).toBeEnabled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it.each(cancellableWorkflows)("preserves genuine network and structured errors in $mode", async ({ mode }) => {
+  window.history.replaceState(null, "", `/?workflow=${mode}`);
+  let calls = 0;
+  vi.stubGlobal("fetch", vi.fn((url: string) => {
+    if (url.endsWith("/api/v1/profile")) return Promise.resolve(profileResponse);
+    calls += 1;
+    if (calls === 1) return Promise.reject(new Error("Network failure"));
+    // An AbortError without our signal being aborted is not an intentional cancellation.
+    if (calls === 2) return Promise.reject(new DOMException("Unexpected failure", "AbortError"));
+    return Promise.resolve(new Response(JSON.stringify({ detail: "Synthetic API error" }), { status: 503 }));
+  }));
+  render(<App />);
+  fireEvent.change(screen.getByLabelText(/ask the example/i), { target: { value: "Synthetic question" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed");
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Ask" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed: Synthetic API error");
+  expect(screen.queryByRole("button", { name: "Cancel request" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Ask" })).toBeEnabled();
+});
 
 beforeEach(() => {
   window.localStorage.clear();

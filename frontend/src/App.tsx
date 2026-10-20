@@ -37,6 +37,9 @@ export function App() {
   const [result, setResult] = useState<ChatResponse | CollaborationResponse | null>(null);
   const [error, setError] = useState<RequestError | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const requestController = useRef<AbortController | null>(null);
+  const questionInput = useRef<HTMLTextAreaElement | null>(null);
   const [comparison, setComparison] = useState<ComparisonState | null>(null);
   const [comparing, setComparing] = useState(false);
   const comparisonController = useRef<AbortController | null>(null);
@@ -63,7 +66,12 @@ export function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  useEffect(() => () => comparisonController.current?.abort(), []);
+  useEffect(() => () => {
+    const controller = requestController.current;
+    requestController.current = null;
+    controller?.abort();
+    comparisonController.current?.abort();
+  }, []);
 
   function selectWorkflow(mode: WorkflowMode) {
     setWorkflowMode(mode);
@@ -96,35 +104,57 @@ export function App() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!question.trim() || busy) return;
+    if (!question.trim() || requestController.current || comparisonController.current) return;
 
+    const controller = new AbortController();
+    requestController.current = controller;
     setLoading(true);
+    setCancelled(false);
     setError(null);
     setResult(null);
     setComparison(null);
     try {
-      setResult(
-        workflowMode === "standard"
-          ? await ask(question.trim())
-          : await collaborate(
-              question.trim(),
-              workflowMode === "verified" ? "verified" : "baseline",
-            ),
-      );
+      const response = workflowMode === "standard"
+        ? await ask(question.trim(), controller.signal)
+        : await collaborate(
+            question.trim(),
+            workflowMode === "verified" ? "verified" : "baseline",
+            controller.signal,
+          );
+      if (requestController.current === controller && !controller.signal.aborted) {
+        setResult(response);
+      }
     } catch (reason) {
-      const detail = reason instanceof ApiError ? reason.message : "";
-      setError({ detail: detail || null });
+      if (requestController.current === controller && !controller.signal.aborted) {
+        const detail = reason instanceof ApiError ? reason.message : "";
+        setError({ detail: detail || null });
+      }
     } finally {
-      setLoading(false);
+      // A cancelled/unmounted request must not change the state of a newer run.
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setLoading(false);
+      }
     }
+  }
+
+  function cancelRequest() {
+    const controller = requestController.current;
+    if (!controller) return;
+    requestController.current = null;
+    controller.abort();
+    setLoading(false);
+    setCancelled(true);
+    questionInput.current?.focus();
   }
 
   async function compare(questionToCompare: string) {
     const submittedQuestion = questionToCompare.trim();
-    if (!submittedQuestion || loading || comparisonController.current) return;
+    if (!submittedQuestion || requestController.current || comparisonController.current) return;
     const controller = new AbortController();
     comparisonController.current = controller;
     setComparing(true);
+    setCancelled(false);
     setResult(null);
     setError(null);
     setComparison({
@@ -237,6 +267,7 @@ export function App() {
         <div className="ask-row">
           <textarea
             id="question"
+            ref={questionInput}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             placeholder={text.placeholder}
@@ -261,6 +292,14 @@ export function App() {
           <p id="compare-help" className="workflow-hint">{text.compareHelp}</p>
         </div>
       </form>
+
+      {/* Keep cancellation accessible outside the form's aria-busy region. */}
+      {(loading || cancelled) && (
+        <div className="request-cancellation">
+          {loading && <button type="button" onClick={cancelRequest}>{text.cancelRequest}</button>}
+          {cancelled && <p role="status">{text.requestCancelled}</p>}
+        </div>
+      )}
 
       {error && (
         <p role="alert" className="error">

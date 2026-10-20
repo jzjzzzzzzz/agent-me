@@ -23,6 +23,8 @@ export type Messages = {
   formLabel: string;
   placeholder: string;
   searching: string;
+  cancelRequest: string;
+  requestCancelled: string;
   ask: string;
   answer: string;
   groundingSources: string;
@@ -105,6 +107,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "Ask the example knowledge base",
     placeholder: "How does the example agent plan a project?",
     searching: "Searching…",
+    cancelRequest: "Cancel request",
+    requestCancelled: "Request cancelled. You can edit your question and try again.",
     ask: "Ask",
     answer: "Answer",
     groundingSources: "Grounding sources",
@@ -173,6 +177,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "向示例知识库提问",
     placeholder: "示例 Agent 如何规划一个项目？",
     searching: "正在检索…",
+    cancelRequest: "取消请求",
+    requestCancelled: "请求已取消。你可以编辑问题后重试。",
     ask: "提问",
     answer: "回答",
     groundingSources: "依据来源",
@@ -235,6 +241,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "向範例知識庫提問",
     placeholder: "範例 Agent 如何規劃一個專案？",
     searching: "正在搜尋…",
+    cancelRequest: "取消請求",
+    requestCancelled: "請求已取消。你可以編輯問題後重試。",
     ask: "提問",
     answer: "回答",
     groundingSources: "依據來源",
@@ -297,6 +305,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "サンプル知識ベースに質問",
     placeholder: "サンプルエージェントはプロジェクトをどう計画しますか？",
     searching: "検索中…",
+    cancelRequest: "リクエストをキャンセル",
+    requestCancelled: "リクエストをキャンセルしました。質問を編集して再試行できます。",
     ask: "質問する",
     answer: "回答",
     groundingSources: "根拠となるソース",
@@ -365,6 +375,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "예제 지식 베이스에 질문하기",
     placeholder: "예제 에이전트는 프로젝트를 어떻게 계획하나요?",
     searching: "검색 중…",
+    cancelRequest: "요청 취소",
+    requestCancelled: "요청이 취소되었습니다. 질문을 수정한 후 다시 시도할 수 있습니다.",
     ask: "질문하기",
     answer: "답변",
     groundingSources: "근거 출처",
@@ -432,6 +444,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "Pregunta a la base de conocimiento de ejemplo",
     placeholder: "¿Cómo planifica un proyecto el agente de ejemplo?",
     searching: "Buscando…",
+    cancelRequest: "Cancelar solicitud",
+    requestCancelled: "Solicitud cancelada. Puedes editar tu pregunta e intentarlo de nuevo.",
     ask: "Preguntar",
     answer: "Respuesta",
     groundingSources: "Fuentes de respaldo",
@@ -500,6 +514,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "Interroger la base de connaissances d'exemple",
     placeholder: "Comment l'agent d'exemple planifie-t-il un projet ?",
     searching: "Recherche…",
+    cancelRequest: "Annuler la requête",
+    requestCancelled: "Requête annulée. Vous pouvez modifier votre question et réessayer.",
     ask: "Interroger",
     answer: "Réponse",
     groundingSources: "Sources de référence",
@@ -568,6 +584,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "Die Beispiel-Wissensbasis fragen",
     placeholder: "Wie plant der Beispiel-Agent ein Projekt?",
     searching: "Suche läuft…",
+    cancelRequest: "Anfrage abbrechen",
+    requestCancelled: "Anfrage abgebrochen. Du kannst deine Frage bearbeiten und es erneut versuchen.",
     ask: "Fragen",
     answer: "Antwort",
     groundingSources: "Belegquellen",
@@ -636,6 +654,8 @@ export const messages: Record<Locale, Messages> = {
     formLabel: "Pergunte à base de conhecimento de exemplo",
     placeholder: "Como o agente de exemplo planeja um projeto?",
     searching: "Pesquisando…",
+    cancelRequest: "Cancelar solicitação",
+    requestCancelled: "Solicitação cancelada. Você pode editar sua pergunta e tentar novamente.",
     ask: "Perguntar",
     answer: "Resposta",
     groundingSources: "Fontes de referência",
