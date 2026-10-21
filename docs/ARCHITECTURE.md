@@ -30,6 +30,9 @@ and returns up to four sources that meet the default `0.75` threshold. If all pr
 present, the service calls the provider's `/chat/completions` route using a grounded system message.
 Otherwise it returns the highest-ranked excerpt.
 
+Source titles use the first ATX H1 outside backtick or tilde fenced code blocks, falling back to
+the filename when none exists. Fenced code remains searchable; this rule only affects title metadata.
+
 Tokenization applies Unicode NFKC normalization followed by case folding. Unicode letters and
 numbers remain word tokens, while Han characters remain individual tokens to preserve the
 reference implementation's deterministic CJK behavior. Retrieval scoring and collaboration coverage metrics share

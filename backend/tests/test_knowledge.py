@@ -395,3 +395,51 @@ def test_title_extraction_from_atx_h1() -> None:
     assert _title(Path("fallback.md"), "## H2 is ignored\n# Valid H1") == "Valid H1"
     assert _title(Path("fallback.md"), "    # Four spaces is not H1\n# Valid H1") == "Valid H1"
     assert _title(Path("fallback.md"), "No heading") == "Fallback"
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~", "````", "~~~~"])
+@pytest.mark.parametrize("indent", ["", "   "])
+def test_document_title_ignores_fenced_code(tmp_path: Path, fence: str, indent: str) -> None:
+    (tmp_path / "profile.md").write_text(
+        f"{indent}{fence}sh\n# install dependencies\n\nnpm ci\n"
+        f"{indent}{fence}\n\n# Developer Profile\n\nPython prototypes.",
+        encoding="utf-8",
+    )
+
+    knowledge = KnowledgeBase(str(tmp_path))
+
+    assert knowledge.documents()[0].title == "Developer Profile"
+    assert knowledge.search("Python prototypes")[0].document.title == "Developer Profile"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "```sh\n# comment\n```",  # Only apparent H1 is fenced.
+        "~~~sh\n# comment",  # An unclosed fence extends through the document.
+        "````sh\n```\n# comment\n````",  # A shorter fence cannot close the block.
+        "~~~sh\n```\n# comment\n~~~",  # The marker type must match.
+        "```sh\n``` trailing text\n# comment\n```",  # Closing fences cannot have info strings.
+        "~~~sh\n\n# comment\n\n~~~",  # Blank lines do not end the code block.
+    ],
+)
+def test_title_falls_back_when_h1_is_only_inside_fenced_code(text: str) -> None:
+    from app.knowledge import _title
+
+    assert _title(Path("fallback-name.md"), text) == "Fallback Name"
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~"])
+def test_title_accepts_longer_closing_fences_with_trailing_whitespace(fence: str) -> None:
+    from app.knowledge import _title
+
+    text = f"{fence}sh\n# comment\n{fence * 2} \t\n# Real title"
+
+    assert _title(Path("fallback.md"), text) == "Real title"
+
+
+@pytest.mark.parametrize("opening", ["    ```sh", "    ~~~sh", "```invalid`info"])
+def test_non_fence_lines_do_not_hide_a_following_h1(opening: str) -> None:
+    from app.knowledge import _title
+
+    assert _title(Path("fallback.md"), f"{opening}\n# Real title") == "Real title"

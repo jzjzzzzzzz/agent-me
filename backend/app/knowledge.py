@@ -130,10 +130,26 @@ def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
 
 
 _H1_HEADING = re.compile(r"^\s{0,3}#\s+(.*?)(?:\s+#+)?\s*$")
+_CODE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 
 
 def _title(path: Path, text: str) -> str:
+    fence_marker = ""
     for line in text.splitlines():
+        fence = _CODE_FENCE.match(line)
+        if fence_marker:
+            # A closing fence must match the opening type and be at least as long.
+            if (
+                fence
+                and fence.group(1)[0] == fence_marker[0]
+                and len(fence.group(1)) >= len(fence_marker)
+                and not fence.group(2).strip(" \t")
+            ):
+                fence_marker = ""
+            continue
+        if fence and (fence.group(1)[0] == "~" or "`" not in fence.group(2)):
+            fence_marker = fence.group(1)
+            continue
         match = _H1_HEADING.match(line)
         if match:
             return match.group(1).strip()
