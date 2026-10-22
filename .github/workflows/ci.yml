@@ -106,7 +106,9 @@ jobs:
   browser-e2e:
     name: Owner browser acceptance
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Playwright's OS dependencies can take over 9 minutes on a slow APT mirror.
+    # Keep time for the full browser suite after installation finishes.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
