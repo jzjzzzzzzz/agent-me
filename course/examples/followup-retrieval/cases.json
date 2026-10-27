@@ -1,0 +1,328 @@
+[
+  {
+    "id": "matplotlib-en/history_has_answer",
+    "family": "matplotlib-en",
+    "condition": "history_has_answer",
+    "language": "en",
+    "question": "Why did I choose it?",
+    "documents": {
+      "figures.md": "I use Matplotlib as my tool for paper figures. I chose Matplotlib because its Python scripts make my paper figures reproducible."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for paper figures?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Matplotlib for paper figures because its Python scripts make the figures reproducible. [figures.md]"
+      }
+    ],
+    "expected": [
+      "Python scripts",
+      "reproducible paper figures"
+    ]
+  },
+  {
+    "id": "matplotlib-en/detail_only_in_corpus",
+    "family": "matplotlib-en",
+    "condition": "detail_only_in_corpus",
+    "language": "en",
+    "question": "Why did I choose it?",
+    "documents": {
+      "figures.md": "I use Matplotlib as my tool for paper figures. I chose Matplotlib because its Python scripts make my paper figures reproducible."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for paper figures?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Matplotlib for paper figures. [figures.md]"
+      }
+    ],
+    "expected": [
+      "Python scripts",
+      "reproducible paper figures"
+    ]
+  },
+  {
+    "id": "matplotlib-en/detail_missing",
+    "family": "matplotlib-en",
+    "condition": "detail_missing",
+    "language": "en",
+    "question": "Why did I choose it?",
+    "documents": {
+      "figures.md": "I use Matplotlib as my tool for paper figures."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for paper figures?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Matplotlib for paper figures. [figures.md]"
+      }
+    ],
+    "expected": "explicitly acknowledge missing reason; do not invent a personal reason"
+  },
+  {
+    "id": "inkscape-zh/history_has_answer",
+    "family": "inkscape-zh",
+    "condition": "history_has_answer",
+    "language": "zh",
+    "question": "我为什么选它？",
+    "documents": {
+      "illustrations.md": "我的社团插图工具是Inkscape。 我选择Inkscape，是因为社团每周四需要一个名为poster-cyan.svg的可编辑文件。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "我的社团插图工具？"
+      },
+      {
+        "role": "assistant",
+        "content": "你的社团插图工具是Inkscape，因为社团每周四需要名为poster-cyan.svg的可编辑文件。[illustrations.md]"
+      }
+    ],
+    "expected": [
+      "周四/星期四",
+      "poster-cyan.svg",
+      "可编辑文件"
+    ]
+  },
+  {
+    "id": "inkscape-zh/detail_only_in_corpus",
+    "family": "inkscape-zh",
+    "condition": "detail_only_in_corpus",
+    "language": "zh",
+    "question": "我为什么选它？",
+    "documents": {
+      "illustrations.md": "我的社团插图工具是Inkscape。 我选择Inkscape，是因为社团每周四需要一个名为poster-cyan.svg的可编辑文件。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "我的社团插图工具？"
+      },
+      {
+        "role": "assistant",
+        "content": "你的社团插图工具是Inkscape。[illustrations.md]"
+      }
+    ],
+    "expected": [
+      "周四/星期四",
+      "poster-cyan.svg",
+      "可编辑文件"
+    ]
+  },
+  {
+    "id": "inkscape-zh/detail_missing",
+    "family": "inkscape-zh",
+    "condition": "detail_missing",
+    "language": "zh",
+    "question": "我为什么选它？",
+    "documents": {
+      "illustrations.md": "我的社团插图工具是Inkscape。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "我的社团插图工具？"
+      },
+      {
+        "role": "assistant",
+        "content": "你的社团插图工具是Inkscape。[illustrations.md]"
+      }
+    ],
+    "expected": "explicitly acknowledge missing reason; do not invent a personal reason"
+  },
+  {
+    "id": "zotero-en/history_has_answer",
+    "family": "zotero-en",
+    "condition": "history_has_answer",
+    "language": "en",
+    "question": "Why that one?",
+    "documents": {
+      "references.md": "I use Zotero as my tool for references. I chose Zotero because my lab's Friday handoff requires a file named weekly-blue.ris."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for references?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Zotero because your lab's Friday handoff requires a file named weekly-blue.ris. [references.md]"
+      }
+    ],
+    "expected": [
+      "Friday lab handoff",
+      "weekly-blue.ris"
+    ]
+  },
+  {
+    "id": "zotero-en/detail_only_in_corpus",
+    "family": "zotero-en",
+    "condition": "detail_only_in_corpus",
+    "language": "en",
+    "question": "Why that one?",
+    "documents": {
+      "references.md": "I use Zotero as my tool for references. I chose Zotero because my lab's Friday handoff requires a file named weekly-blue.ris."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for references?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Zotero for references. [references.md]"
+      }
+    ],
+    "expected": [
+      "Friday lab handoff",
+      "weekly-blue.ris"
+    ]
+  },
+  {
+    "id": "zotero-en/detail_missing",
+    "family": "zotero-en",
+    "condition": "detail_missing",
+    "language": "en",
+    "question": "Why that one?",
+    "documents": {
+      "references.md": "I use Zotero as my tool for references."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for references?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Zotero for references. [references.md]"
+      }
+    ],
+    "expected": "explicitly acknowledge missing reason; do not invent a personal reason"
+  },
+  {
+    "id": "sensor-zh/history_has_answer",
+    "family": "sensor-zh",
+    "condition": "history_has_answer",
+    "language": "zh",
+    "question": "我为什么选这款？",
+    "documents": {
+      "weather.md": "学校气象站用的是P-17传感器。 我选择P-17，是因为它的6针插头能接上学校记录仪。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "学校气象站用什么传感器？"
+      },
+      {
+        "role": "assistant",
+        "content": "你选择P-17传感器，是因为它的6针插头能接上学校记录仪。[weather.md]"
+      }
+    ],
+    "expected": [
+      "6针插头",
+      "学校记录仪兼容"
+    ]
+  },
+  {
+    "id": "sensor-zh/detail_only_in_corpus",
+    "family": "sensor-zh",
+    "condition": "detail_only_in_corpus",
+    "language": "zh",
+    "question": "我为什么选这款？",
+    "documents": {
+      "weather.md": "学校气象站用的是P-17传感器。 我选择P-17，是因为它的6针插头能接上学校记录仪。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "学校气象站用什么传感器？"
+      },
+      {
+        "role": "assistant",
+        "content": "学校气象站用的是P-17传感器。[weather.md]"
+      }
+    ],
+    "expected": [
+      "6针插头",
+      "学校记录仪兼容"
+    ]
+  },
+  {
+    "id": "sensor-zh/detail_missing",
+    "family": "sensor-zh",
+    "condition": "detail_missing",
+    "language": "zh",
+    "question": "我为什么选这款？",
+    "documents": {
+      "weather.md": "学校气象站用的是P-17传感器。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "学校气象站用什么传感器？"
+      },
+      {
+        "role": "assistant",
+        "content": "学校气象站用的是P-17传感器。[weather.md]"
+      }
+    ],
+    "expected": "explicitly acknowledge missing reason; do not invent a personal reason"
+  },
+  {
+    "id": "topic-switch-en",
+    "family": "topic-switch-en",
+    "condition": "topic_switch",
+    "language": "en",
+    "question": "What tea do I prefer?",
+    "documents": {
+      "figures.md": "I use Matplotlib as my tool for paper figures. I chose Matplotlib because its Python scripts make my paper figures reproducible.",
+      "tea.md": "I prefer jasmine tea."
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "Which tool do I use for paper figures?"
+      },
+      {
+        "role": "assistant",
+        "content": "You use Matplotlib for paper figures because its Python scripts make the figures reproducible. [figures.md]"
+      }
+    ],
+    "expected": [
+      "jasmine tea"
+    ]
+  },
+  {
+    "id": "topic-switch-zh",
+    "family": "topic-switch-zh",
+    "condition": "topic_switch",
+    "language": "zh",
+    "question": "我偏好的茶？",
+    "documents": {
+      "illustrations.md": "我的社团插图工具是Inkscape。 我选择Inkscape，是因为社团每周四需要一个名为poster-cyan.svg的可编辑文件。",
+      "tea.md": "我偏好的茶是茉莉花茶。"
+    },
+    "history": [
+      {
+        "role": "user",
+        "content": "我的社团插图工具？"
+      },
+      {
+        "role": "assistant",
+        "content": "你的社团插图工具是Inkscape，因为社团每周四需要名为poster-cyan.svg的可编辑文件。[illustrations.md]"
+      }
+    ],
+    "expected": [
+      "茉莉花茶"
+    ]
+  }
+]

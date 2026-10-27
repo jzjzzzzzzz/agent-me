@@ -11,6 +11,7 @@ from . import __version__
 from .audit import AuditLog
 from .collaboration import CollaborationOrchestrator
 from .config import Settings, get_settings
+from .followup_retrieval import retrieve_chat_context
 from .knowledge import KnowledgeBase, KnowledgeLoadError
 from .memory import (
     MemoryConflict,
@@ -233,6 +234,7 @@ async def profile(config: Settings = Depends(get_settings)) -> ProfileResponse:
         name=config.app_name,
         description=config.app_description,
         max_question_chars=config.max_question_chars,
+        max_history_chars=config.max_history_chars,
         external_provider_enabled=config.provider_state == "openai-compatible",
     )
 
@@ -250,7 +252,7 @@ async def chat(payload: ChatRequest, config: Settings = Depends(get_settings)) -
             detail="history exceeds configured limit",
         )
     knowledge = _configured_knowledge_base(config)
-    matches = await run_in_threadpool(knowledge.search, payload.question)
+    matches = await run_in_threadpool(retrieve_chat_context, knowledge, payload, config)
     answer, mode = await generate_answer(
         question=payload.question,
         history=payload.history,

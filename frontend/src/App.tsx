@@ -27,6 +27,7 @@ import {
 } from "./workflowLink";
 import "./styles.css";
 import { PersonalWorkspace } from "./PersonalWorkspace";
+import { chatHistory, type ConversationTurn } from "./chatHistory";
 
 const DEFAULT_MAX_QUESTION_CHARS = 8000;
 type RequestError = { detail: string | null };
@@ -35,6 +36,7 @@ export function App() {
   const [locale, setLocale] = useState<Locale>(initialLocale);
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<ChatResponse | CollaborationResponse | null>(null);
+  const [conversation, setConversation] = useState<ConversationTurn[]>([]);
   const [error, setError] = useState<RequestError | null>(null);
   const [loading, setLoading] = useState(false);
   const [cancelled, setCancelled] = useState(false);
@@ -106,6 +108,8 @@ export function App() {
     event.preventDefault();
     if (!question.trim() || requestController.current || comparisonController.current) return;
 
+    const submittedQuestion = question.trim();
+    const submittedMode = workflowMode;
     const controller = new AbortController();
     requestController.current = controller;
     setLoading(true);
@@ -114,15 +118,21 @@ export function App() {
     setResult(null);
     setComparison(null);
     try {
-      const response = workflowMode === "standard"
-        ? await ask(question.trim(), controller.signal)
+      const response = submittedMode === "standard"
+        ? await ask(submittedQuestion, controller.signal, chatHistory(
+            conversation, profile?.max_history_chars ?? 24000,
+            profile?.max_history_turn_chars ?? 8000,
+          ), conversation.at(-1)?.response.sources.map(({ path, excerpt }) => ({ path, excerpt })) ?? [])
         : await collaborate(
-            question.trim(),
-            workflowMode === "verified" ? "verified" : "baseline",
+            submittedQuestion,
+            submittedMode === "verified" ? "verified" : "baseline",
             controller.signal,
           );
       if (requestController.current === controller && !controller.signal.aborted) {
         setResult(response);
+        if (submittedMode === "standard" && response.mode !== "multi-agent-local") {
+          setConversation((current) => [...current, { question: submittedQuestion, response }]);
+        }
       }
     } catch (reason) {
       if (requestController.current === controller && !controller.signal.aborted) {
@@ -187,7 +197,6 @@ export function App() {
     if (!controller.signal.aborted) setComparing(false);
     if (comparisonController.current === controller) comparisonController.current = null;
   }
-
   return (
     <main>
       <div className="toolbar">
@@ -309,7 +318,30 @@ export function App() {
 
       <LocalRunReplay text={text} />
 
-      {result && <AnswerResult result={result} text={text} />}
+      {workflowMode === "standard" && conversation.length > 0 && (
+        <section aria-label={text.conversation}>
+          <div className="answer-heading">
+            <h2>{text.conversation}</h2>
+            <button type="button" disabled={busy} onClick={() => {
+              setConversation([]);
+              setResult(null);
+              setQuestion("");
+              setError(null);
+              setCancelled(false);
+              questionInput.current?.focus();
+            }}>{text.newConversation}</button>
+          </div>
+          {conversation.map((turn, index) => (
+            <details key={index} open={index === conversation.length - 1}>
+              <summary>{turn.question}</summary>
+              <AnswerResult key={conversation.length} result={turn.response} text={text} headingLevel={3} />
+            </details>
+          ))}
+        </section>
+      )}
+      {result && (workflowMode !== "standard" || result.mode === "multi-agent-local" || conversation.length === 0) && (
+        <AnswerResult result={result} text={text} />
+      )}
       {comparison && (
         <WorkflowComparison comparison={comparison} comparing={comparing} text={text} onRetry={() => compare(comparison.question)} />
       )}

@@ -25,12 +25,26 @@ enforce the same input limit. The safe boolean `external_provider_enabled` lets 
 the question's data destination before submission. It never reveals the provider URL, model ID, or
 credentials.
 
+`max_history_chars` and `max_history_turn_chars` expose the total and per-message history budgets.
+The browser keeps recent complete exchanges within those limits and the 20-message cap.
+
 ## `POST /api/v1/chat`
 
 Request fields:
 
 - `question`: required nonblank string, capped by `MAX_QUESTION_CHARS`.
 - `history`: optional array of up to 20 `{role, content}` items. Roles are `user` or `assistant`; total content is capped by `MAX_HISTORY_CHARS`.
+- `previous_sources`: optional array of up to four `{path, excerpt}` locators copied from the
+  preceding response. Paths are 1–1024 characters and excerpts 1–4000 characters after trimming;
+  unknown fields are rejected. These are untrusted locations, not evidence supplied by the client.
+
+With a configured external provider, an empty current-question search can revisit these locations
+when history is present. The server reads only its current public Markdown corpus, locating the
+old excerpt and including adjacent paragraphs (at most 3000 characters per excerpt). Edited
+sources use current text; deleted or nonpublic paths are skipped. Existing context budgets still
+apply. There is one answer-model request and no query-rewrite request. Direct search hits take
+precedence; an irrelevant hit therefore does not trigger this fallback. See
+[follow-up retrieval](FOLLOWUP_RETRIEVAL.md) for the request flow and evaluation.
 
 Unknown fields, invalid roles, blank content, and oversized fields are rejected. Unsafe symbolic
 links, unreadable Markdown, a file larger than `MAX_DOCUMENT_BYTES`, more than
