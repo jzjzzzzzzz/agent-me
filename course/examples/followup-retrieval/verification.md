@@ -34,10 +34,11 @@ The backend failure is the unchanged
 Windows denied `Path.symlink_to` with WinError 1314. Other symlink tests skip when that privilege is
 unavailable. No test was changed to hide this environment limitation.
 
-The extra `npm run audit:deps -- --registry=https://registry.npmjs.org` check reported the existing
-locked transitive `zod <4.6.6` advisory GHSA-mrhx-c7xc-m3w5. The configured npm mirror did not provide
-an audit endpoint, so the official registry was used. This PR does not change dependencies or locks;
-the advisory can also affect the upstream frontend CI audit step.
+The initial `npm run audit:deps -- --registry=https://registry.npmjs.org` check reported the existing
+locked transitive `zod <4.6.6` advisory GHSA-mrhx-c7xc-m3w5. Remote frontend CI confirmed the same
+failure. A separate follow-up commit updates only that ESLint development dependency's lock entry
+from 4.5.4 to 4.6.7 within its existing range; package manifests and runtime dependencies are unchanged.
+The configured npm mirror did not provide an audit endpoint, so the official registry was used.
 
 Saved live measurements were collected in the earlier experiments described in [README](README.md).
 No new model calls or training were needed to validate the extracted implementation.
