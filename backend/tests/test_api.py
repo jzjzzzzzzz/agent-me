@@ -61,6 +61,8 @@ async def test_profile_exposes_public_runtime_configuration(client: httpx.AsyncC
         "name": settings.app_name,
         "description": settings.app_description,
         "max_question_chars": settings.max_question_chars,
+        "max_history_chars": settings.max_history_chars,
+        "max_history_turn_chars": 8000,
         "external_provider_enabled": False,
     }
 

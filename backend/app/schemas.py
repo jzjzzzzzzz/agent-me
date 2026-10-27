@@ -2,12 +2,23 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+MAX_CHAT_TURN_CHARS = 8_000
+
 
 class ChatTurn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=8_000)
+    content: str = Field(min_length=1, max_length=MAX_CHAT_TURN_CHARS)
+
+
+class PreviousSource(BaseModel):
+    """A locator from a previous response, never authoritative evidence text."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    path: str = Field(min_length=1, max_length=1024)
+    excerpt: str = Field(min_length=1, max_length=4000)
 
 
 class ChatRequest(BaseModel):
@@ -15,6 +26,7 @@ class ChatRequest(BaseModel):
 
     question: str = Field(min_length=1)
     history: list[ChatTurn] = Field(default_factory=list, max_length=20)
+    previous_sources: list[PreviousSource] = Field(default_factory=list, max_length=4)
 
     @field_validator("question")
     @classmethod
@@ -79,4 +91,6 @@ class ProfileResponse(BaseModel):
     name: str
     description: str
     max_question_chars: int
+    max_history_chars: int
+    max_history_turn_chars: int = MAX_CHAT_TURN_CHARS
     external_provider_enabled: bool

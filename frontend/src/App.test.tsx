@@ -393,7 +393,7 @@ it("translates provider mode and explains an empty source list", async () => {
   expect(screen.getByText("No matching source excerpts were found.")).toBeInTheDocument();
 });
 
-it("shows a structured API error and clears a stale answer while retrying", async () => {
+it("shows a structured API error and preserves the previous exchange while retrying", async () => {
   let rejectRequest: ((reason: Error) => void) | undefined;
   let chatCall = 0;
   const fetchMock = vi.fn().mockImplementation((url: string) => {
@@ -420,7 +420,8 @@ it("shows a structured API error and clears a stale answer while retrying", asyn
   await userEvent.clear(input);
   await userEvent.type(input, "Second");
   await userEvent.click(screen.getByRole("button", { name: "Ask" }));
-  expect(screen.queryByText("Old answer")).not.toBeInTheDocument();
+  expect(screen.getByText("Old answer")).toBeInTheDocument();
+  expect(screen.getByText("First", { selector: "summary" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Searching…" })).toBeDisabled();
 
   rejectRequest?.(new Error("network"));

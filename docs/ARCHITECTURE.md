@@ -30,6 +30,13 @@ and returns up to four sources that meet the default `0.75` threshold. If all pr
 present, the service calls the provider's `/chat/completions` route using a grounded system message.
 Otherwise it returns the highest-ranked excerpt.
 
+The browser keeps successful standard-Q&A exchanges in page memory and sends bounded recent
+history and previous source locators on follow-ups. If current-question search returns no hits,
+`followup_retrieval.py` can revisit those sources in the current public corpus before the usual
+single provider request. Client excerpts only locate server-owned text; no client path is opened
+directly. See [follow-up retrieval](FOLLOWUP_RETRIEVAL.md). Local extractive and collaboration
+retrieval keep their existing behavior.
+
 Source titles use the first ATX H1 outside backtick or tilde fenced code blocks, falling back to
 the filename when none exists. Fenced code remains searchable; this rule only affects title metadata.
 

@@ -1,6 +1,8 @@
 export type AnswerMode = "extractive" | "openai-compatible";
 export type Source = { title: string; path: string; excerpt: string; score: number };
+export type PreviousSource = Pick<Source, "path" | "excerpt">;
 export type ChatResponse = { answer: string; mode: AnswerMode; sources: Source[] };
+export type ChatTurn = { role: "user" | "assistant"; content: string };
 export type CollaborationAgent = "planner" | "researcher" | "critic" | "writer" | "verifier";
 export type CollaborationPolicy = "baseline" | "verified";
 export type CollaborationWorkflow =
@@ -28,6 +30,8 @@ export type ProfileResponse = {
   name: string;
   description: string;
   max_question_chars: number;
+  max_history_chars?: number;
+  max_history_turn_chars?: number;
   external_provider_enabled: boolean;
 };
 
@@ -97,6 +101,10 @@ function parseProfileResponse(value: unknown): ProfileResponse {
     typeof profile.max_question_chars !== "number" ||
     !Number.isInteger(profile.max_question_chars) ||
     profile.max_question_chars < 1 ||
+    ["max_history_chars", "max_history_turn_chars"].some((key) =>
+      Object.hasOwn(profile, key) &&
+      (typeof profile[key] !== "number" || !Number.isInteger(profile[key]) || profile[key] < 1),
+    ) ||
     typeof profile.external_provider_enabled !== "boolean" ||
     (Object.hasOwn(profile, "personal_enabled") &&
       typeof profile.personal_enabled !== "boolean")
@@ -183,11 +191,20 @@ async function responseError(response: Response): Promise<ApiError> {
   return new ApiError(detail, response.status, code);
 }
 
-export async function ask(question: string, signal?: AbortSignal): Promise<ChatResponse> {
+export async function ask(
+  question: string,
+  signal?: AbortSignal,
+  history: ChatTurn[] = [],
+  previousSources: PreviousSource[] = [],
+): Promise<ChatResponse> {
   const response = await fetch(`${API_BASE}/api/v1/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({
+      question,
+      ...(history.length ? { history } : {}),
+      ...(history.length && previousSources.length ? { previous_sources: previousSources } : {}),
+    }),
     signal,
   });
   if (!response.ok) throw await responseError(response);

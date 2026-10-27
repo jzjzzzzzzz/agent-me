@@ -21,6 +21,8 @@ export type Messages = {
   title: string;
   intro: string;
   formLabel: string;
+  conversation: string;
+  newConversation: string;
   placeholder: string;
   searching: string;
   cancelRequest: string;
@@ -81,6 +83,8 @@ export type Messages = {
 export const messages: Record<Locale, Messages> = {
   en: {
     personalWorkspace: personalMessages.en,
+    conversation: "Conversation",
+    newConversation: "New conversation",
     compareWorkflows: "Compare workflows",
     compareHelp: "Runs both local collaboration policies with the same question, independently of the selected mode. Neither sends data to an external model provider.",
     comparisonQuestion: "Compared question",
@@ -151,6 +155,8 @@ export const messages: Record<Locale, Messages> = {
   },
   "zh-CN": {
     personalWorkspace: personalMessages["zh-CN"],
+    conversation: "对话",
+    newConversation: "新对话",
     compareWorkflows: "对比工作流",
     compareHelp: "用相同问题运行两种本地协作策略，不受当前模式选择影响。两者均不向外部模型服务发送数据。",
     comparisonQuestion: "对比的问题",
@@ -215,6 +221,8 @@ export const messages: Record<Locale, Messages> = {
   },
   "zh-TW": {
     personalWorkspace: personalMessages["zh-TW"],
+    conversation: "對話",
+    newConversation: "新對話",
     compareWorkflows: "比較工作流程",
     compareHelp: "用相同問題執行兩種本機協作策略，不受目前模式選擇影響。兩者均不向外部模型服務傳送資料。",
     comparisonQuestion: "比較的問題",
@@ -279,6 +287,8 @@ export const messages: Record<Locale, Messages> = {
   },
   ja: {
     personalWorkspace: personalMessages.ja,
+    conversation: "会話",
+    newConversation: "新しい会話",
     compareWorkflows: "ワークフローを比較",
     compareHelp: "選択中のモードに関係なく、同じ質問で両方のローカル協調ポリシーを実行します。どちらも外部モデルにデータを送りません。",
     comparisonQuestion: "比較する質問",
@@ -349,6 +359,8 @@ export const messages: Record<Locale, Messages> = {
   },
   ko: {
     personalWorkspace: personalMessages.ko,
+    conversation: "대화",
+    newConversation: "새 대화",
     compareWorkflows: "워크플로 비교",
     compareHelp: "선택된 모드와 관계없이 같은 질문으로 두 로컬 협업 정책을 실행합니다. 둘 다 외부 모델 제공업체에 데이터를 보내지 않습니다.",
     comparisonQuestion: "비교 질문",
@@ -418,6 +430,8 @@ export const messages: Record<Locale, Messages> = {
   },
   es: {
     personalWorkspace: personalMessages.es,
+    conversation: "Conversación",
+    newConversation: "Nueva conversación",
     compareWorkflows: "Comparar flujos",
     compareHelp: "Ejecuta ambas políticas locales con la misma pregunta, sin depender del modo seleccionado. Ninguna envía datos a un proveedor de modelos externo.",
     comparisonQuestion: "Pregunta comparada",
@@ -488,6 +502,8 @@ export const messages: Record<Locale, Messages> = {
   },
   fr: {
     personalWorkspace: personalMessages.fr,
+    conversation: "Conversation",
+    newConversation: "Nouvelle conversation",
     compareWorkflows: "Comparer les flux",
     compareHelp: "Exécute les deux politiques locales avec la même question, quel que soit le mode sélectionné. Aucune n’envoie de données à un fournisseur de modèles externe.",
     comparisonQuestion: "Question comparée",
@@ -558,6 +574,8 @@ export const messages: Record<Locale, Messages> = {
   },
   de: {
     personalWorkspace: personalMessages.de,
+    conversation: "Gespräch",
+    newConversation: "Neues Gespräch",
     compareWorkflows: "Workflows vergleichen",
     compareHelp: "Führt beide lokalen Abläufe mit derselben Frage aus, unabhängig vom gewählten Modus. Keiner sendet Daten an einen externen Modellanbieter.",
     comparisonQuestion: "Verglichene Frage",
@@ -628,6 +646,8 @@ export const messages: Record<Locale, Messages> = {
   },
   "pt-BR": {
     personalWorkspace: personalMessages["pt-BR"],
+    conversation: "Conversa",
+    newConversation: "Nova conversa",
     compareWorkflows: "Comparar fluxos",
     compareHelp: "Executa as duas políticas locais com a mesma pergunta, independentemente do modo selecionado. Nenhuma envia dados a um provedor de modelos externo.",
     comparisonQuestion: "Pergunta comparada",

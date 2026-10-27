@@ -342,3 +342,49 @@ class KnowledgeBase:
                 )
         matches.sort(key=lambda item: (-item.score, item.document.path, item.excerpt))
         return matches[:limit]
+
+    def revisit_sources(self, references: list[tuple[str, str]], question: str) -> list[Match]:
+        """Locate prior excerpts in current public documents; never read a client path directly."""
+        documents = {document.path: document for document in self.documents()}
+        query = _query_tokens(question)
+        matches: list[Match] = []
+        seen: set[tuple[str, str]] = set()
+        for path, previous_excerpt in references:
+            previous_excerpt = previous_excerpt.strip()
+            reference = path, previous_excerpt
+            if reference in seen or path not in documents:
+                continue
+            seen.add(reference)
+            document = documents[path]
+            chunks = _content_chunks(document.text)
+            if not chunks:
+                continue
+            text = "\n\n".join(chunks)
+            position = text.find(previous_excerpt) if previous_excerpt else -1
+            if position >= 0:
+                end = position + len(previous_excerpt)
+                offsets, offset = [], 0
+                for chunk in chunks:
+                    offsets.append((offset, offset + len(chunk)))
+                    offset += len(chunk) + 2
+                covered = [
+                    i for i, (start, stop) in enumerate(offsets) if start < end and stop > position
+                ]
+                if len(covered) > 1:
+                    # A previously expanded window still exists: keep its location stable.
+                    window = text[position:end]
+                else:
+                    index = covered[0]
+                    window = "\n\n".join(chunks[max(0, index - 1) : index + 2])
+            else:
+                # An edited source (or an unrecognized locator) must use current server text.
+                index = max(
+                    range(len(chunks)), key=lambda i: len(query & normalized_tokens(chunks[i]))
+                )
+                window = "\n\n".join(chunks[max(0, index - 1) : index + 2])
+            excerpt = _excerpt(window, query, limit=3000)
+            if any(m.document.path == path and m.excerpt == excerpt for m in matches):
+                continue
+            score = len(query & normalized_tokens(excerpt)) / len(query) if query else 0.0
+            matches.append(Match(document=document, excerpt=excerpt, score=round(score, 4)))
+        return matches
