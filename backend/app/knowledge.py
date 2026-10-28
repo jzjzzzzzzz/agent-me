@@ -84,18 +84,28 @@ def _query_tokens(value: str) -> set[str]:
     return normalized_tokens(value) - _STOP_WORDS
 
 
-def _excerpt(paragraph: str, query: set[str], limit: int = 1_000) -> str:
-    """Return a bounded excerpt positioned around the terms that matched."""
+def _excerpt(
+    paragraph: str,
+    query: set[str],
+    limit: int = 1_000,
+    *,
+    anchor: tuple[int, int] | None = None,
+) -> str:
+    """Bound text around an exact locator, when supplied, or the matching terms."""
     if len(paragraph) <= limit:
         return paragraph
 
     # Match the same word/Han token boundaries and normalization as search. Keep
     # original-text offsets so excerpts remain readable and preserve Unicode.
-    hits = [
-        (start, end)
-        for start, end in token_spans(paragraph)
-        if normalized_tokens(paragraph[start:end]) & query
-    ]
+    hits = (
+        [anchor]
+        if anchor is not None
+        else [
+            (start, end)
+            for start, end in token_spans(paragraph)
+            if normalized_tokens(paragraph[start:end]) & query
+        ]
+    )
     if not hits:
         return paragraph[:limit]
 
@@ -361,6 +371,7 @@ class KnowledgeBase:
                 continue
             text = "\n\n".join(chunks)
             position = text.find(previous_excerpt) if previous_excerpt else -1
+            anchor = None
             if position >= 0:
                 end = position + len(previous_excerpt)
                 offsets, offset = [], 0
@@ -375,14 +386,19 @@ class KnowledgeBase:
                     window = text[position:end]
                 else:
                     index = covered[0]
-                    window = "\n\n".join(chunks[max(0, index - 1) : index + 2])
+                    first_index = max(0, index - 1)
+                    window = "\n\n".join(chunks[first_index : index + 2])
+                    # Incidental query hits in a long neighbor must not evict the
+                    # exact passage that identified this source in the first place.
+                    window_start = offsets[first_index][0]
+                    anchor = position - window_start, end - window_start
             else:
                 # An edited source (or an unrecognized locator) must use current server text.
                 index = max(
                     range(len(chunks)), key=lambda i: len(query & normalized_tokens(chunks[i]))
                 )
                 window = "\n\n".join(chunks[max(0, index - 1) : index + 2])
-            excerpt = _excerpt(window, query, limit=3000)
+            excerpt = _excerpt(window, query, limit=3000, anchor=anchor)
             if any(m.document.path == path and m.excerpt == excerpt for m in matches):
                 continue
             score = len(query & normalized_tokens(excerpt)) / len(query) if query else 0.0

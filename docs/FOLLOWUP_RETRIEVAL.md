@@ -34,6 +34,9 @@ and next paragraphs. A still-present expanded window stays in place on subsequen
 edits invalidate the locator, overlap with the previous and current questions selects a current
 paragraph. Deleted paths are skipped, and distinct passages from the same file can be retained.
 Each excerpt is capped at 3000 characters and the normal total context budget still applies.
+When a single-paragraph exact locator fits within that cap, clipping preserves its original
+location and uses the remaining space for neighboring text. Shared query words in a long neighbor
+cannot displace the located passage. Expanded windows that still fit remain unchanged on later turns.
 
 Existing direct-search scores retain their meaning. Revisited scores describe overlap with the
 previous-plus-current questions; a low score can be returned because this is source revisiting,

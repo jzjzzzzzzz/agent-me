@@ -11,6 +11,7 @@ from app.main import app
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("long_neighbor", [False, True])
 @pytest.mark.parametrize(
     ("first_question", "followup", "document"),
     [
@@ -28,9 +29,10 @@ from app.main import app
     ],
 )
 async def test_chat_followup_retrieves_grounding_and_keeps_original_question(
-    tmp_path, monkeypatch, first_question, followup, document
+    tmp_path, monkeypatch, first_question, followup, document, long_neighbor
 ):
-    (tmp_path / "figures.md").write_text(document, encoding="utf-8")
+    text = "My figures archive: " + "gardening " * 700 + "\n\n" if long_neighbor else ""
+    (tmp_path / "figures.md").write_text(text + document, encoding="utf-8")
     settings = Settings(
         _env_file=None,
         knowledge_dir=str(tmp_path),
