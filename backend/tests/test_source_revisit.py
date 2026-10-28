@@ -1,3 +1,5 @@
+import pytest
+
 from app.config import Settings
 from app.followup_retrieval import retrieve_chat_context
 from app.knowledge import KnowledgeBase
@@ -55,6 +57,47 @@ def test_distinct_passages_in_same_file_are_kept(tmp_path):
     assert len(matches) == 2
     assert first in matches[0].excerpt
     assert last in matches[1].excerpt
+
+
+@pytest.mark.parametrize("side", ["before", "after"])
+def test_long_neighbor_cannot_displace_the_exact_source_locator(tmp_path, side):
+    anchor = "I use Matplotlib for paper figures."
+    reason = "I chose it because its Python scripts make my work reproducible."
+    neighbor = "My figures archive: " + "gardening " * 700
+    chunks = [neighbor, anchor, reason] if side == "before" else [reason, anchor, neighbor]
+    (tmp_path / "notes.md").write_text("\n\n".join(chunks), "utf-8")
+    knowledge = KnowledgeBase(tmp_path)
+
+    matches = knowledge.revisit_sources(
+        [("notes.md", anchor)],
+        "Which tool do I use for paper figures?\nWhy did I choose it?",
+    )
+
+    assert len(matches) == 1
+    assert anchor in matches[0].excerpt
+    assert reason in matches[0].excerpt
+    assert len(matches[0].excerpt) <= 3000
+
+    repeated = knowledge.revisit_sources(
+        [("notes.md", matches[0].excerpt)], "Why did I choose it?\nTell me more."
+    )
+    assert repeated[0].excerpt == matches[0].excerpt
+
+
+@pytest.mark.parametrize("length", [1, 1000, 2999, 3000, 4000])
+@pytest.mark.parametrize("padding", ["", "filler " * 500])
+def test_exact_locator_clipping_respects_the_excerpt_budget(tmp_path, length, padding):
+    anchor = "x" * length
+    neighbor = "shared " * 700
+    (tmp_path / "notes.md").write_text(
+        "\n\n".join([neighbor, padding + anchor + padding, neighbor]), "utf-8"
+    )
+
+    match = KnowledgeBase(tmp_path).revisit_sources([("notes.md", anchor)], "shared")[0]
+
+    assert len(match.excerpt) <= 3000
+    if length <= 3000:
+        assert anchor in match.excerpt
 
 
 def test_current_topic_wins_and_extractive_mode_keeps_existing_behavior(tmp_path):
