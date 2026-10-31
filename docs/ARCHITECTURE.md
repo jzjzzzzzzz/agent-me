@@ -30,6 +30,10 @@ and returns up to four sources that meet the default `0.75` threshold. If all pr
 present, the service calls the provider's `/chat/completions` route using a grounded system message.
 Otherwise it returns the highest-ranked excerpt.
 
+Grounded answering and opt-in semantic learning share `provider.py::request_completion` for HTTP
+delivery, streamed response/answer limits, and safe HTTP error classification. Callers still build
+their own messages and enforce their own configuration, grounding, and consent checks.
+
 The browser keeps successful standard-Q&A exchanges in page memory and sends bounded recent
 history and previous source locators on follow-ups. If current-question search returns no hits,
 `followup_retrieval.py` can revisit those sources in the current public corpus before the usual

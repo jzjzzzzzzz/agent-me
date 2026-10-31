@@ -76,6 +76,45 @@ async def _read_limited_response(response: httpx.Response, max_bytes: int) -> by
     return bytes(body)
 
 
+async def request_completion(
+    *,
+    messages: list[dict[str, str]],
+    settings: Settings,
+    transport: httpx.AsyncBaseTransport | None = None,
+) -> str:
+    """Send caller-built messages through one bounded, safely classified HTTP boundary."""
+    endpoint = settings.llm_base_url.rstrip("/") + "/chat/completions"
+    try:
+        async with httpx.AsyncClient(
+            timeout=settings.provider_timeout_seconds,
+            transport=transport,
+        ) as client:
+            async with client.stream(
+                "POST",
+                endpoint,
+                headers={"Authorization": f"Bearer {settings.llm_api_key}"},
+                json={"model": settings.llm_model, "messages": messages, "stream": False},
+            ) as response:
+                response.raise_for_status()
+                response_body = await _read_limited_response(
+                    response,
+                    settings.max_provider_response_bytes,
+                )
+    except httpx.TimeoutException:
+        raise ProviderError("provider_timeout") from None
+    except httpx.HTTPStatusError as error:
+        code = (
+            "provider_rate_limited"
+            if error.response.status_code == 429
+            else "provider_request_failed"
+        )
+        raise ProviderError(code) from None
+    except httpx.RequestError:
+        raise ProviderError("provider_unavailable") from None
+
+    return _answer_content(response_body, settings.max_answer_chars)
+
+
 async def generate_answer(
     *,
     question: str,
@@ -101,33 +140,5 @@ async def generate_answer(
     messages.extend(turn.model_dump() for turn in history)
     messages.append({"role": "user", "content": question})
 
-    endpoint = settings.llm_base_url.rstrip("/") + "/chat/completions"
-    try:
-        async with httpx.AsyncClient(
-            timeout=settings.provider_timeout_seconds,
-            transport=transport,
-        ) as client:
-            async with client.stream(
-                "POST",
-                endpoint,
-                headers={"Authorization": f"Bearer {settings.llm_api_key}"},
-                json={"model": settings.llm_model, "messages": messages, "stream": False},
-            ) as response:
-                response.raise_for_status()
-                response_body = await _read_limited_response(
-                    response,
-                    settings.max_provider_response_bytes,
-                )
-    except httpx.TimeoutException as error:
-        raise ProviderError("provider_timeout") from error
-    except httpx.HTTPStatusError as error:
-        code = (
-            "provider_rate_limited"
-            if error.response.status_code == 429
-            else "provider_request_failed"
-        )
-        raise ProviderError(code) from error
-    except httpx.RequestError as error:
-        raise ProviderError("provider_unavailable") from error
-
-    return _answer_content(response_body, settings.max_answer_chars), "openai-compatible"
+    answer = await request_completion(messages=messages, settings=settings, transport=transport)
+    return answer, "openai-compatible"
