@@ -13,7 +13,7 @@ from .disclosure import DisclosureManager, target_id
 from .learning import MAX_DOCUMENT_BYTES, Candidate, LearningPipeline
 from .memory import MemoryConflict, MemoryInputError, MemoryPermissionDenied
 from .memory_models import Entry
-from .provider import ProviderError, _answer_content, _read_limited_response
+from .provider import ProviderError, request_completion
 from .semantic_models import SemanticIngestion, SpanProposals
 
 EXTRACTOR = "model-literal-spans-v1"
@@ -89,38 +89,18 @@ def review_semantic(store, source_id: str, config: Settings):
     }
 
 
-async def propose(settings: Settings, content: str, transport=None):
+async def propose(
+    settings: Settings, content: str, transport: httpx.AsyncBaseTransport | None = None
+) -> str:
     """Only the exact consented source and fixed instructions enter the outbound payload."""
-    try:
-        async with httpx.AsyncClient(
-            timeout=settings.provider_timeout_seconds, transport=transport
-        ) as client:
-            async with client.stream(
-                "POST",
-                settings.llm_base_url.rstrip("/") + "/chat/completions",
-                headers={"Authorization": f"Bearer {settings.llm_api_key}"},
-                json={
-                    "model": settings.llm_model,
-                    "stream": False,
-                    "messages": [
-                        {"role": "system", "content": INSTRUCTIONS},
-                        {"role": "user", "content": content},
-                    ],
-                },
-            ) as response:
-                response.raise_for_status()
-                body = await _read_limited_response(response, settings.max_provider_response_bytes)
-    except httpx.TimeoutException:
-        raise ProviderError("provider_timeout") from None
-    except httpx.HTTPStatusError as error:
-        raise ProviderError(
-            "provider_rate_limited"
-            if error.response.status_code == 429
-            else "provider_request_failed"
-        ) from None
-    except httpx.RequestError:
-        raise ProviderError("provider_unavailable") from None
-    return _answer_content(body, settings.max_answer_chars)
+    return await request_completion(
+        messages=[
+            {"role": "system", "content": INSTRUCTIONS},
+            {"role": "user", "content": content},
+        ],
+        settings=settings,
+        transport=transport,
+    )
 
 
 async def ingest_semantic(
