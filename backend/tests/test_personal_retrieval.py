@@ -435,3 +435,24 @@ def test_prompt_injection_is_data_not_action_or_permission(agent):
 def test_request_contract_rejects_ambiguous_or_malformed_controls(payload):
     with pytest.raises(ValidationError):
         AskRequest(**payload)
+
+
+@pytest.mark.parametrize("count", [1, 20])
+def test_owner_lookup_does_not_scale_with_unbound_memories(agent, monkeypatch, count):
+    db, retriever, _ = agent
+    owner = person(retriever.identity, "Alex Example")
+    retriever.identity.bind_owner(owner["id"])
+    for index in range(count):
+        add(db, f"profile.detail{index}", f"Detail {index}")
+
+    original_owner = retriever.identity.owner
+    calls = []
+
+    def tracked_owner():
+        calls.append(True)
+        return original_owner()
+
+    monkeypatch.setattr(retriever.identity, "owner", tracked_owner)
+    result = retriever.retrieve(AskRequest(question="What do you know about me?"))
+    assert result.status == "known"
+    assert len(calls) == 2  # One for self-scoping, one for retrieval.

@@ -355,7 +355,6 @@ class PersonalRetriever:
                 if not owner_unbound or item["entity_id"] is not None:
                     continue
                 # Global owner facts must not answer a question about somebody else.
-                owner = self.identity.owner()["entity_id"]
                 if subjects and subjects != [owner] and item["kind"] != "preference":
                     continue
             facet = field_facet(item["key"])
@@ -446,6 +445,12 @@ class PersonalRetriever:
                         reasons=["intent"],
                     )
                 )
+        # Resolve relationship backing in O(1), rather than scanning every memory per edge.
+        selected_by_id = (
+            {row["record"]["id"]: row["record"] for row in selected}
+            if subjects and intent in {"relationships", "projects"}
+            else {}
+        )
         for item_id in subjects:
             item = entities[item_id]
             if ("name" in facets or intent == "profile") and not any(
@@ -485,14 +490,7 @@ class PersonalRetriever:
                         f"{labels[edge['from_entity_id']]} — {edge['predicate']} → "
                         f"{labels[edge['to_entity_id']]}"
                     )
-                    backing = next(
-                        (
-                            row["record"]
-                            for row in selected
-                            if row["record"]["id"] == edge["evidence_id"]
-                        ),
-                        None,
-                    )
+                    backing = selected_by_id.get(edge["evidence_id"])
                     if backing is None:
                         continue
                     candidates.append(
@@ -542,7 +540,7 @@ class PersonalRetriever:
             ]
         trace.append(dict(stage="retrieve", outcome="completed", count=len(candidates)))
         groups = {}
-        owner_entity = self.identity.owner()["entity_id"]
+        owner_entity = owner
         for item in candidates:
             if item.kind == "memory_value" and item.purpose == "answer" and item.belief == "known":
                 groups.setdefault(
