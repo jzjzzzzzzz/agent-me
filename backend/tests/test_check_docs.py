@@ -233,3 +233,16 @@ def test_repository_docs_do_not_walk_owner_workspace_or_browser_artifacts(tmp_pa
         )
     monkeypatch.setattr(check_docs, "ROOT", tmp_path)
     assert check_docs.markdown_files() == [public]
+
+
+def test_angle_delimited_destinations_keep_spaces_and_optional_titles(tmp_path, monkeypatch):
+    source = tmp_path / "source.md"
+    source.write_text(
+        '[self](<>)\n[space only]( )\n[install](<setup guide.md#install> "Guide")\n'
+        "[missing](<missing guide.md>)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "setup guide.md").write_text("# Install\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == ["source.md: missing local link: missing guide.md"]

@@ -95,9 +95,12 @@ def destination_path(destination: str) -> str:
 
 def destination_parts(destination: str) -> tuple[str, str]:
     value = destination.strip()
-    if value.startswith("<") and value.endswith(">"):
-        value = value[1:-1]
-    value = value.split(maxsplit=1)[0]
+    if not value:
+        return "", ""
+    if value.startswith("<") and ">" in value:
+        value = value[1 : value.index(">")]
+    else:
+        value = value.split(maxsplit=1)[0]
     path, separator, fragment = value.partition("#")
     return path, fragment if separator else ""
 
