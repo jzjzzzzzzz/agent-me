@@ -102,7 +102,7 @@ def destination_parts(destination: str) -> tuple[str, str]:
     else:
         value = value.split(maxsplit=1)[0]
     path, separator, fragment = value.partition("#")
-    return path, fragment if separator else ""
+    return path.partition("?")[0], fragment if separator else ""
 
 
 def heading_text(value: str) -> str:

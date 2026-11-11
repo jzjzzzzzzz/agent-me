@@ -246,3 +246,26 @@ def test_angle_delimited_destinations_keep_spaces_and_optional_titles(tmp_path, 
     monkeypatch.setattr(check_docs, "ROOT", tmp_path)
 
     assert check_docs.validate_file(source) == ["source.md: missing local link: missing guide.md"]
+
+
+def test_queries_do_not_change_the_local_target_path_or_heading(tmp_path, monkeypatch):
+    source = tmp_path / "source.md"
+    source.write_text(
+        "# Source\n"
+        "[same page](?plain=1#source)\n"
+        "[cross page](guide.md?plain=1#install)\n"
+        "[broken](missing.md?plain=1)\n"
+        "[bad section](guide.md?plain=1#absent)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "guide.md").write_text("# Install\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == [
+        "source.md: missing local link: missing.md",
+        "source.md: missing Markdown anchor in guide.md: #absent",
+    ]
+
+
+def test_url_encoded_question_mark_remains_part_of_the_filename():
+    assert check_docs.destination_parts("why%3F.md?plain=1#intro") == ("why%3F.md", "intro")
