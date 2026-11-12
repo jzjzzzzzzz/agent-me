@@ -146,12 +146,12 @@ def unfenced_lines(text: str) -> list[str]:
                 fence
                 and fence.group(1)[0] == fence_character
                 and len(fence.group(1)) >= fence_length
-                and not line[fence.end() :].strip()
+                and not line[fence.end() :].strip(" \t")
             ):
                 fence_character = ""
                 fence_length = 0
             continue
-        if fence:
+        if fence and (fence.group(1)[0] == "~" or "`" not in line[fence.end() :]):
             marker = fence.group(1)
             fence_character = marker[0]
             fence_length = len(marker)

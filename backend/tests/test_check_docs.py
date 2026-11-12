@@ -269,3 +269,16 @@ def test_queries_do_not_change_the_local_target_path_or_heading(tmp_path, monkey
 
 def test_url_encoded_question_mark_remains_part_of_the_filename():
     assert check_docs.destination_parts("why%3F.md?plain=1#intro") == ("why%3F.md", "intro")
+
+
+def test_invalid_backtick_fence_does_not_hide_links_or_headings(tmp_path, monkeypatch):
+    source = tmp_path / "source.md"
+    source.write_text("```invalid`info\n# Visible\n\n[broken](missing.md)\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == ["source.md: missing local link: missing.md"]
+    assert check_docs.heading_anchors(source.read_text(encoding="utf-8")) == {"visible"}
+
+
+def test_tilde_fence_can_have_backticks_in_its_info_string():
+    assert check_docs.heading_anchors("~~~some`info\n# Hidden\n~~~\n# Visible\n") == {"visible"}
