@@ -45,7 +45,8 @@ CHINESE_SECTIONS = (
     "## 完成清单",
     "## 延伸阅读",
 )
-MERGE_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+# A bare separator can also be a valid Setext heading underline.
+MERGE_MARKERS = ("<<<<<<<", ">>>>>>>")
 REMOVED_SLUG_CATEGORIES = {
     "Cc",
     "Cf",

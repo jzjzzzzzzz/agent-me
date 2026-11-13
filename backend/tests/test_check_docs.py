@@ -282,3 +282,25 @@ def test_invalid_backtick_fence_does_not_hide_links_or_headings(tmp_path, monkey
 
 def test_tilde_fence_can_have_backticks_in_its_info_string():
     assert check_docs.heading_anchors("~~~some`info\n# Hidden\n~~~\n# Visible\n") == {"visible"}
+
+
+def test_setext_heading_is_not_a_merge_conflict(tmp_path, monkeypatch):
+    source = tmp_path / "source.md"
+    source.write_text("A valid title\n=============\n\n[back](#a-valid-title)\n", encoding="utf-8")
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == []
+
+
+def test_real_conflict_is_reported_even_with_a_setext_underline(tmp_path, monkeypatch):
+    source = tmp_path / "source.md"
+    source.write_text(
+        "A valid title\n=============\n\n<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> topic\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+
+    assert check_docs.validate_file(source) == [
+        "source.md: unresolved merge marker <<<<<<<",
+        "source.md: unresolved merge marker >>>>>>>",
+    ]
