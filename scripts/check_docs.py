@@ -60,7 +60,7 @@ REMOVED_SLUG_CATEGORIES = {
     "Po",
     "Ps",
 }
-ATX_HEADING = re.compile(r"^ {0,3}#{1,6}(?:[ \t]+(.*)|[ \t]*)$")
+ATX_HEADING = re.compile(r"^ {0,3}(#{1,6})(?:[ \t]+(.*)|[ \t]*)$")
 SETEXT_HEADING = re.compile(r"^ {0,3}(?:=+|-+)[ \t]*$")
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
 INLINE_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
@@ -162,6 +162,10 @@ def unfenced_lines(text: str) -> list[str]:
     return lines
 
 
+def atx_text(match: re.Match[str]) -> str:
+    return re.sub(r"(?:^|[ \t]+)#+[ \t]*$", "", match.group(2) or "").rstrip()
+
+
 def markdown_headings(text: str) -> list[str]:
     lines = unfenced_lines(text)
     headings: list[str] = []
@@ -178,9 +182,7 @@ def markdown_headings(text: str) -> list[str]:
 
         match = ATX_HEADING.match(line)
         if match:
-            heading = match.group(1) or ""
-            heading = re.sub(r"[ \t]+#+[ \t]*$", "", heading)
-            headings.append(heading.rstrip())
+            headings.append(atx_text(match))
 
     return headings
 
@@ -271,14 +273,19 @@ def validate_course() -> list[str]:
             if not path.is_file():
                 errors.append(f"{relative}: maintained lesson is missing")
                 continue
-            text = path.read_text(encoding="utf-8")
-            headings = tuple(
-                line.strip() for line in text.splitlines() if line.startswith("## ")
-            )
+            lines = unfenced_lines(path.read_text(encoding="utf-8"))
+            headings = {
+                f"## {atx_text(match)}"
+                for line in lines
+                if (match := ATX_HEADING.match(line)) and match.group(1) == "##"
+            }
             for section in required_sections:
-                if not any(heading.startswith(section) for heading in headings):
+                if section not in headings and not any(
+                    heading.startswith((f"{section}:", f"{section}："))
+                    for heading in headings
+                ):
                     errors.append(f"{relative}: missing required section {section}")
-            if "**Time:**" not in text and "**时间：**" not in text:
+            if not any("**Time:**" in line or "**时间：**" in line for line in lines):
                 errors.append(f"{relative}: missing time metadata")
     return errors
 
