@@ -304,3 +304,30 @@ def test_real_conflict_is_reported_even_with_a_setext_underline(tmp_path, monkey
         "source.md: unresolved merge marker <<<<<<<",
         "source.md: unresolved merge marker >>>>>>>",
     ]
+
+
+def test_course_requires_visible_sections_and_accepts_subtitles(tmp_path, monkeypatch):
+    monkeypatch.setattr(check_docs, "ROOT", tmp_path)
+    monkeypatch.setattr(check_docs, "LESSONS", ("00-fixture",))
+    monkeypatch.setattr(check_docs, "ENGLISH_SECTIONS", ("## Exercises", "## Further reading"))
+    monkeypatch.setattr(check_docs, "CHINESE_SECTIONS", ("## 练习", "## 延伸阅读"))
+    english = tmp_path / "course" / "00-fixture" / "README.md"
+    chinese = tmp_path / "course" / "translations" / "zh-CN" / "00-fixture" / "README.md"
+    for path in (english, chinese):
+        path.parent.mkdir(parents=True)
+
+    english.write_text(
+        "## ExercisesArchive\n   ## Further reading: References ###\n\n"
+        "```md\n## Exercises\n**Time:** 10 minutes\n```\n",
+        encoding="utf-8",
+    )
+    chinese.write_text("**时间：** 10 分钟\n\n## 练习：示例\n##\t延伸阅读\n", encoding="utf-8")
+    assert check_docs.validate_course() == [
+        f"{english.relative_to(tmp_path)}: missing required section ## Exercises",
+        f"{english.relative_to(tmp_path)}: missing time metadata",
+    ]
+
+    english.write_text(
+        "**Time:** 10 minutes\n\n## Exercises\n## Further reading: References\n", encoding="utf-8"
+    )
+    assert check_docs.validate_course() == []
