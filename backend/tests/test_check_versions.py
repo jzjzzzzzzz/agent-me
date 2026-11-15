@@ -112,3 +112,23 @@ def test_stable_version_rules_remain(repository, capsys, version):
     (repository / "VERSION").write_text(version, encoding="utf-8")
     assert check_versions.main() == 1
     assert "VERSION: expected a stable MAJOR.MINOR.PATCH value" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("version", ["2.0.1١", "2.1２.0", "2９.0.0"])
+def test_non_ascii_decimal_digits_are_not_stable_versions(repository, capsys, version):
+    # All metadata agrees, so the format check must reject the release on its own.
+    for filename in (
+        "VERSION",
+        "backend/pyproject.toml",
+        "backend/app/__init__.py",
+        "backend/uv.lock",
+        "frontend/package.json",
+        "frontend/package-lock.json",
+    ):
+        target = repository / filename
+        target.write_text(
+            target.read_text(encoding="utf-8").replace("2.0.0", version), encoding="utf-8"
+        )
+
+    assert check_versions.main() == 1
+    assert "VERSION: expected a stable MAJOR.MINOR.PATCH value" in capsys.readouterr().err
