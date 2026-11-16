@@ -20,44 +20,48 @@ def load_toml(path: Path) -> dict[str, object]:
         return tomllib.load(handle)
 
 
-def app_version(path: Path) -> str | None:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+def direct_binding(tree: ast.Module, name: str) -> ast.expr | None:
+    """Return the last simple module-level assignment without executing source."""
+    value = None
     for node in tree.body:
-        if not isinstance(node, ast.Assign):
-            continue
         if (
-            any(
-                isinstance(target, ast.Name) and target.id == "__version__"
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == name
                 for target in node.targets
             )
-            and isinstance(node.value, ast.Constant)
-            and isinstance(node.value.value, str)
+            or (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id == name
+                and node.value is not None
+            )
         ):
-            return node.value.value
+            value = node.value
+    return value
+
+
+def app_version(path: Path) -> str | None:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    value = direct_binding(tree, "__version__")
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        return value.value
     return None
 
 
 def uses_app_version(tree: ast.Module) -> bool:
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or not any(
-            isinstance(target, ast.Name) and target.id == "app"
-            for target in node.targets
-        ):
-            continue
-        call = node.value
-        if not (
-            isinstance(call, ast.Call)
-            and isinstance(call.func, ast.Name)
-            and call.func.id == "FastAPI"
-        ):
-            return False
-        return any(
+    call = direct_binding(tree, "app")
+    return (
+        isinstance(call, ast.Call)
+        and isinstance(call.func, ast.Name)
+        and call.func.id == "FastAPI"
+        and any(
             keyword.arg == "version"
             and isinstance(keyword.value, ast.Name)
             and keyword.value.id == "__version__"
             for keyword in call.keywords
         )
-    return False
+    )
 
 
 def main() -> int:
