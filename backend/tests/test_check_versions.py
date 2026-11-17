@@ -160,3 +160,33 @@ def test_final_annotated_assignment_can_correct_an_earlier_binding(repository, c
     )
     assert check_versions.main() == 0
     assert "Version consistency check passed" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("filename", "content", "diagnostic"),
+    [
+        ("VERSION", None, "cannot read"),
+        ("backend/pyproject.toml", "[project\n", "invalid TOML"),
+        ("backend/pyproject.toml", 'project = "invalid"\n', "expected '2.0.0', found None"),
+        ("backend/app/__init__.py", "__version__ = (", "invalid Python"),
+        ("backend/app/main.py", None, "cannot read"),
+        ("backend/uv.lock", "package = {}\n", "expected '2.0.0', found None"),
+        ("frontend/package.json", "{", "invalid JSON"),
+        ("frontend/package.json", "null", "expected a metadata object"),
+        ("frontend/package-lock.json", '{"version":"2.0.0", "packages":null}', "(package):"),
+    ],
+)
+def test_bad_release_metadata_has_file_specific_diagnostics(
+    repository, capsys, filename, content, diagnostic
+):
+    target = repository / filename
+    if content is None:
+        target.unlink()
+    else:
+        target.write_text(content, encoding="utf-8")
+
+    assert check_versions.main() == 1
+    errors = capsys.readouterr().err
+    assert "Version consistency check failed:" in errors
+    assert any(filename in line and diagnostic in line for line in errors.splitlines())
+    assert "Traceback" not in errors
