@@ -7,7 +7,9 @@ import ast
 import json
 import re
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import TypeVar
 
 import tomllib
 
@@ -15,9 +17,40 @@ ROOT = Path(__file__).resolve().parents[1]
 SEMVER = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$", re.ASCII)
 
 
-def load_toml(path: Path) -> dict[str, object]:
-    with path.open("rb") as handle:
-        return tomllib.load(handle)
+T = TypeVar("T")
+
+
+def read_parsed(path: str, parse: Callable[[str], T], errors: list[str]) -> T | None:
+    try:
+        return parse((ROOT / path).read_text(encoding="utf-8"))
+    except OSError as error:
+        errors.append(f"{path}: cannot read metadata: {error.strerror}")
+    except UnicodeDecodeError:
+        errors.append(f"{path}: metadata is not valid UTF-8")
+    except SyntaxError as error:
+        errors.append(f"{path}: invalid Python at line {error.lineno}: {error.msg}")
+    except json.JSONDecodeError as error:
+        errors.append(f"{path}: invalid JSON at line {error.lineno}: {error.msg}")
+    except tomllib.TOMLDecodeError as error:
+        errors.append(f"{path}: invalid TOML: {error}")
+    return None
+
+
+def read_object(
+    path: str, parse: Callable[[str], object], errors: list[str]
+) -> dict[str, object] | None:
+    def parse_object(text: str) -> dict[str, object] | None:
+        value = parse(text)
+        if isinstance(value, dict):
+            return value
+        errors.append(f"{path}: expected a metadata object")
+        return None
+
+    return read_parsed(path, parse_object, errors)
+
+
+def object_fields(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
 
 
 def direct_binding(tree: ast.Module, name: str) -> ast.expr | None:
@@ -41,8 +74,7 @@ def direct_binding(tree: ast.Module, name: str) -> ast.expr | None:
     return value
 
 
-def app_version(path: Path) -> str | None:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+def app_version(tree: ast.Module) -> str | None:
     value = direct_binding(tree, "__version__")
     if isinstance(value, ast.Constant) and isinstance(value.value, str):
         return value.value
@@ -65,67 +97,68 @@ def uses_app_version(tree: ast.Module) -> bool:
 
 
 def main() -> int:
-    expected = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     errors: list[str] = []
-    if not SEMVER.fullmatch(expected):
+    expected = read_parsed("VERSION", str.strip, errors)
+    if expected is not None and not SEMVER.fullmatch(expected):
         errors.append(
             f"VERSION: expected a stable MAJOR.MINOR.PATCH value, found {expected!r}"
         )
 
-    backend = load_toml(ROOT / "backend" / "pyproject.toml")
-    backend_project = backend["project"]
-    assert isinstance(backend_project, dict)
-    backend_name = backend_project["name"]
-    values: dict[str, object] = {
-        "backend/pyproject.toml": backend_project["version"],
-        "backend/app/__init__.py": app_version(
-            ROOT / "backend" / "app" / "__init__.py"
-        ),
-    }
-
-    uv_lock = load_toml(ROOT / "backend" / "uv.lock")
-    packages = uv_lock.get("package", [])
-    assert isinstance(packages, list)
-    editable = next(
-        (
-            package
-            for package in packages
-            if isinstance(package, dict)
-            and package.get("name") == backend_name
-            and package.get("source") == {"editable": "."}
-        ),
-        None,
+    values: dict[str, object] = {}
+    backend = read_object("backend/pyproject.toml", tomllib.loads, errors)
+    backend_project = (
+        object_fields(backend.get("project")) if backend is not None else {}
     )
-    values["backend/uv.lock"] = editable.get("version") if editable else None
+    backend_name = backend_project.get("name")
+    if backend is not None:
+        values["backend/pyproject.toml"] = backend_project.get("version")
+        if not isinstance(backend_name, str) or not backend_name:
+            errors.append("backend/pyproject.toml: expected a project name")
 
-    frontend = json.loads(
-        (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
-    )
-    package_lock = json.loads(
-        (ROOT / "frontend" / "package-lock.json").read_text(encoding="utf-8")
-    )
-    values["frontend/package.json"] = frontend.get("version")
-    values["frontend/package-lock.json (root)"] = package_lock.get("version")
-    values["frontend/package-lock.json (package)"] = (
-        package_lock.get("packages", {}).get("", {}).get("version")
-    )
+    init_path = "backend/app/__init__.py"
+    init_tree = read_parsed(init_path, ast.parse, errors)
+    if init_tree is not None:
+        values[init_path] = app_version(init_tree)
 
-    for source, actual in values.items():
-        if actual != expected:
-            errors.append(f"{source}: expected {expected!r}, found {actual!r}")
-
-    main_source = (ROOT / "backend" / "app" / "main.py").read_text(encoding="utf-8")
-    try:
-        main_tree = ast.parse(main_source, filename="backend/app/main.py")
-    except SyntaxError as error:
-        errors.append(
-            f"backend/app/main.py: invalid Python at line {error.lineno}: {error.msg}"
-        )
-    else:
-        if not uses_app_version(main_tree):
-            errors.append(
-                "backend/app/main.py: FastAPI metadata must use app.__version__"
+    uv_lock = read_object("backend/uv.lock", tomllib.loads, errors)
+    if uv_lock is not None:
+        packages = uv_lock.get("package")
+        editable = (
+            next(
+                (
+                    package
+                    for package in packages
+                    if isinstance(package, dict)
+                    and package.get("name") == backend_name
+                    and package.get("source") == {"editable": "."}
+                ),
+                {},
             )
+            if isinstance(packages, list) and backend_name
+            else {}
+        )
+        values["backend/uv.lock"] = editable.get("version")
+
+    frontend = read_object("frontend/package.json", json.loads, errors)
+    if frontend is not None:
+        values["frontend/package.json"] = frontend.get("version")
+    package_lock = read_object("frontend/package-lock.json", json.loads, errors)
+    if package_lock is not None:
+        values["frontend/package-lock.json (root)"] = package_lock.get("version")
+        packages = object_fields(package_lock.get("packages"))
+        values["frontend/package-lock.json (package)"] = object_fields(
+            packages.get("")
+        ).get("version")
+
+    if expected is not None:
+        for source, actual in values.items():
+            if actual != expected:
+                errors.append(f"{source}: expected {expected!r}, found {actual!r}")
+
+    main_path = "backend/app/main.py"
+    main_tree = read_parsed(main_path, ast.parse, errors)
+    if main_tree is not None and not uses_app_version(main_tree):
+        errors.append(f"{main_path}: FastAPI metadata must use app.__version__")
 
     if errors:
         print("Version consistency check failed:", file=sys.stderr)
