@@ -443,3 +443,18 @@ def test_non_fence_lines_do_not_hide_a_following_h1(opening: str) -> None:
     from app.knowledge import _title
 
     assert _title(Path("fallback.md"), f"{opening}\n# Real title") == "Real title"
+
+
+@pytest.mark.parametrize("empty_h1", ["#", "#   ", "   #\t", "# ###", "   #\t###  "])
+def test_empty_h1_does_not_preempt_a_meaningful_title(empty_h1: str) -> None:
+    from app.knowledge import _title
+
+    path = Path("fallback-name.md")
+    assert _title(path, f"{empty_h1}\n# Actual title ###") == "Actual title"
+    assert _title(path, f"{empty_h1}\n## Lower-level heading") == "Fallback Name"
+
+
+def test_title_keeps_hashes_that_are_not_closing_markup() -> None:
+    from app.knowledge import _title
+
+    assert _title(Path("fallback.md"), "# Why C#?") == "Why C#?"
