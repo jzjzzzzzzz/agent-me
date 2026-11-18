@@ -139,7 +139,7 @@ def _excerpt(
     return paragraph[start:end]
 
 
-_H1_HEADING = re.compile(r"^\s{0,3}#\s+(.*?)(?:\s+#+)?\s*$")
+_H1_HEADING = re.compile(r"^ {0,3}#[ \t]+(.*)$")
 _CODE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 
 
@@ -162,7 +162,9 @@ def _title(path: Path, text: str) -> str:
             continue
         match = _H1_HEADING.match(line)
         if match:
-            return match.group(1).strip()
+            title = re.sub(r"(?:^|[ \t]+)#+[ \t]*$", "", match.group(1)).strip()
+            if title:
+                return title
     return path.stem.replace("-", " ").replace("_", " ").title()
 
 
