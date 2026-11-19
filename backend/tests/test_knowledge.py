@@ -458,3 +458,22 @@ def test_title_keeps_hashes_that_are_not_closing_markup() -> None:
     from app.knowledge import _title
 
     assert _title(Path("fallback.md"), "# Why C#?") == "Why C#?"
+
+
+@pytest.mark.parametrize("opening,closing", [("````python", "`````"), ("~~~sh", "~~~")])
+def test_search_keeps_code_comments_literal_across_blank_lines(
+    tmp_path: Path, opening: str, closing: str
+) -> None:
+    (tmp_path / "guide.md").write_text(
+        f"# Guide\n\n{opening}\ncommand = 'example'\n\n# sqlite migration note\n\n"
+        f"{closing}\n\n## Preserve citations\nBody text for the section.\n",
+        encoding="utf-8",
+    )
+    knowledge = KnowledgeBase(str(tmp_path))
+
+    comments = knowledge.search("sqlite migration")
+    assert len(comments) == 1
+    assert comments[0].excerpt == "# sqlite migration note"
+    headings = knowledge.search("preserve citations")
+    assert len(headings) == 1
+    assert headings[0].excerpt == "Preserve citations\nBody text for the section."

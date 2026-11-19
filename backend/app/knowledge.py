@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
+from itertools import groupby
 from pathlib import Path
 from threading import RLock
 
@@ -143,7 +145,8 @@ _H1_HEADING = re.compile(r"^ {0,3}#[ \t]+(.*)$")
 _CODE_FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
 
 
-def _title(path: Path, text: str) -> str:
+def _fenced_lines(text: str) -> Iterator[tuple[str, bool]]:
+    """Mark fenced code and its delimiters, including across blank lines."""
     fence_marker = ""
     for line in text.splitlines():
         fence = _CODE_FENCE.match(line)
@@ -156,9 +159,17 @@ def _title(path: Path, text: str) -> str:
                 and not fence.group(2).strip(" \t")
             ):
                 fence_marker = ""
-            continue
-        if fence and (fence.group(1)[0] == "~" or "`" not in fence.group(2)):
+            yield line, True
+        elif fence and (fence.group(1)[0] == "~" or "`" not in fence.group(2)):
             fence_marker = fence.group(1)
+            yield line, True
+        else:
+            yield line, False
+
+
+def _title(path: Path, text: str) -> str:
+    for line, fenced in _fenced_lines(text):
+        if fenced:
             continue
         match = _H1_HEADING.match(line)
         if match:
@@ -170,16 +181,18 @@ def _title(path: Path, text: str) -> str:
 
 def _content_chunks(text: str) -> list[str]:
     chunks: list[str] = []
-    for block in re.split(r"\n\s*\n", text):
+    for has_text, block in groupby(_fenced_lines(text), key=lambda item: bool(item[0].strip())):
+        if not has_text:
+            continue
         lines: list[str] = []
         has_body = False
-        for raw_line in block.splitlines():
-            heading = _ATX_HEADING.fullmatch(raw_line)
+        for raw_line, fenced in block:
+            heading = None if fenced else _ATX_HEADING.fullmatch(raw_line)
             if heading:
                 lines.append(heading.group(1).strip())
             else:
                 lines.append(raw_line.strip())
-                has_body = has_body or bool(raw_line.strip())
+                has_body = True
         normalized = "\n".join(line for line in lines if line).strip()
         if has_body and normalized:
             chunks.append(normalized)
