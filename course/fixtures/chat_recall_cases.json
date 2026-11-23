@@ -1,0 +1,28 @@
+{
+  "cases": [
+    {"id":"name-zh","stage":"initial","question":"你记得我的名字吗？","top":"name"},
+    {"id":"name-en","stage":"initial","question":"What am I called?","top":"name"},
+    {"id":"role-zh","stage":"initial","question":"我做什么工作？","top":"role"},
+    {"id":"role-en","stage":"initial","question":"What do I do for a living?","top":"role"},
+    {"id":"skills-en","stage":"initial","question":"What abilities do I have?","top":"skills"},
+    {"id":"skills-zh-hant","stage":"initial","question":"我擅長什麼？","top":"skills"},
+    {"id":"style-zh","stage":"initial","question":"我喜欢你怎么回答？","top":"style"},
+    {"id":"current-project","stage":"initial","question":"我现在在做什么项目？","top":"focus"},
+    {"id":"project-deadline","stage":"initial","scope":"orchid","question":"When is this due?","top":"orchid-deadline","exclude":["bamboo-deadline"]},
+    {"id":"same-question-other-project","stage":"initial","scope":"bamboo","question":"When is this due?","top":"bamboo-deadline","exclude":["orchid-deadline"]},
+    {"id":"missing-project-scope","stage":"initial","question":"When is this due?","top":null},
+    {"id":"project-style-override","stage":"initial","scope":"orchid","question":"How do I like you to answer?","top":"orchid-style","exclude":["style"]},
+    {"id":"exact-project-note","stage":"initial","scope":"orchid","question":"Lumos calibration","top":"orchid-note"},
+    {"id":"contains-unrelated-qualifiers","stage":"initial","scope":"orchid","question":"Lumos electric railway certification","top":null},
+    {"id":"single-han-character-overlap","stage":"initial","scope":"orchid","question":"项目育成池里有啥鹅？","top":null},
+    {"id":"expired-record","stage":"initial","scope":"orchid","question":"FictionalExpiredQuill","top":null},
+    {"id":"sensitive-off","stage":"initial","question":"FictionalHiddenTopaz","top":null},
+    {"id":"sensitive-opt-in","stage":"initial","allow_sensitive":true,"question":"FictionalHiddenTopaz","top":"sensitive"},
+    {"id":"explicitly-disabled","stage":"initial","use_memory":false,"question":"What is my role?","top":null},
+    {"id":"pending-is-not-authority","stage":"pending","scope":"orchid","question":"When is this due?","top":"orchid-deadline","exclude":["revised-deadline"]},
+    {"id":"replacement-visible","stage":"revised","scope":"orchid","question":"When is this due?","top":"revised-deadline","exclude":["orchid-deadline"]},
+    {"id":"other-project-not-replaced","stage":"revised","scope":"bamboo","question":"When is this due?","top":"bamboo-deadline","exclude":["revised-deadline"]},
+    {"id":"deleted-does-not-restore-old","stage":"forgotten","scope":"orchid","question":"When is this due?","top":null},
+    {"id":"disagreeing-role-aliases","stage":"conflict","question":"What is my role?","top":null,"disputed":true}
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: setup dev test e2e lint audit format docs evaluate evaluate-memory evaluate-learning evaluate-semantic evaluate-identity evaluate-retrieval evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
+.PHONY: setup dev test e2e lint audit format docs evaluate evaluate-memory evaluate-learning evaluate-semantic evaluate-identity evaluate-retrieval evaluate-chat-recall evaluate-agency evaluate-owner-control evaluate-longitudinal knowledge-check build lock lock-check version-check
 
 UV_PROJECT_ENVIRONMENT ?= $(CURDIR)/.venv
 
@@ -47,6 +47,7 @@ evaluate:
 	.venv/bin/python scripts/evaluate_semantic_learning.py --check-fixture
 	.venv/bin/python scripts/evaluate_identity.py
 	.venv/bin/python scripts/evaluate_retrieval.py
+	.venv/bin/python scripts/evaluate_chat_recall.py
 	.venv/bin/python scripts/evaluate_agency.py
 	.venv/bin/python scripts/evaluate_owner_control.py
 	.venv/bin/python scripts/evaluate_longitudinal.py
@@ -65,6 +66,9 @@ evaluate-identity:
 
 evaluate-retrieval:
 	.venv/bin/python scripts/evaluate_retrieval.py
+
+evaluate-chat-recall:
+	.venv/bin/python scripts/evaluate_chat_recall.py
 
 evaluate-agency:
 	.venv/bin/python scripts/evaluate_agency.py

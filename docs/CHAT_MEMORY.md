@@ -64,12 +64,35 @@ database migrations, provider calls for extraction, or public endpoint changes.
   request for a different format takes precedence for that reply and does not write a change.
   The last answer shows available sources, not proof that a model used or entailed each source.
 
+## Recall precision / 检索准确性
+
+Private chat now distinguishes two forms of recall:
+
+- **Closed owner/project fields:** a small, bilingual, whole-question catalog maps phrases such as
+  `我做什么工作？` to role fields and `When is this due?` to the selected project's deadline.
+  It is not free-form semantic search and does not infer a different project from the words in
+  the question. Closed-field answers do not fall through to an operator Markdown note, public
+  example, or external model when the field is missing. If distinct active fact values exist under
+  equivalent keys, the chat reports disagreement rather than choosing the newer value.
+- **Other questions:** punctuation and common conversational terms are removed before lexical
+  coverage is scored. A topical hit needs at least 75% meaningful-term coverage and an anchor:
+  a shared multi-character non-Han token or a contiguous two-Han-character phrase. A single
+  common character is not enough. This favors abstention over exposing a vaguely similar memory;
+  broad presentation defaults can still be offered to an explicitly authorized generator.
+
+The source panel displays the reason (field, text match, or writing default) and stored revision.
+That metadata describes what was **offered**, not what a model actually used. Before optional
+delivery, the backend also rechecks the revision and active field agreement against live state.
+This remains SQLite-only: no embedding service and no automatic recall of old transcripts.
+
 ## API integration
 
 - `POST /api/v1/personal/chat`: adds optional `project_id`, `suggest_memory` (default false)
   and `use_memory` (default true). Existing `allow_sensitive` and `allow_provider` stay opt-in.
   A command response uses `mode: "memory-review"`. A command or actual proposal adds
   `capture: {turn_id, outcome, memory_id}`; non-proposal answers need not include it.
+  Closed-field answers add `recall: {field, status}` (available, unavailable, disabled, disputed).
+  Memory sources add `reason` and `revision`; document sources keep their original shape.
 - `POST /api/v1/personal/history/{turn_id}/capture`: accepts the typed `Entry` fields, but
   sensitivity is `private` or `sensitive` and a non-null `entity_id` must be a confirmed project.
   `content` is checked as a contiguous exact excerpt from a persisted user turn.
@@ -102,3 +125,15 @@ time filtering, deletion/replay and optional provider delivery with a fake compl
 [browser test](../frontend/e2e/chat-memory.spec.ts) covers project-scoped capture, confirmation,
 a page reload, evidence display and forgetting on desktop and mobile. These are synthetic
 product checks, rather than an evaluation on real users or a comparison with the papers.
+
+
+### Fictional recall comparison
+
+Run `make evaluate-chat-recall` or `.venv/bin/python scripts/evaluate_chat_recall.py --json`.
+The [24 labeled scenarios](../course/fixtures/chat_recall_cases.json) exercise English and Chinese
+paraphrases, project boundaries, ambiguous fields, pending and time boundaries,
+expired/sensitive records and corrected/deleted memories. The comparator recreates v1's
+local literal-overlap rule on the same scoped records and compares the first evidence ID,
+explicitly excluded evidence and expected dispute state. It does not call any provider, use
+real users or rank a generated response. This is a branch-specific acceptance set designed
+to exercise known gaps, not an independent dataset or a LongMemEval score.

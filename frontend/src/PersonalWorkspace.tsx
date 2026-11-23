@@ -4,7 +4,12 @@ import type { PersonalWorkspaceMessages } from "./personalMessages";
 
 type Entry = { revision?: number; id: string; kind: string; key: string; content: string; status: string; source: string; updated_at: string; entity_id?: string | null };
 type CaptureOutcome = "created" | "existing" | "superseded" | "forgotten" | "ignored";
-type ChatSource = { path: string; excerpt: string };
+type ChatSource = {
+  path: string;
+  excerpt: string;
+  reason?: "field" | "lexical" | "presentation_default";
+  revision?: number;
+};
 type Project = { id: string; kind: string; name: string; status: string; sensitivity: string };
 type CaptureDraft = { turnId: string; kind: string; key: string; content: string; projectId: string; sensitivity: string };
 type Turn = { id: string; role: string; content: string };
@@ -272,7 +277,9 @@ export function PersonalWorkspace({
       {sources.length > 0 && <details className="chat-memory-sources">
         <summary>{chatText.sources}</summary>
         <ul>{sources.map((source, index) => <li key={`${source.path}-${index}`}>
-          <code>{source.path}</code><p>{source.excerpt}</p>
+          <code>{source.path}</code>
+          {source.reason && <small> · {chatText.recallReason[source.reason]}{source.revision ? ` · r${source.revision}` : ""}</small>}
+          <p>{source.excerpt}</p>
         </li>)}</ul>
       </details>}
       <form onSubmit={sendChat}>

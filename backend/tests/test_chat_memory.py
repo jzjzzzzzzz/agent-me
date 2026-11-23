@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -279,3 +280,94 @@ async def test_scoped_provider_context_and_command_non_delivery(
 def test_invalid_explicit_command_is_not_a_model_question(command):
     result = propose(command, suggest=True, project_id=None)
     assert result.explicit and result.entry is None
+
+
+async def test_closed_fields_use_scoped_confirmed_memory_not_markdown(
+    personal, configured_private_provider, monkeypatch
+):
+    import app.provider as provider
+
+    client, config = personal
+    db = Store(config.personal_data_dir)
+    (db.root / "knowledge").mkdir()
+    (db.root / "knowledge" / "decoy.md").write_text(
+        "# Not a current memory\n\nWhat is my role? Museum curator.", encoding="utf-8"
+    )
+    (Path(config.knowledge_dir) / "example.md").write_text(
+        "# Fictional example\n\nWhat is my role? Violin maker.", encoding="utf-8"
+    )
+    calls = []
+
+    async def fake_completion(**kwargs):
+        calls.append(kwargs["messages"])
+        return "Synthetic role answer"
+
+    monkeypatch.setattr(provider, "request_completion", fake_completion)
+    request = {"question": "What is my role?", "allow_provider": True}
+    missing = await api(client, "/chat", request)
+    assert missing["recall"] == {"field": "role", "status": "unavailable"}
+    assert missing["sources"] == [] and calls == []
+
+    role_id = confirm(db, "identity.role", "Optical systems engineer", kind="fact")
+    local = await api(client, "/chat", {"question": "请问：我做什么工作？"})
+    assert local["recall"] == {"field": "role", "status": "available"}
+    assert local["sources"] == [
+        {
+            "path": f"memory/{role_id}",
+            "excerpt": "identity.role: Optical systems engineer",
+            "reason": "field",
+            "revision": 2,
+        }
+    ]
+    disabled = await api(client, "/chat", {**request, "use_memory": False})
+    assert disabled["recall"]["status"] == "disabled" and calls == []
+    await api(client, "/chat", request)
+    assert len(calls) == 1 and "Optical systems engineer" in calls[0][0]["content"]
+    assert "Museum curator" not in str(calls) and "Violin maker" not in str(calls)
+
+    # A distinct canonical alias can contain a conflicting value; don't pick by age.
+    confirm(db, "job.title", "Museum curator", kind="fact")
+    conflict = await api(client, "/chat", request)
+    assert conflict["recall"]["status"] == "disputed"
+    assert conflict["sources"] == [] and len(calls) == 1
+
+
+def test_new_alias_conflict_prevents_delivery_of_an_old_recall(tmp_path):
+    db = Store(str(tmp_path))
+    confirm(db, "identity.role", "Optical systems engineer", kind="fact")
+    old_matches = db.chat_recall("What is my role?").matches
+    target = target_id("https://fixture.invalid/v1", "fictional")
+    manager = DisclosureManager(db)
+    manager.configure(
+        DisclosurePolicy(enabled=True, target_id=target, labels=["public", "private"]), 1
+    )
+    confirm(db, "job.title", "Museum curator", kind="fact")
+    assert (
+        manager.authorize(
+            target,
+            [("memory", match) for match in old_matches],
+            chat_scope=True,
+            recall_question="What is my role?",
+            expected_owner_id=db.owner_id,
+        )
+        == []
+    )
+
+
+def test_revised_source_is_not_delivered_with_an_old_revision(tmp_path):
+    db = Store(str(tmp_path))
+    item_id = confirm(db, "identity.role", "Optical systems engineer", kind="fact")
+    old_matches = db.chat_recall("What is my role?").matches
+    db.edit(item_id, Entry(key="identity.role", content="Optical systems engineer"), 2)
+    db.confirm(item_id, [], 3)
+    new_matches = db.chat_recall("What is my role?").matches
+    same_text = old_matches[0].excerpt == new_matches[0].excerpt
+    assert same_text and old_matches[0].revision != new_matches[0].revision
+    target = target_id("https://fixture.invalid/v1", "fictional")
+    manager = DisclosureManager(db)
+    manager.configure(
+        DisclosurePolicy(enabled=True, target_id=target, labels=["public", "private"]), 1
+    )
+    authorize = {"chat_scope": True, "recall_question": "What is my role?"}
+    assert manager.authorize(target, [("memory", old_matches[0])], **authorize) == []
+    assert manager.authorize(target, [("memory", new_matches[0])], **authorize) == list(new_matches)

@@ -25,6 +25,7 @@ from .agency_models import (
 from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
 from .audit import AuditLog
 from .chat_memory import ChatCapture, TurnCapture, propose
+from .chat_recall import ChatMemoryMatch
 from .config import Settings, get_settings
 from .consolidation import ConsolidationManager
 from .disclosure import DisclosureManager, target_id
@@ -107,7 +108,6 @@ from .retrieval_models import (
     VerifiedClaim,
     VerifyRequest,
 )
-from .schemas import ChatTurn
 from .semantic_learning import ingest_semantic, review_semantic
 from .semantic_models import SemanticIngestion
 
@@ -777,57 +777,45 @@ async def chat(
         )
         return {"answer": answer, "mode": "memory-review", "sources": [], "capture": capture}
 
-    knowledge = KnowledgeBase(
-        config.knowledge_dir,
-        max_document_bytes=config.max_document_bytes,
-        max_documents=config.max_knowledge_documents,
-        max_corpus_bytes=config.max_knowledge_bytes,
+    recall = await run_in_threadpool(
+        db.chat_recall,
+        payload.question,
+        project_id=payload.project_id,
+        allow_sensitive=payload.allow_sensitive,
+        use_memory=payload.use_memory,
     )
-    public = await run_in_threadpool(knowledge.search, payload.question)
-    local_knowledge = KnowledgeBase(
-        str(db.root / "knowledge"),
-        max_document_bytes=config.max_document_bytes,
-        max_documents=config.max_knowledge_documents,
-        max_corpus_bytes=config.max_knowledge_bytes,
-    )
-    local = await run_in_threadpool(local_knowledge.search, payload.question)
-    # Namespace local paths so they cannot be mistaken for public repository files.
-    local = [
-        Match(
-            Document(m.document.title, "private/knowledge/" + m.document.path, m.document.text),
-            m.excerpt,
-            m.score,
+    private = list(recall.matches)
+    public, local = [], []
+    if recall.field is None:
+        # Exact personal fields are answered from the active memory store, never from
+        # public sample profiles, stale prose, or an unscoped Markdown lookalike.
+        options = dict(
+            max_document_bytes=config.max_document_bytes,
+            max_documents=config.max_knowledge_documents,
+            max_corpus_bytes=config.max_knowledge_bytes,
         )
-        for m in local
-    ]
-    scope = {
-        "project_id": payload.project_id,
-        "allow_sensitive": payload.allow_sensitive,
-        "use_memory": payload.use_memory,
-    }
-    private = await run_in_threadpool(db.chat_context, payload.question, **scope)
-    matches = sorted(private + local + public, key=lambda m: m.score, reverse=True)
-    # Deliberately don't re-inject stored conversations: deleted memories must not return
-    # through stale chat history. History is persisted for display, not factual grounding.
-    history: list[ChatTurn] = []
-    if payload.allow_provider:
-        provider_config = config.model_copy(deep=True)
-        if provider_config.provider_state != "openai-compatible":
-            from .memory import MemoryPermissionDenied
-
-            raise MemoryPermissionDenied("A configured provider is required for disclosure")
-        # Refresh document evidence; memory values/subjects/privacy are re-read by the policy gate.
-        public = await run_in_threadpool(knowledge.search, payload.question)
-        local = await run_in_threadpool(local_knowledge.search, payload.question)
+        public_knowledge = KnowledgeBase(config.knowledge_dir, **options)
+        local_knowledge = KnowledgeBase(str(db.root / "knowledge"), **options)
+        public = await run_in_threadpool(public_knowledge.search, payload.question)
         local = [
             Match(
                 Document(m.document.title, "private/knowledge/" + m.document.path, m.document.text),
                 m.excerpt,
                 m.score,
             )
-            for m in local
+            for m in await run_in_threadpool(local_knowledge.search, payload.question)
         ]
-        private = await run_in_threadpool(db.chat_context, payload.question, **scope)
+
+    matches = sorted(private + local + public, key=lambda m: m.score, reverse=True)
+    mode = "extractive"
+    # A closed field with no authoritative match or a conflict cannot be delegated
+    # to the model to guess, even if the owner requested provider delivery.
+    if payload.allow_provider and (recall.field is None or private):
+        provider_config = config.model_copy(deep=True)
+        if provider_config.provider_state != "openai-compatible":
+            from .memory import MemoryPermissionDenied
+
+            raise MemoryPermissionDenied("A configured provider is required for disclosure")
         permitted = await run_in_threadpool(
             DisclosureManager(db).authorize,
             target_id(provider_config.llm_base_url, provider_config.llm_model),
@@ -837,21 +825,31 @@ async def chat(
             allow_sensitive=payload.allow_sensitive,
             chat_scope=True,
             project_id=payload.project_id,
+            expected_owner_id=workspace_owner,
+            recall_question=payload.question if recall.field is not None else None,
         )
         matches = context_matches(
             sorted(permitted, key=lambda m: m.score, reverse=True), config.max_context_chars
         )
-        answer, mode = await generate_answer(
-            question=payload.question,
-            history=history,
-            matches=matches,
-            settings=provider_config,
-            private_memory=True,
-        )
+        if matches or recall.field is None:
+            # Stored transcripts are for display, not context for a model.
+            answer, mode = await generate_answer(
+                question=payload.question,
+                history=[],
+                matches=matches,
+                settings=provider_config,
+                private_memory=True,
+            )
+        else:
+            answer = extractive_answer([])
     else:
-        # A zero-overlap style default is useful to a generator, not a local factual answer.
+        # A style default is useful to a generator, not a local factual answer.
         matches = [match for match in matches if match.score > 0]
-        answer, mode = extractive_answer(matches), "extractive"
+        answer = (
+            "Confirmed memories disagree about this field. Review them before using either value."
+            if recall.conflict
+            else extractive_answer(matches)
+        )
     answer, capture = await run_in_threadpool(
         db.save_chat,
         payload.question,
@@ -861,14 +859,35 @@ async def chat(
         allow_sensitive=payload.allow_sensitive,
         proposal=proposal,
     )
-    response_matches = (
-        context_matches(matches, config.max_context_chars)
-        if mode == "openai-compatible"
-        else matches
-    )
-    return {
+    response = {
         "answer": answer,
         "mode": mode,
-        "sources": [{"path": m.document.path, "excerpt": m.excerpt} for m in response_matches],
-        **({"capture": capture} if capture is not None else {}),
+        "sources": [
+            {
+                "path": match.document.path,
+                "excerpt": match.excerpt,
+                **(
+                    {"reason": match.reason, "revision": match.revision}
+                    if isinstance(match, ChatMemoryMatch)
+                    else {}
+                ),
+            }
+            for match in matches
+        ],
     }
+    if capture is not None:
+        response["capture"] = capture
+    if recall.field is not None:
+        response["recall"] = {
+            "field": recall.field,
+            "status": (
+                "disputed"
+                if recall.conflict
+                else "available"
+                if matches
+                else "unavailable"
+                if payload.use_memory
+                else "disabled"
+            ),
+        }
+    return response

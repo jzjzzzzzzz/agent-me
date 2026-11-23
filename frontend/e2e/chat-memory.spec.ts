@@ -25,10 +25,11 @@ test("private chat memory survives reload, respects scope and can be forgotten",
   await expect(workspace.locator(".private-history article").last()).toContainText("could not find");
   await workspace.getByRole("button", { name: "Load project scopes", exact: true }).click();
   await workspace.getByRole("combobox", { name: "Memory scope", exact: true }).selectOption(pending.id);
-  await ask("Orchid updates");
+  await ask("How do I like you to answer?");
   await expect(workspace.locator(".private-history article").last()).toContainText("start with evidence");
   await workspace.getByText("Sources offered to the last answer", { exact: true }).click();
   await expect(workspace.locator(".chat-memory-sources")).toContainText("memory/");
+  await expect(workspace.locator(".chat-memory-sources")).toContainText("Profile field");
 
   await workspace.getByRole("button", { name: /^Delete: response\.style,/ }).click();
   await expect(workspace.getByRole("button", { name: /^Delete: response\.style,/ })).toHaveCount(0);
