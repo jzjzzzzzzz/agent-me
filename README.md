@@ -350,4 +350,8 @@ to the user.
 
 ## Private AI Twin workspace
 
-Build a local profile, persist conversations, and confirm editable long-term memories. Personal mode is opt-in and token-protected; public chat never reads the private workspace. See the [English and Chinese setup guide](docs/PERSONAL.md).
+Build a local profile, persist conversations, and confirm editable long-term memories.
+Private chat can remember an exact owner message, suggest a reviewable candidate, apply
+project-specific preferences across chats, and forget records without replaying old transcripts.
+Personal mode is opt-in and token-protected; public chat never reads the private workspace.
+See the [setup guide](docs/PERSONAL.md) and [long-term memory walkthrough](docs/CHAT_MEMORY.md).

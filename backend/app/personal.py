@@ -24,6 +24,7 @@ from .agency_models import (
 )
 from .agent_runtime import AgentIntent, AgentOutcome, AgentRuntime, KnowledgeIntent
 from .audit import AuditLog
+from .chat_memory import ChatCapture, TurnCapture, propose
 from .config import Settings, get_settings
 from .consolidation import ConsolidationManager
 from .disclosure import DisclosureManager, target_id
@@ -118,6 +119,9 @@ class PersonalChat(BaseModel):
     question: str = Field(min_length=1, max_length=8000)
     allow_sensitive: bool = Field(default=False, strict=True)
     allow_provider: bool = Field(default=False, strict=True)
+    suggest_memory: bool = Field(default=False, strict=True)
+    use_memory: bool = Field(default=True, strict=True)
+    project_id: str | None = Field(default=None, min_length=1, max_length=100)
     _unicode = field_validator("question")(valid_unicode)
 
 
@@ -735,6 +739,11 @@ def history(db: Store = Depends(store)):
     return db.history()
 
 
+@router.post("/history/{turn_id}/capture", response_model=ChatCapture)
+def capture_turn(turn_id: str, payload: TurnCapture, db: Store = Depends(store)):
+    return db.capture_turn(turn_id, payload)
+
+
 @router.post("/history/clear")
 def clear_history(db: Store = Depends(store)):
     return db.clear_history()
@@ -752,6 +761,22 @@ async def chat(
     if len(payload.question) > config.max_question_chars:
         raise HTTPException(413, "Question exceeds configured limit")
     workspace_owner = await run_in_threadpool(lambda: db.owner_id)
+    proposal = propose(
+        payload.question, suggest=payload.suggest_memory, project_id=payload.project_id
+    )
+    if proposal.explicit:
+        # Commands are local state proposals, not questions for a provider.
+        answer, capture = await run_in_threadpool(
+            db.save_chat,
+            payload.question,
+            "",
+            expected_owner_id=workspace_owner,
+            project_id=payload.project_id,
+            allow_sensitive=payload.allow_sensitive,
+            proposal=proposal,
+        )
+        return {"answer": answer, "mode": "memory-review", "sources": [], "capture": capture}
+
     knowledge = KnowledgeBase(
         config.knowledge_dir,
         max_document_bytes=config.max_document_bytes,
@@ -775,9 +800,12 @@ async def chat(
         )
         for m in local
     ]
-    private = await run_in_threadpool(
-        db.context, payload.question, allow_sensitive=payload.allow_sensitive
-    )
+    scope = {
+        "project_id": payload.project_id,
+        "allow_sensitive": payload.allow_sensitive,
+        "use_memory": payload.use_memory,
+    }
+    private = await run_in_threadpool(db.chat_context, payload.question, **scope)
     matches = sorted(private + local + public, key=lambda m: m.score, reverse=True)
     # Deliberately don't re-inject stored conversations: deleted memories must not return
     # through stale chat history. History is persisted for display, not factual grounding.
@@ -799,6 +827,7 @@ async def chat(
             )
             for m in local
         ]
+        private = await run_in_threadpool(db.chat_context, payload.question, **scope)
         permitted = await run_in_threadpool(
             DisclosureManager(db).authorize,
             target_id(provider_config.llm_base_url, provider_config.llm_model),
@@ -806,17 +835,31 @@ async def chat(
             + [("private", m) for m in local]
             + [("public", m) for m in public],
             allow_sensitive=payload.allow_sensitive,
+            chat_scope=True,
+            project_id=payload.project_id,
         )
         matches = context_matches(
             sorted(permitted, key=lambda m: m.score, reverse=True), config.max_context_chars
         )
         answer, mode = await generate_answer(
-            question=payload.question, history=history, matches=matches, settings=provider_config
+            question=payload.question,
+            history=history,
+            matches=matches,
+            settings=provider_config,
+            private_memory=True,
         )
     else:
+        # A zero-overlap style default is useful to a generator, not a local factual answer.
+        matches = [match for match in matches if match.score > 0]
         answer, mode = extractive_answer(matches), "extractive"
-    await run_in_threadpool(
-        db.save_chat, payload.question, answer, expected_owner_id=workspace_owner
+    answer, capture = await run_in_threadpool(
+        db.save_chat,
+        payload.question,
+        answer,
+        expected_owner_id=workspace_owner,
+        project_id=payload.project_id,
+        allow_sensitive=payload.allow_sensitive,
+        proposal=proposal,
     )
     response_matches = (
         context_matches(matches, config.max_context_chars)
@@ -827,4 +870,5 @@ async def chat(
         "answer": answer,
         "mode": mode,
         "sources": [{"path": m.document.path, "excerpt": m.excerpt} for m in response_matches],
+        **({"capture": capture} if capture is not None else {}),
     }

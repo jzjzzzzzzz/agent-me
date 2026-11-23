@@ -1,3 +1,4 @@
+import { chatMemoryMessages } from "./chatMemoryMessages";
 import { governanceMessages, type GovernanceMessages } from "./governanceMessages";
 import { migrationMessages, type MigrationMessages } from "./migrationMessages";
 import { erasureMessages, type ErasureMessages } from "./erasureMessages";
@@ -8,6 +9,7 @@ import type { Locale } from "./i18n";
 import { reviewMessages, type ReviewMessages } from "./reviewMessages";
 
 export type PersonalWorkspaceMessages = {
+  chatMemory: typeof chatMemoryMessages.en;
   governance: GovernanceMessages;
   migration: MigrationMessages;
   erasure: ErasureMessages;
@@ -45,7 +47,6 @@ export type PersonalWorkspaceMessages = {
   replacePrompt: string;
   replace: string;
   privateChatTitle: string;
-  chatGuidance: string;
   roleUser: string;
   roleAssistant: string;
   privateQuestion: string;
@@ -58,6 +59,7 @@ export type PersonalWorkspaceMessages = {
 
 export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
   en: {
+    chatMemory: chatMemoryMessages["en"],
     governance: governanceMessages["en"],
     migration: migrationMessages["en"],
     erasure: erasureMessages["en"],
@@ -68,7 +70,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     workspaceLabel: "Private workspace",
     title: "My AI twin",
     intro: "Profiles, conversations, and memories are stored locally. Only confirmed memories ground answers.",
-    externalDisclosure: "A model provider is configured, but this workspace stays local by default. Only explicitly authorized model-assisted extraction calls it. Provider disclosure requires a reviewed policy and explicit opt-in on each API request.",
+    externalDisclosure: "A model provider is configured, but this workspace stays local by default. Generated private chat and model-assisted extraction each require a reviewed policy and explicit opt-in for the current request.",
     localDisclosure: "Local extractive mode: private questions and context stay in this deployment and are not sent to an external model provider. Answers are source excerpts rather than personalized generation.",
     tokenLabel: "Workspace token",
     unlock: "Unlock",
@@ -95,7 +97,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "Replace these confirmed memories with the new content?",
     replace: "Replace",
     privateChatTitle: "Private chat",
-    chatGuidance: "Use “Remember: …” or “记住：…” to create a candidate preference, then confirm it above. Add other information manually.",
     roleUser: "You",
     roleAssistant: "Assistant",
     privateQuestion: "Private question",
@@ -106,6 +107,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Request failed",
   },
   "zh-CN": {
+    chatMemory: chatMemoryMessages["zh-CN"],
     governance: governanceMessages["zh-CN"],
     migration: migrationMessages["zh-CN"],
     erasure: erasureMessages["zh-CN"],
@@ -143,7 +145,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "确认用新内容替换以下已确认记忆？",
     replace: "确认替换",
     privateChatTitle: "私有聊天",
-    chatGuidance: "使用“记住：…”或“Remember: …”生成候选偏好，再到上方确认。其他信息可手动添加。",
     roleUser: "你",
     roleAssistant: "助手",
     privateQuestion: "私有问题",
@@ -154,6 +155,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "请求失败",
   },
   "zh-TW": {
+    chatMemory: chatMemoryMessages["zh-TW"],
     governance: governanceMessages["zh-TW"],
     migration: migrationMessages["zh-TW"],
     erasure: erasureMessages["zh-TW"],
@@ -191,7 +193,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "要以新內容取代以下已確認的記憶嗎？",
     replace: "確認取代",
     privateChatTitle: "私人聊天",
-    chatGuidance: "使用「記住：…」或「Remember: …」建立候選偏好，再到上方確認。其他資訊可手動新增。",
     roleUser: "你",
     roleAssistant: "助理",
     privateQuestion: "私人問題",
@@ -202,6 +203,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "請求失敗",
   },
   ja: {
+    chatMemory: chatMemoryMessages["ja"],
     governance: governanceMessages["ja"],
     migration: migrationMessages["ja"],
     erasure: erasureMessages["ja"],
@@ -239,7 +241,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "次の確認済み記憶を新しい内容で置き換えますか？",
     replace: "置き換える",
     privateChatTitle: "プライベートチャット",
-    chatGuidance: "「Remember: …」または「记住：…」で好みの候補を作成し、上で確認してください。その他の情報は手動で追加できます。",
     roleUser: "あなた",
     roleAssistant: "アシスタント",
     privateQuestion: "非公開の質問",
@@ -250,6 +251,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "リクエストに失敗しました",
   },
   ko: {
+    chatMemory: chatMemoryMessages["ko"],
     governance: governanceMessages["ko"],
     migration: migrationMessages["ko"],
     erasure: erasureMessages["ko"],
@@ -287,7 +289,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "다음 확인된 기억을 새 내용으로 교체할까요?",
     replace: "교체",
     privateChatTitle: "비공개 채팅",
-    chatGuidance: "“Remember: …” 또는 “记住：…”로 선호 후보를 만든 후 위에서 확인하세요. 다른 정보는 직접 추가할 수 있습니다.",
     roleUser: "나",
     roleAssistant: "어시스턴트",
     privateQuestion: "비공개 질문",
@@ -298,6 +299,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "요청 실패",
   },
   es: {
+    chatMemory: chatMemoryMessages["es"],
     governance: governanceMessages["es"],
     migration: migrationMessages["es"],
     erasure: erasureMessages["es"],
@@ -335,7 +337,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "¿Reemplazar estos recuerdos confirmados por el contenido nuevo?",
     replace: "Reemplazar",
     privateChatTitle: "Chat privado",
-    chatGuidance: "Usa “Remember: …” o “记住：…” para crear una preferencia candidata y confírmala arriba. Añade la demás información manualmente.",
     roleUser: "Tú",
     roleAssistant: "Asistente",
     privateQuestion: "Pregunta privada",
@@ -346,6 +347,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "La solicitud ha fallado",
   },
   fr: {
+    chatMemory: chatMemoryMessages["fr"],
     governance: governanceMessages["fr"],
     migration: migrationMessages["fr"],
     erasure: erasureMessages["fr"],
@@ -383,7 +385,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "Remplacer ces souvenirs confirmés par le nouveau contenu ?",
     replace: "Remplacer",
     privateChatTitle: "Discussion privée",
-    chatGuidance: "Utilisez « Remember: … » ou « 记住：… » pour créer une préférence candidate, puis confirmez-la ci-dessus. Ajoutez les autres informations manuellement.",
     roleUser: "Vous",
     roleAssistant: "Assistant",
     privateQuestion: "Question privée",
@@ -394,6 +395,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Échec de la requête",
   },
   de: {
+    chatMemory: chatMemoryMessages["de"],
     governance: governanceMessages["de"],
     migration: migrationMessages["de"],
     erasure: erasureMessages["de"],
@@ -431,7 +433,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "Diese bestätigten Erinnerungen durch den neuen Inhalt ersetzen?",
     replace: "Ersetzen",
     privateChatTitle: "Privater Chat",
-    chatGuidance: "Verwende „Remember: …“ oder „记住：…“, um einen Präferenzkandidaten zu erstellen, und bestätige ihn oben. Andere Informationen kannst du manuell hinzufügen.",
     roleUser: "Du",
     roleAssistant: "Assistent",
     privateQuestion: "Private Frage",
@@ -442,6 +443,7 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     requestFailed: "Anfrage fehlgeschlagen",
   },
   "pt-BR": {
+    chatMemory: chatMemoryMessages["pt-BR"],
     governance: governanceMessages["pt-BR"],
     migration: migrationMessages["pt-BR"],
     erasure: erasureMessages["pt-BR"],
@@ -479,7 +481,6 @@ export const personalMessages: Record<Locale, PersonalWorkspaceMessages> = {
     replacePrompt: "Substituir estas memórias confirmadas pelo novo conteúdo?",
     replace: "Substituir",
     privateChatTitle: "Chat privado",
-    chatGuidance: "Use “Remember: …” ou “记住：…” para criar uma preferência candidata e confirme-a acima. Adicione outras informações manualmente.",
     roleUser: "Você",
     roleAssistant: "Assistente",
     privateQuestion: "Pergunta privada",

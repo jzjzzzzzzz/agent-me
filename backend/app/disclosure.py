@@ -228,17 +228,37 @@ class DisclosureManager:
                 "sensitivity": "sensitive" if source["sensitivity"] == "sensitive" else "private",
             }
 
-    def authorize(self, provider_target, matches, *, allow_sensitive=False):
+    def authorize(
+        self,
+        provider_target,
+        matches,
+        *,
+        allow_sensitive=False,
+        chat_scope=False,
+        project_id=None,
+    ):
         # Source-value/privacy revalidation precedes authorization; no stored transcript is input.
-        selected = self.store.select(TemporalQuery(allow_sensitive=allow_sensitive))
+        query = TemporalQuery(allow_sensitive=allow_sensitive, entity_id=project_id)
+        selected = (
+            self.store.select(query, chat_scope=True) if chat_scope else self.store.select(query)
+        )
         memories = {f"memory/{row['record']['id']}": row for row in selected}
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             policy = DisclosurePolicy.model_validate(settings(db)["policy"])
+            project = self.store._entity(db, project_id) if chat_scope else None
             if (
                 not policy.enabled
                 or policy.target_id != provider_target
                 or "private" not in policy.labels
+                or project
+                and (
+                    project["kind"] != "project"
+                    or project["sensitivity"] == "sensitive"
+                    and (not allow_sensitive or "sensitive" not in policy.labels)
+                    or policy.entity_ids is not None
+                    and project_id not in policy.entity_ids
+                )
             ):
                 record(db, "disclosure.authorize", "denied")
                 denied = True

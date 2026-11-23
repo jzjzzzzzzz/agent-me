@@ -14,6 +14,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from .agency_schema import extend_agency
+from .chat_memory import ChatCapture, Proposal, propose
 from .control_schema import extend_control
 from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
@@ -24,6 +25,16 @@ from .text import normalized_tokens
 _SCHEMA_VERSION = 8
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
+_CHAT_DEFAULT_PREFERENCES = frozenset(
+    {
+        "style",
+        "response.style",
+        "response.format",
+        "response.tone",
+        "response.language",
+        "conversation.preference",
+    }
+)
 _RECORD_COLUMNS = (
     "id,kind,key,content,source,status,created_at,updated_at,revision,superseded_by,sensitivity,"
     "entity_id,confidence,belief,valid_from,valid_until,occurred_at,owner_id,category"
@@ -49,6 +60,10 @@ def memory_digest(
     if any(value is not None for value in qualifiers):
         values.append(qualifiers)
     return hashlib.sha256(json.dumps(values, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def turn_quote_digest(source: str, content: str) -> str:
+    return memory_digest("owner-turn-quote", source, content)
 
 
 def record_digest(item):
@@ -590,14 +605,16 @@ class Store:
 
     @staticmethod
     def _delete(db, entry_id):
+        now = datetime.now(UTC).isoformat()
         for row in db.execute("SELECT * FROM revisions WHERE id=?", (entry_id,)).fetchall():
             db.execute(
-                "INSERT OR REPLACE INTO forgotten VALUES (?,?)",
-                (
-                    record_digest(dict(row)),
-                    datetime.now(UTC).isoformat(),
-                ),
+                "INSERT OR REPLACE INTO forgotten VALUES (?,?)", (record_digest(dict(row)), now)
             )
+            if row["source"].startswith("turn:"):
+                db.execute(
+                    "INSERT OR REPLACE INTO forgotten VALUES (?,?)",
+                    (turn_quote_digest(row["source"], row["content"]), now),
+                )
         db.execute("DELETE FROM origins WHERE memory_id=?", (entry_id,))
         db.execute("DELETE FROM memory_digests WHERE memory_id=?", (entry_id,))
         db.execute("DELETE FROM revisions WHERE id=?", (entry_id,))
@@ -617,36 +634,106 @@ class Store:
             db.execute("DELETE FROM turns")
         return {"deleted": True}
 
-    def save_chat(self, question: str, answer: str, *, expected_owner_id: str | None = None):
-        turn_id = uuid4().hex
-        candidate: Entry | None = None
-        # Explicit syntax only: do not silently infer personal facts from casual conversation.
-        for prefix in ("记住：", "记住:", "Remember:", "remember:"):
-            if question.startswith(prefix):
-                value = question[len(prefix) :].strip()
-                if value:
-                    candidate = Entry(
-                        kind="preference", key="conversation.preference", content=value[:2000]
-                    )
-                break
-        # The source turn, candidate, and its initial snapshot must succeed together.
+    def _chat_subjects(self, db, project_id, allow_sensitive):
+        owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+        binding = db.execute("SELECT value FROM workspace WHERE key='owner_entity_id'").fetchone()
+        project = self._entity(db, project_id)
+        if project and project["kind"] != "project":
+            raise MemoryInputError("Chat scope must be a confirmed project")
+        if project and project["sensitivity"] == "sensitive" and not allow_sensitive:
+            raise MemoryPermissionDenied("Sensitive project requires explicit opt-in")
+        return owner, binding[0] if binding else None
+
+    def _capture_turn(self, db, turn_id, candidate):
+        entry_data = candidate.model_dump()
+        entity = self._entity(db, candidate.entity_id)
+        label = {"public": 0, "private": 1, "sensitive": 2}
+        minimum_label = max(
+            label[candidate.sensitivity], label[entity["sensitivity"]] if entity else 0, 1
+        )
+        candidate = candidate.model_copy(
+            update={"sensitivity": "sensitive" if minimum_label == 2 else "private"}
+        )
+        digest = record_digest(entry_data)
+        if db.execute(
+            "SELECT 1 FROM forgotten WHERE digest IN (?, ?)",
+            (digest, turn_quote_digest(f"turn:{turn_id}", candidate.content)),
+        ).fetchone():
+            return ChatCapture(turn_id=turn_id, outcome="forgotten")
+        rows = db.execute(
+            "SELECT e.id,e.status,e.sensitivity FROM memory_digests d "
+            "JOIN entries e ON d.memory_id=e.id WHERE d.digest=? ORDER BY e.rowid",
+            (digest,),
+        ).fetchall()
+        for row in rows:
+            if row["status"] != "superseded" and label[row["sensitivity"]] >= minimum_label:
+                return ChatCapture(turn_id=turn_id, memory_id=row["id"], outcome="existing")
+        if any(row["status"] == "superseded" for row in rows):
+            return ChatCapture(turn_id=turn_id, outcome="superseded")
+        item = self._insert(db, candidate, source=f"turn:{turn_id}")
+        return ChatCapture(turn_id=turn_id, memory_id=item["id"], outcome="created")
+
+    def capture_turn(self, turn_id: str, candidate: Entry):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            if (
-                expected_owner_id is not None
-                and db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
-                != expected_owner_id
-            ):
+            turn = db.execute(
+                "SELECT content FROM turns WHERE id=? AND role='user'", (turn_id,)
+            ).fetchone()
+            if not turn:
+                raise MemoryNotFound("Owner chat turn not found")
+            if candidate.content not in turn["content"]:
+                raise MemoryInputError("Candidate must quote the owner turn exactly")
+            self._chat_subjects(db, candidate.entity_id, candidate.sensitivity == "sensitive")
+            return self._capture_turn(db, turn_id, candidate)
+
+    def save_chat(
+        self,
+        question: str,
+        answer: str,
+        *,
+        expected_owner_id: str | None = None,
+        project_id: str | None = None,
+        allow_sensitive: bool = False,
+        proposal: Proposal | None = None,
+    ):
+        proposal = proposal or propose(question, suggest=False, project_id=project_id)
+        turn_id = uuid4().hex
+        # The source turn, candidate and initial snapshot succeed together.
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            owner, _ = self._chat_subjects(db, project_id, allow_sensitive)
+            if expected_owner_id is not None and owner != expected_owner_id:
                 raise MemoryConflict("Workspace changed during chat; discarded stale result")
+            candidate = proposal.entry
+            if candidate is not None and (
+                candidate.entity_id != project_id or candidate.content not in question
+            ):
+                raise MemoryInputError("Chat proposal must quote its exact scoped owner turn")
             now = datetime.now(UTC).isoformat()
+            assistant_id = uuid4().hex
             db.executemany(
                 "INSERT INTO turns VALUES (?,?,?,?)",
-                [(turn_id, "user", question, now), (uuid4().hex, "assistant", answer, now)],
+                [(turn_id, "user", question, now), (assistant_id, "assistant", answer, now)],
             )
+            capture = None
             if candidate is not None:
-                self._insert(db, candidate, source=f"turn:{turn_id}")
+                capture = self._capture_turn(db, turn_id, candidate)
+            elif proposal.explicit:
+                capture = ChatCapture(turn_id=turn_id, outcome="ignored")
+            if proposal.explicit:
+                answer = {
+                    "created": "Memory candidate saved for your review.",
+                    "existing": "This memory is already recorded.",
+                    "superseded": "This value was superseded; review its history to restore it.",
+                    "forgotten": "This forgotten value was not restored.",
+                    "ignored": (
+                        "Use Remember: <kind> <key> = <value> or Correct: <kind> <key> = <value>."
+                    ),
+                }[capture.outcome]
+                db.execute("UPDATE turns SET content=? WHERE id=?", (answer, assistant_id))
+            return answer, capture
 
-    def select(self, query: TemporalQuery):
+    def select(self, query: TemporalQuery, *, chat_scope: bool = False):
         now = datetime.now(UTC)
         as_of, known_at = utc(query.as_of) or now, utc(query.known_at) or now
         with self.connect() as db:
@@ -654,7 +741,15 @@ class Store:
             current = {
                 row["id"]: dict(row) for row in db.execute("SELECT * FROM entries ORDER BY rowid")
             }
-            owner_id = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()[0]
+            if chat_scope:
+                owner_id, owner_entity = self._chat_subjects(
+                    db, query.entity_id, query.allow_sensitive
+                )
+            else:
+                owner_id = db.execute(
+                    "SELECT value FROM workspace WHERE key='owner_id'"
+                ).fetchone()[0]
+                owner_entity = None
             entities = {item["id"]: item for item in records(db, "entities")}
             if query.known_at is None:
                 chosen = current
@@ -672,7 +767,10 @@ class Store:
             item = {field: raw[field] for field in _RECORD_COLUMNS.split(",")}
             if item["status"] != "confirmed" or item["owner_id"] != owner_id:
                 continue
-            if query.entity_id is not None and item["entity_id"] != query.entity_id:
+            if chat_scope:
+                if item["entity_id"] not in {None, owner_entity, query.entity_id}:
+                    continue
+            elif query.entity_id is not None and item["entity_id"] != query.entity_id:
                 if item["entity_id"] is not None or item["kind"] != "preference":
                     continue
             entity = entities.get(item["entity_id"]) if item["entity_id"] else None
@@ -722,20 +820,54 @@ class Store:
     ):
         if type(allow_sensitive) is not bool:
             raise MemoryInputError("Sensitive disclosure requires an explicit boolean")
-        tokens = normalized_tokens(question)
-        preferences: list[Match] = []
-        facts: list[Match] = []
         items = self.select(
             TemporalQuery(
                 allow_sensitive=allow_sensitive, as_of=as_of, known_at=known_at, entity_id=entity_id
             )
         )
+        return self._rank_context(question, items)
+
+    def chat_context(self, question, *, project_id=None, allow_sensitive=False, use_memory=True):
+        items = self.select(
+            TemporalQuery(entity_id=project_id, allow_sensitive=allow_sensitive),
+            chat_scope=True,
+        )
+        if not use_memory:
+            return []
+        # A selected project's active preferences override same-key defaults without
+        # changing the stored global preference or affecting chats in other scopes.
+        project_keys = {
+            unicodedata.normalize("NFC", item["record"]["key"])
+            for item in items
+            if project_id is not None
+            and item["record"]["entity_id"] == project_id
+            and item["record"]["kind"] == "preference"
+        }
+        items = [
+            item
+            for item in items
+            if item["record"]["entity_id"] == project_id
+            or item["record"]["kind"] != "preference"
+            or unicodedata.normalize("NFC", item["record"]["key"]) not in project_keys
+        ]
+        return self._rank_context(question, items, scoped_chat=True)
+
+    @staticmethod
+    def _rank_context(question, items, *, scoped_chat=False):
+        tokens = normalized_tokens(question)
+        preferences: list[Match] = []
+        facts: list[Match] = []
         for selected in items:
             item = selected["record"]
             excerpt = f"{item['key']}: {item['content']}"
             overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
-            # Preferences are always eligible, but do not outrank relevant factual evidence.
-            if overlap or item["kind"] == "preference":
+            # Only broad presentation defaults can travel with a lexically unrelated
+            # chat question. The existing unscoped core API keeps its original behavior.
+            key = unicodedata.normalize("NFC", item["key"]).casefold()
+            is_default = item["kind"] == "preference" and (
+                not scoped_chat or key in _CHAT_DEFAULT_PREFERENCES
+            )
+            if overlap or is_default:
                 doc = Document(title=item["key"], path=f"memory/{item['id']}", text=excerpt)
                 match = Match(document=doc, excerpt=excerpt, score=overlap)
                 (preferences if item["kind"] == "preference" else facts).append(match)
