@@ -250,3 +250,6 @@ are inert data. Audit does not store request content, tokens, private paths or e
 `/api/v1/personal/chat` is local/extractive unless both workspace authorization and explicit
 `allow_provider: true` apply. `/disclosure/target` and `/disclosure/policy` expose owner target
 review and data scopes. See [disclosure contracts](DISCLOSURE.md); atomic ask remains provider-free.
+See [long-term chat memory](CHAT_MEMORY.md#api-integration) for scoped chat fields, capture
+outcomes and exact owner-turn proposals. Explicit remember/correct commands are local even when
+provider opt-in is present.

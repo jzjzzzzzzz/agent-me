@@ -92,18 +92,13 @@ Windows 可使用 `.venv\Scripts\uvicorn.exe` 和 `python` 替换对应命令。
 
 ### 4. 聊天与确认
 
-在**私有聊天**输入 `记住：先给结论，再给细节` 或 `Remember: Keep answers concise`。
-系统保存对话，并将指令后的文本作为待确认偏好；点击确认后才用于后续回答。
-本版采用明确指令提取，不会从普通聊天中自动推断事实；事实、事件和决策请在表单中选择类型。
-从聊天提取的默认字段为 `conversation.preference`，可先编辑成更具体的字段再确认。
+在**私有聊天**输入 `记住：偏好 response.style = 给导师写项目更新，先说结论`，或从一条自己的聊天消息中提取**原文摘录**。
+确认前，候选不会用于回答；用 `更正：` 和相同的类型、字段与项目范围可提出替换。
+可开启规则式记忆建议，但默认关闭，不自动吸收普通聊天。选择已确认项目后，可定义该项目独有的偏好，
+不覆盖个人默认。详见[对话长期记忆](CHAT_MEMORY.md)。
 
-已确认的偏好无需词项命中也可进入私有回答上下文，为其保留 20 条名额中的 5 条底线配额，
-避免被大量匹配的事实挤出；预算有余时仍优先纳入偏好而非低相关事实。其他记忆采用词项匹配检索。
-记忆总计最多选取 20 条；若已确认偏好与相关事实合计超出该预算，底线配额之外得分最低的偏好会被舍弃。
-发送给模型的上下文仍受 `MAX_CONTEXT_CHARS` 限制。
-没有配置模型时仅返回相关原文，不会智能模仿语气。
-如需私有模型生成，配置三个 `LLM_*` 值后，还须通过 API/CLI 授权披露策略，并在每次请求显式设置 `allow_provider: true`；参见[披露契约](DISCLOSURE.md)。
-普通问答与协作模式保持原有行为，**不会读取私有工作区**。
+本地模式只返回相关原文，不生成个性化草稿。模型生成需要配置三个 `LLM_*` 值、审核披露策略，
+并对当次请求明确授权；参见[披露契约](DISCLOSURE.md)。公开问答和协作不会读取私有工作区。
 
 ### 5. 更新、冲突与删除
 
@@ -172,19 +167,18 @@ not a guarantee that an already-started server transaction was undone; refresh a
 Close the workbench to return to the compatibility memory/chat form. No credentials or private
 content are written to browser storage. All nine supported interface locales cover the workbench.
 
-Add profile fields as typed entries (`fact`, `preference`, `event`, `decision`). All new or edited
-entries are pending until confirmed. Use `Remember: ...` in private chat to propose a preference,
-then review it in the memory list. The default extracted key is `conversation.preference`; edit it
-to a specific key before confirmation when needed. Matching kind/key conflicts require explicit
-replacement. Replaced records become read-only `superseded` archives, excluded from answer context.
-Edits preserve prior revision snapshots. The review workbench browses versions and superseded records; restoration remains an API/CLI capability. Cross-key semantic contradiction detection is not implemented.
+Add typed facts, preferences, events or decisions from the profile form, an exact owner
+turn excerpt, or an explicit command such as `Remember: preference response.style = Lead with the
+conclusion`. Confirm a candidate before it can affect later chats. `Correct:` proposes a replacement
+through the same revision-aware review. For project-specific overrides, choose a confirmed project
+scope in the private chat. Optional local suggestions require a checkbox and never confirm
+themselves. See [long-term chat memory](CHAT_MEMORY.md) for controls and limitations.
 
-Confirmed preferences are eligible without lexical overlap; a reserved floor (5 of the 20
-total slots) keeps them from being evicted by a flood of matching facts, and any unused
-budget still favors preferences before low-relevance facts. Other entries use lexical
-retrieval. At most 20 memory entries are selected in total; if confirmed preferences and
-relevant facts together exceed that budget, the lowest-scoring preferences beyond the
-reserved floor are dropped. Provider context remains bounded by `MAX_CONTEXT_CHARS`.
+Current chat ranks relevant approved records and reserves context for eligible preferences. A
+same-key project preference takes precedence only inside that project. Up to 20 memory matches
+are selected; provider context also respects `MAX_CONTEXT_CHARS`. A broad presentation default
+may guide generation when there is no lexical overlap, but does not become a local extractive
+answer to an unrelated question.
 Optional private Markdown belongs in `private/knowledge/`, never the tracked `knowledge/`.
 Private Markdown is operator-maintained knowledge and bypasses candidate confirmation.
 The public chat and collaboration endpoints never read this workspace.
@@ -225,8 +219,9 @@ The token must contain at least 32 characters. Disabled mode returns 404, failed
 | POST | `/entries/{id}/delete` | Delete a record and its snapshots; optional `{expected_revision}` rejects stale deletion |
 | GET | `/history` | Latest 100 persisted turns |
 | POST | `/history/clear` | Delete all turns, retain entries |
+| POST | `/history/{turn_id}/capture` | Propose an exact excerpt of a stored owner turn |
 | GET | `/export` | Version-8 snapshot including learning provenance and forgetting digests |
-| POST | `/chat` | Private grounded answer for `{question}` and persist exchange |
+| POST | `/chat` | Scoped private grounded chat and local memory proposals |
 
 ### Typed memory contract / 结构化记忆契约
 
@@ -241,7 +236,7 @@ A memory contains `kind`, `key`, `content`, server-generated `id`, `source`, `st
 a monotonically increasing `revision`, and nullable `superseded_by`.
 The default list excludes superseded records; export includes them.
 
-- Manual sources are `manual`; explicit remember instructions use `turn:<id>`.
+- Manual sources are `manual`; explicit chat proposals and literal captures use `turn:<id>`.
 - An edit attributes the new version to `manual`, while snapshots preserve the previous source.
 - Restore creates a **new pending record** with `source = memory:<original-id>@<revision>`.
   Its confirmation still needs explicit replacement if the original kind/key has a current record.
@@ -250,7 +245,8 @@ The default list excludes superseded records; export includes them.
 - Existing databases migrate automatically. Their known state becomes a `baseline` snapshot;
   pre-migration edits or deleted replacements cannot be reconstructed.
 - The source turn, explicitly requested candidate, and initial snapshot are written atomically.
-  Ordinary conversation still creates no inferred memory. Remember text remains capped at 2,000 characters.
+  Ordinary conversation still creates no active memory; opt-in rules can suggest verbatim candidates.
+  Chat capture text remains capped at 2,000 characters.
 
 Entry creation rejects client-set provenance, IDs, timestamps, revision, or status.
 Confirmation rejects unknown fields, duplicate or blank replacement IDs, non-string IDs,

@@ -101,7 +101,7 @@ async def test_sensitive_memory_never_reaches_provider_without_explicit_opt_in(
         await client.post(
             BASE + "/chat",
             headers=HEADERS,
-            json={"question": "Synthetic query", "allow_provider": True},
+            json={"question": "What is my private style?", "allow_provider": True},
         )
     ).status_code == 200
     assert captured[-1] == []
@@ -109,7 +109,11 @@ async def test_sensitive_memory_never_reaches_provider_without_explicit_opt_in(
         await client.post(
             BASE + "/chat",
             headers=HEADERS,
-            json={"question": "Synthetic query", "allow_sensitive": True, "allow_provider": True},
+            json={
+                "question": "What is my private style?",
+                "allow_sensitive": True,
+                "allow_provider": True,
+            },
         )
     ).status_code == 200
     assert captured[-1] == ["private.style: SensitiveOrchid"]
@@ -117,7 +121,7 @@ async def test_sensitive_memory_never_reaches_provider_without_explicit_opt_in(
         await client.post(
             BASE + "/chat",
             headers=HEADERS,
-            json={"question": "Synthetic query", "allow_sensitive": "false"},
+            json={"question": "What is my private style?", "allow_sensitive": "false"},
         )
     ).status_code == 422
 

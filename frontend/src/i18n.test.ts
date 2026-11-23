@@ -48,6 +48,9 @@ describe("localization", () => {
       expect(Object.keys(messages[code].personalWorkspace.review).sort()).toEqual(
         Object.keys(messages.en.personalWorkspace.review).sort(),
       );
+      expect(Object.keys(messages[code].personalWorkspace.chatMemory).sort()).toEqual(
+        Object.keys(messages.en.personalWorkspace.chatMemory).sort(),
+      );
       expect(Object.keys(messages[code].personalWorkspace).sort()).toEqual(
         Object.keys(messages.en.personalWorkspace).sort(),
       );
@@ -56,7 +59,7 @@ describe("localization", () => {
 
   it("keeps a backend-supported literal prefix in localized private chat guidance", () => {
     for (const { code } of supportedLocales) {
-      expect(messages[code].personalWorkspace.chatGuidance).toMatch(/Remember:|记住：/);
+      expect(messages[code].personalWorkspace.chatMemory.guidance).toMatch(/Remember:|记住：|記住：/);
     }
   });
 });

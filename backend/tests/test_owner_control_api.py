@@ -145,7 +145,13 @@ async def test_in_flight_chat_cannot_repopulate_a_purged_workspace(
     response = await client.post(
         BASE + "/chat",
         headers=H,
-        json={"question": "Remember: StalePrivatePreference", "allow_provider": True},
+        # Explicit commands bypass providers. A regular opted-in suggestion can still
+        # be in flight when an owner purges the workspace.
+        json={
+            "question": "From now on, StalePrivatePreference",
+            "allow_provider": True,
+            "suggest_memory": True,
+        },
     )
     assert response.status_code == 409 and "StalePrivate" not in response.text
     assert not db.history() and not db.entries()
