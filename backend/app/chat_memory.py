@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from string import ascii_letters, digits
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -34,11 +35,8 @@ class Proposal:
 
 
 _COMMAND = re.compile(r"^(?P<verb>remember|correct|记住|記住|更正)\s*[:：]", re.IGNORECASE)
-_TYPED = re.compile(
-    r"^(fact|preference|event|decision|事实|事實|偏好|事件|决策|決策)"
-    r"[ \t]+([a-z][a-z0-9_.-]{0,99})[ \t]*[=＝][ \t]*(.+)$",
-    re.IGNORECASE,
-)
+_TYPED_KINDS = frozenset({"fact", "preference", "event", "decision"})
+_KEY_CHARS = frozenset(ascii_letters + digits + "_.-")
 _KINDS = {
     "事实": "fact",
     "事實": "fact",
@@ -67,17 +65,40 @@ _TEMPORARY = re.compile(
 )
 
 
+def _parse_typed(body: str) -> tuple[str, str, str] | None:
+    """Split a typed command in linear time, preserving its literal value."""
+    delimiter = next((index for index, char in enumerate(body) if char in "=＝"), None)
+    if delimiter is None:
+        return None
+    head = body[:delimiter]
+    gap = next((index for index, char in enumerate(head) if char in " \t"), None)
+    if gap is None:
+        return None
+    raw_kind = head[:gap].casefold()
+    kind = _KINDS.get(raw_kind, raw_kind)
+    key = head[gap:].strip(" \t")
+    value = body[delimiter + 1 :].strip()
+    if (
+        kind not in _TYPED_KINDS
+        or not 1 <= len(key) <= 100
+        or key[0] not in ascii_letters
+        or any(char not in _KEY_CHARS for char in key)
+        or not value
+        or "\n" in value
+    ):
+        return None
+    return kind, key, value
+
+
 def propose(question: str, *, suggest: bool, project_id: str | None) -> Proposal:
     """Treat only exact user text as evidence and never infer subject or effective dates."""
     question = question.strip()
     command = _COMMAND.match(question)
     if command:
         body = question[command.end() :].strip()
-        typed = _TYPED.fullmatch(body)
+        typed = _parse_typed(body)
         if typed:
-            kind, key, content = typed.groups()
-            kind = _KINDS.get(kind, kind.lower())
-            content = content.strip()
+            kind, key, content = typed
         elif command["verb"].casefold() in {"correct", "更正"} or "=" in body or "＝" in body:
             return Proposal(None, explicit=True)
         else:

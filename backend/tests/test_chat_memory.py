@@ -282,6 +282,35 @@ def test_invalid_explicit_command_is_not_a_model_question(command):
     assert result.explicit and result.entry is None
 
 
+@pytest.mark.parametrize(
+    ("command", "kind", "key", "value"),
+    [
+        (
+            "Remember:  FACT\t  Identity.Role \t= Optical engineer",
+            "fact",
+            "identity.role",
+            "Optical engineer",
+        ),
+        (
+            "更正：偏好 response.style ＝ 项目＝Orchid 时先写结论",
+            "preference",
+            "response.style",
+            "项目＝Orchid 时先写结论",
+        ),
+        (
+            "记住：决策 project.notes=Keep mode = draft",
+            "decision",
+            "project.notes",
+            "Keep mode = draft",
+        ),
+    ],
+)
+def test_typed_capture_preserves_literal_content_and_ascii_field(command, kind, key, value):
+    result = propose(command, suggest=False, project_id=None)
+    assert result.explicit and result.entry is not None
+    assert (result.entry.kind, result.entry.key, result.entry.content) == (kind, key, value)
+
+
 async def test_closed_fields_use_scoped_confirmed_memory_not_markdown(
     personal, configured_private_provider, monkeypatch
 ):
