@@ -15,6 +15,7 @@ from pydantic import ValidationError
 
 from .agency_schema import extend_agency
 from .chat_memory import ChatCapture, Proposal, propose
+from .chat_recall import rank_chat
 from .control_schema import extend_control
 from .identity_schema import extend_identity, extend_records, records
 from .knowledge import Document, Match
@@ -25,16 +26,6 @@ from .text import normalized_tokens
 _SCHEMA_VERSION = 8
 _MAX_MATCHES = 20
 _MAX_PREFERENCE_MATCHES = 5
-_CHAT_DEFAULT_PREFERENCES = frozenset(
-    {
-        "style",
-        "response.style",
-        "response.format",
-        "response.tone",
-        "response.language",
-        "conversation.preference",
-    }
-)
 _RECORD_COLUMNS = (
     "id,kind,key,content,source,status,created_at,updated_at,revision,superseded_by,sensitivity,"
     "entity_id,confidence,belief,valid_from,valid_until,occurred_at,owner_id,category"
@@ -827,15 +818,12 @@ class Store:
         )
         return self._rank_context(question, items)
 
-    def chat_context(self, question, *, project_id=None, allow_sensitive=False, use_memory=True):
+    def chat_recall(self, question, *, project_id=None, allow_sensitive=False, use_memory=True):
         items = self.select(
             TemporalQuery(entity_id=project_id, allow_sensitive=allow_sensitive),
             chat_scope=True,
         )
-        if not use_memory:
-            return []
-        # A selected project's active preferences override same-key defaults without
-        # changing the stored global preference or affecting chats in other scopes.
+        # Active project preferences override same-key defaults without editing them.
         project_keys = {
             unicodedata.normalize("NFC", item["record"]["key"])
             for item in items
@@ -850,10 +838,27 @@ class Store:
             or item["record"]["kind"] != "preference"
             or unicodedata.normalize("NFC", item["record"]["key"]) not in project_keys
         ]
-        return self._rank_context(question, items, scoped_chat=True)
+        return rank_chat(
+            question,
+            items,
+            project_id=project_id,
+            limit=_MAX_MATCHES,
+            preference_slots=_MAX_PREFERENCE_MATCHES,
+            enabled=use_memory,
+        )
+
+    def chat_context(self, question, *, project_id=None, allow_sensitive=False, use_memory=True):
+        return list(
+            self.chat_recall(
+                question,
+                project_id=project_id,
+                allow_sensitive=allow_sensitive,
+                use_memory=use_memory,
+            ).matches
+        )
 
     @staticmethod
-    def _rank_context(question, items, *, scoped_chat=False):
+    def _rank_context(question, items):
         tokens = normalized_tokens(question)
         preferences: list[Match] = []
         facts: list[Match] = []
@@ -861,13 +866,7 @@ class Store:
             item = selected["record"]
             excerpt = f"{item['key']}: {item['content']}"
             overlap = len(tokens & normalized_tokens(excerpt)) / max(len(tokens), 1)
-            # Only broad presentation defaults can travel with a lexically unrelated
-            # chat question. The existing unscoped core API keeps its original behavior.
-            key = unicodedata.normalize("NFC", item["key"]).casefold()
-            is_default = item["kind"] == "preference" and (
-                not scoped_chat or key in _CHAT_DEFAULT_PREFERENCES
-            )
-            if overlap or is_default:
+            if overlap or item["kind"] == "preference":
                 doc = Document(title=item["key"], path=f"memory/{item['id']}", text=excerpt)
                 match = Match(document=doc, excerpt=excerpt, score=overlap)
                 (preferences if item["kind"] == "preference" else facts).append(match)

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from .audit import record
+from .chat_recall import ChatMemoryMatch
 from .memory import MemoryConflict, MemoryError, MemoryInputError, MemoryPermissionDenied
 from .memory_models import TemporalQuery
 from .memory_time import active_at
@@ -236,6 +237,8 @@ class DisclosureManager:
         allow_sensitive=False,
         chat_scope=False,
         project_id=None,
+        expected_owner_id=None,
+        recall_question=None,
     ):
         # Source-value/privacy revalidation precedes authorization; no stored transcript is input.
         query = TemporalQuery(allow_sensitive=allow_sensitive, entity_id=project_id)
@@ -245,6 +248,10 @@ class DisclosureManager:
         memories = {f"memory/{row['record']['id']}": row for row in selected}
         with self.store.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            if expected_owner_id is not None:
+                owner = db.execute("SELECT value FROM workspace WHERE key='owner_id'").fetchone()
+                if not owner or owner[0] != expected_owner_id:
+                    raise MemoryConflict("Workspace changed before provider delivery")
             policy = DisclosurePolicy.model_validate(settings(db)["policy"])
             project = self.store._entity(db, project_id) if chat_scope else None
             if (
@@ -266,9 +273,20 @@ class DisclosureManager:
             else:
                 denied = False
                 allowed = []
+                # Refresh a closed field under the write fence: a competing alias
+                # newly confirmed after retrieval can also invalidate the old result.
+                field_paths = None
+                if recall_question is not None:
+                    live_recall = self.store.chat_recall(
+                        recall_question, project_id=project_id, allow_sensitive=allow_sensitive
+                    )
+                    field_paths = {match.document.path for match in live_recall.matches}
                 for namespace, match in matches:
                     path = match.document.path
-                    if namespace not in policy.namespaces:
+                    if namespace not in policy.namespaces or (
+                        field_paths is not None
+                        and (namespace != "memory" or path not in field_paths)
+                    ):
                         continue
                     if namespace == "memory":
                         row = memories.get(path)
@@ -282,6 +300,8 @@ class DisclosureManager:
                         if (
                             not live
                             or live["revision"] != item["revision"]
+                            or isinstance(match, ChatMemoryMatch)
+                            and match.revision != live["revision"]
                             or not active_at(dict(live), datetime.now(UTC))
                         ):
                             continue

@@ -1,6 +1,7 @@
 import type { Locale } from "./i18n";
 
 const en = {
+  recallReason: { field: "Profile field", lexical: "Text match", presentation_default: "Writing default" },
   guidance: "Use Remember: preference response.style = Lead with the conclusion. Use Correct: with the same type and key to propose a replacement. Nothing becomes active until confirmed.",
   loadProjects: "Load project scopes",
   scope: "Memory scope",
@@ -26,6 +27,7 @@ const en = {
 type Messages = typeof en;
 
 const zhCN: Messages = {
+  recallReason: { field: "档案字段", lexical: "文字匹配", presentation_default: "写作默认" },
   guidance: "例如：记住：偏好 response.style = 先说结论。用「更正：」和相同的类型、字段提出替换。确认前不会生效。",
   loadProjects: "加载项目范围",
   scope: "记忆范围",
@@ -49,6 +51,7 @@ const zhCN: Messages = {
 };
 
 const zhTW: Messages = {
+  recallReason: { field: "檔案欄位", lexical: "文字比對", presentation_default: "寫作預設" },
   guidance: "例如：記住：偏好 response.style = 先說結論。用「更正：」與相同的類型、欄位提出替換；確認前不會生效。",
   loadProjects: "載入專案範圍",
   scope: "記憶範圍",
@@ -76,6 +79,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
   "zh-CN": zhCN,
   "zh-TW": zhTW,
   ja: {
+    recallReason: { field: "プロフィールの項目", lexical: "テキスト一致", presentation_default: "文章の既定値" },
     guidance: "例：Remember: preference response.style = 結論から伝える。同じ種類とキーで Correct: を使うと変更候補を作成できます。確認するまで有効になりません。",
     loadProjects: "プロジェクトの範囲を読み込む",
     scope: "記憶の範囲",
@@ -98,6 +102,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
     ignored: "候補は作成されませんでした。訂正には種類、キー、値が必要です。内容は2,000文字以内にしてください。",
   },
   ko: {
+    recallReason: { field: "프로필 필드", lexical: "텍스트 일치", presentation_default: "글쓰기 기본값" },
     guidance: "예: Remember: preference response.style = 결론부터 말하기. 같은 유형과 키로 Correct: 를 사용하면 교체를 제안할 수 있습니다. 확인 전에는 적용되지 않습니다.",
     loadProjects: "프로젝트 범위 불러오기",
     scope: "메모리 범위",
@@ -120,6 +125,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
     ignored: "후보가 생성되지 않았습니다. 수정하려면 유형, 키, 값을 지정하고 내용은 2,000자 이내로 작성하세요.",
   },
   es: {
+    recallReason: { field: "Campo del perfil", lexical: "Coincidencia de texto", presentation_default: "Estilo predeterminado" },
     guidance: "Ejemplo: Remember: preference response.style = Empezar por la conclusión. Usa Correct: con el mismo tipo y clave para proponer un reemplazo. Nada se activa sin confirmación.",
     loadProjects: "Cargar ámbitos de proyecto",
     scope: "Ámbito de memoria",
@@ -142,6 +148,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
     ignored: "No se creó ningún candidato. Para corregir, indica tipo, clave y valor; máximo 2.000 caracteres.",
   },
   fr: {
+    recallReason: { field: "Champ du profil", lexical: "Correspondance de texte", presentation_default: "Style par défaut" },
     guidance: "Exemple : Remember: preference response.style = Commencer par la conclusion. Utilisez Correct: avec les mêmes type et clé pour proposer un remplacement. La confirmation est obligatoire.",
     loadProjects: "Charger les périmètres de projet",
     scope: "Périmètre de mémoire",
@@ -164,6 +171,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
     ignored: "Aucun candidat créé. Pour corriger, fournissez un type, une clé et une valeur de 2 000 caractères au maximum.",
   },
   de: {
+    recallReason: { field: "Profilfeld", lexical: "Textübereinstimmung", presentation_default: "Schreibvorgabe" },
     guidance: "Beispiel: Remember: preference response.style = Mit dem Fazit beginnen. Mit Correct: und demselben Typ und Schlüssel schlägst du einen Ersatz vor. Aktiv wird er erst nach Bestätigung.",
     loadProjects: "Projektbereiche laden",
     scope: "Speicherbereich",
@@ -186,6 +194,7 @@ export const chatMemoryMessages: Record<Locale, Messages> = {
     ignored: "Kein Vorschlag erstellt. Eine Korrektur braucht Typ, Schlüssel und Wert; höchstens 2.000 Zeichen.",
   },
   "pt-BR": {
+    recallReason: { field: "Campo do perfil", lexical: "Correspondência de texto", presentation_default: "Estilo padrão" },
     guidance: "Exemplo: Remember: preference response.style = Começar pela conclusão. Use Correct: com o mesmo tipo e a mesma chave para propor uma substituição. Nada é ativado sem confirmação.",
     loadProjects: "Carregar escopos de projeto",
     scope: "Escopo da memória",
